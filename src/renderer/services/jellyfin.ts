@@ -270,23 +270,35 @@ class JellyfinService {
   }
 
   async uploadImage(itemId: string, imageUrl: string): Promise<void> {
-    // Download image and upload as base64 to Jellyfin
-    const res = await fetch(imageUrl)
-    if (!res.ok) throw new Error('Failed to fetch cover art')
+    // Download image from URL
+    const res = await fetch(imageUrl, { redirect: 'follow' })
+    if (!res.ok) throw new Error(`Failed to fetch cover art: ${res.status}`)
     const blob = await res.blob()
     const buffer = await blob.arrayBuffer()
-    const base64 = btoa(String.fromCharCode(...new Uint8Array(buffer)))
-    const contentType = blob.type || 'image/jpeg'
+    const bytes = new Uint8Array(buffer)
 
+    // Convert to base64 in chunks to avoid call stack overflow
+    let base64 = ''
+    const chunk = 8192
+    for (let i = 0; i < bytes.length; i += chunk) {
+      base64 += String.fromCharCode(...bytes.subarray(i, i + chunk))
+    }
+    base64 = btoa(base64)
+
+    const contentType = blob.type || 'image/jpeg'
     const uploadRes = await fetch(`${this.serverUrl}/Items/${itemId}/Images/Primary`, {
       method: 'POST',
       headers: {
         'X-Emby-Authorization': this.authHeader(),
         'Content-Type': contentType
       },
-      body: Uint8Array.from(atob(base64), c => c.charCodeAt(0))
+      body: base64
     })
     if (!uploadRes.ok) throw new Error(`Upload failed: ${uploadRes.status}`)
+  }
+
+  async deleteImage(itemId: string): Promise<void> {
+    return this.request(`/Items/${itemId}/Images/Primary`, { method: 'DELETE' })
   }
 
   async refreshItem(itemId: string): Promise<void> {

@@ -8,7 +8,7 @@ import { useToastStore } from '../../stores/toast'
 import { Modal } from '../UI/Modal'
 import {
   Search, Loader2, Check, X, Disc3, User, Calendar, Tag, Image,
-  Music, ArrowLeft, ChevronRight, Download
+  Music, ArrowLeft, ChevronRight, Download, Trash2
 } from 'lucide-react'
 
 interface MetadataEditorProps {
@@ -41,6 +41,8 @@ export default function MetadataEditor({ album, tracks, open, onClose, onApplied
   const [applyYear, setApplyYear] = useState(true)
   const [applyCover, setApplyCover] = useState(true)
   const [applyTracks, setApplyTracks] = useState(true)
+  const [clearing, setClearing] = useState(false)
+  const [showClearConfirm, setShowClearConfirm] = useState(false)
 
   useEffect(() => {
     if (open) {
@@ -159,6 +161,53 @@ export default function MetadataEditor({ album, tracks, open, onClose, onApplied
     setApplying(false)
   }
 
+  const handleClear = async () => {
+    setClearing(true)
+    try {
+      // Clear album metadata
+      await jellyfin.updateItem(album.Id, {
+        Name: '',
+        AlbumArtist: '',
+        AlbumArtists: [],
+        ProductionYear: null,
+        PremiereDate: null,
+        Genres: [],
+        Tags: [],
+        Studios: []
+      })
+
+      // Delete cover art
+      try {
+        await jellyfin.deleteImage(album.Id)
+      } catch {
+        // Image might not exist, ignore
+      }
+
+      // Clear track metadata
+      for (const track of tracks) {
+        try {
+          await jellyfin.updateItem(track.Id, {
+            Name: '',
+            IndexNumber: null,
+            Artists: [],
+            AlbumArtist: ''
+          })
+        } catch (err) {
+          console.warn(`Failed to clear track ${track.Name}:`, err)
+        }
+      }
+
+      toast('Metadados removidos', 'success')
+      onApplied()
+      onClose()
+    } catch (err) {
+      console.error('Failed to clear metadata:', err)
+      toast('Erro ao limpar metadados', 'error')
+    }
+    setClearing(false)
+    setShowClearConfirm(false)
+  }
+
   if (!open) return null
 
   const allTracks = detailed?.media?.flatMap(m => m.tracks || []) || []
@@ -231,6 +280,42 @@ export default function MetadataEditor({ album, tracks, open, onClose, onApplied
                 {searching ? <Loader2 size={16} className="animate-spin" /> : <Search size={16} />}
                 Buscar
               </button>
+
+              {/* Separator */}
+              <div className="border-t border-border-subtle pt-4 mt-2">
+                <h4 className="text-xs text-text-tertiary uppercase tracking-wider mb-2">Ações</h4>
+                {!showClearConfirm ? (
+                  <button
+                    onClick={() => setShowClearConfirm(true)}
+                    className="flex items-center gap-2 text-red-400 hover:text-red-300 text-sm transition-colors"
+                  >
+                    <Trash2 size={15} />
+                    Limpar todos os metadados
+                  </button>
+                ) : (
+                  <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4">
+                    <p className="text-sm text-red-300 mb-3">
+                      Isso vai apagar o título, artista, ano, capa e nomes das faixas. Deseja continuar?
+                    </p>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={handleClear}
+                        disabled={clearing}
+                        className="flex items-center gap-2 bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-full text-sm font-semibold transition-colors disabled:opacity-50"
+                      >
+                        {clearing ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
+                        {clearing ? 'Limpando...' : 'Confirmar'}
+                      </button>
+                      <button
+                        onClick={() => setShowClearConfirm(false)}
+                        className="px-4 py-2 rounded-full text-sm text-text-secondary hover:text-text-primary hover:bg-white/10 transition-colors"
+                      >
+                        Cancelar
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           )}
 
