@@ -2,9 +2,9 @@ import { NavLink, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../../stores/auth'
 import { useLibraryStore } from '../../stores/library'
 import {
-  Home, Disc3, Users, Music, ListMusic, Search, LogOut, Download
+  Home, Disc3, Users, Music, ListMusic, Search, LogOut, Download, RefreshCw
 } from 'lucide-react'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 
 const navItems = [
   { to: '/', icon: Home, label: 'Início' },
@@ -21,8 +21,9 @@ const libraryItems = [
 
 export default function Sidebar() {
   const { logout, auth } = useAuthStore()
-  const { playlists, fetchPlaylists } = useLibraryStore()
+  const { playlists, fetchPlaylists, refreshAll, isLoading } = useLibraryStore()
   const navigate = useNavigate()
+  const [refreshing, setRefreshing] = useState(false)
 
   useEffect(() => {
     fetchPlaylists()
@@ -31,6 +32,12 @@ export default function Sidebar() {
   const handleLogout = () => {
     logout()
     navigate('/')
+  }
+
+  const handleRefresh = async () => {
+    setRefreshing(true)
+    await refreshAll()
+    setRefreshing(false)
   }
 
   return (
@@ -61,9 +68,19 @@ export default function Sidebar() {
 
       {/* Library section */}
       <div className="mt-6 px-3">
-        <h3 className="text-[11px] font-semibold text-text-tertiary uppercase tracking-wider px-3 mb-2">
-          Biblioteca
-        </h3>
+        <div className="flex items-center justify-between px-3 mb-2">
+          <h3 className="text-[11px] font-semibold text-text-tertiary uppercase tracking-wider">
+            Biblioteca
+          </h3>
+          <button
+            onClick={handleRefresh}
+            disabled={refreshing}
+            className="p-1 rounded-md text-text-tertiary hover:text-text-primary hover:bg-white/10 transition-colors no-drag disabled:opacity-40"
+            title="Sincronizar biblioteca"
+          >
+            <RefreshCw size={13} className={refreshing ? 'animate-spin' : ''} />
+          </button>
+        </div>
         <nav className="space-y-0.5">
           {libraryItems.map(item => (
             <NavLink

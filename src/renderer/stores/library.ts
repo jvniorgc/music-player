@@ -20,6 +20,7 @@ interface LibraryState {
   fetchHome: () => Promise<void>
   loadMoreAlbums: () => Promise<void>
   loadMoreSongs: () => Promise<void>
+  refreshAll: () => Promise<void>
   reset: () => void
 }
 
@@ -117,6 +118,22 @@ export const useLibraryStore = create<LibraryState>((set, get) => ({
     const { songs, totalSongs } = get()
     if (songs.length >= totalSongs) return
     await get().fetchSongs(songs.length)
+  },
+
+  refreshAll: async () => {
+    set({ isLoading: true })
+    get().reset()
+    try {
+      await Promise.all([
+        get().fetchAlbums(0),
+        get().fetchArtists(0),
+        get().fetchSongs(0),
+        get().fetchPlaylists(),
+        get().fetchHome()
+      ])
+    } finally {
+      set({ isLoading: false })
+    }
   },
 
   reset: () => set({
