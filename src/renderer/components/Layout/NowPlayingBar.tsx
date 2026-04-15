@@ -135,7 +135,7 @@ export default function NowPlayingBar() {
 
         {/* Right side: time, volume, queue, download */}
         <div className="w-64 flex items-center justify-end gap-3">
-          <span className="text-[11px] text-text-tertiary tabular-nums">
+          <span className="text-[11px] text-text-tertiary tabular-nums whitespace-nowrap shrink-0">
             {formatTime(currentTime)} / {formatTime(duration)}
           </span>
 
