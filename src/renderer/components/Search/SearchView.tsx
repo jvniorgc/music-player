@@ -149,6 +149,21 @@ export default function SearchView() {
                             <span className="text-3xl">💿</span>
                           </div>
                         )}
+                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors" />
+                        <button
+                          onClick={async (e) => {
+                            e.stopPropagation()
+                            try {
+                              const res = await jellyfin.getAlbumItems(album.Id)
+                              if (res.Items.length > 0) playItems(res.Items)
+                            } catch (err) {
+                              console.error('Failed to play album:', err)
+                            }
+                          }}
+                          className="absolute bottom-3 right-3 w-10 h-10 bg-accent rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 transform translate-y-1 group-hover:translate-y-0 shadow-lg shadow-black/30"
+                        >
+                          <Play size={18} className="text-white ml-0.5" fill="white" />
+                        </button>
                       </div>
                       <p className="text-sm font-medium truncate">{album.Name}</p>
                       <p className="text-xs text-text-secondary truncate">
