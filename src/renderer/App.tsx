@@ -14,6 +14,7 @@ import PlaylistList from './components/Library/PlaylistList'
 import PlaylistView from './components/Library/PlaylistView'
 import SearchView from './components/Search/SearchView'
 import DownloadsView from './components/Library/DownloadsView'
+import SoulseekView from './components/Soulseek/SoulseekView'
 import { Loader2, Music2 } from 'lucide-react'
 import { playback } from './services/playback'
 
@@ -76,6 +77,7 @@ export default function App() {
           <Route path="/playlists" element={<PlaylistList />} />
           <Route path="/playlist/:id" element={<PlaylistView />} />
           <Route path="/downloads" element={<DownloadsView />} />
+          <Route path="/soulseek" element={<SoulseekView />} />
         </Route>
       </Routes>
     </HashRouter>
