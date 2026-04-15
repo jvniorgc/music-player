@@ -248,12 +248,50 @@ class JellyfinService {
   }
 
   async renameItem(itemId: string, name: string): Promise<void> {
-    // Jellyfin requires the full item DTO for updates
     const item = await this.request<any>(`/Users/${this.userId}/Items/${itemId}`)
     item.Name = name
     return this.request(`/Items/${itemId}`, {
       method: 'POST',
       body: JSON.stringify(item)
+    })
+  }
+
+  async getFullItem(itemId: string): Promise<any> {
+    return this.request(`/Users/${this.userId}/Items/${itemId}`)
+  }
+
+  async updateItem(itemId: string, updates: Record<string, any>): Promise<void> {
+    const item = await this.getFullItem(itemId)
+    Object.assign(item, updates)
+    return this.request(`/Items/${itemId}`, {
+      method: 'POST',
+      body: JSON.stringify(item)
+    })
+  }
+
+  async uploadImage(itemId: string, imageUrl: string): Promise<void> {
+    // Download image and upload as base64 to Jellyfin
+    const res = await fetch(imageUrl)
+    if (!res.ok) throw new Error('Failed to fetch cover art')
+    const blob = await res.blob()
+    const buffer = await blob.arrayBuffer()
+    const base64 = btoa(String.fromCharCode(...new Uint8Array(buffer)))
+    const contentType = blob.type || 'image/jpeg'
+
+    const uploadRes = await fetch(`${this.serverUrl}/Items/${itemId}/Images/Primary`, {
+      method: 'POST',
+      headers: {
+        'X-Emby-Authorization': this.authHeader(),
+        'Content-Type': contentType
+      },
+      body: Uint8Array.from(atob(base64), c => c.charCodeAt(0))
+    })
+    if (!uploadRes.ok) throw new Error(`Upload failed: ${uploadRes.status}`)
+  }
+
+  async refreshItem(itemId: string): Promise<void> {
+    return this.request(`/Items/${itemId}/Refresh?Recursive=true&MetadataRefreshMode=FullRefresh&ReplaceAllMetadata=false`, {
+      method: 'POST'
     })
   }
 

@@ -3,7 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { jellyfin, JellyfinItem } from '../../services/jellyfin'
 import { usePlayerStore } from '../../stores/player'
 import { useDownloadStore } from '../../stores/download'
-import { Play, Pause, Shuffle, Download, Check, Clock, ArrowLeft } from 'lucide-react'
+import { Play, Pause, Shuffle, Download, Check, Clock, ArrowLeft, Pencil } from 'lucide-react'
+import MetadataEditor from '../Metadata/MetadataEditor'
 
 function formatDuration(ticks?: number): string {
   if (!ticks) return ''
@@ -30,18 +31,20 @@ export default function AlbumView() {
   const [loading, setLoading] = useState(true)
   const { playItems, currentTrack, isPlaying, togglePlay } = usePlayerStore()
   const { isDownloaded, startDownload } = useDownloadStore()
+  const [showMetadata, setShowMetadata] = useState(false)
 
-  useEffect(() => {
+  const loadData = () => {
     if (!id) return
     setLoading(true)
-
     Promise.all([
       jellyfin.getAlbumItems(id).then(r => setTracks(r.Items)),
       fetch(`${jellyfin.serverUrl}/Users/${jellyfin.userId}/Items/${id}`, {
         headers: { 'X-Emby-Authorization': `MediaBrowser Token="${jellyfin.token}"` }
       }).then(r => r.json()).then(setAlbum)
     ]).finally(() => setLoading(false))
-  }, [id])
+  }
+
+  useEffect(() => { loadData() }, [id])
 
   if (loading || !album) {
     return <div className="flex items-center justify-center py-24 text-text-tertiary">Carregando...</div>
@@ -129,6 +132,13 @@ export default function AlbumView() {
             >
               <Download size={16} />
             </button>
+            <button
+              onClick={() => setShowMetadata(true)}
+              className="p-2.5 rounded-full bg-white/10 hover:bg-white/15 transition-colors"
+              title="Editar metadados"
+            >
+              <Pencil size={16} />
+            </button>
           </div>
         </div>
       </div>
@@ -182,6 +192,14 @@ export default function AlbumView() {
           )
         })}
       </div>
+
+      <MetadataEditor
+        album={album}
+        tracks={tracks}
+        open={showMetadata}
+        onClose={() => setShowMetadata(false)}
+        onApplied={loadData}
+      />
     </div>
   )
 }
