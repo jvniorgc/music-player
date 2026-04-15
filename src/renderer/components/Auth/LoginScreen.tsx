@@ -4,7 +4,7 @@ import { Music2, Loader2, Server, AlertCircle } from 'lucide-react'
 
 export default function LoginScreen() {
   const { login, isLoading, error } = useAuthStore()
-  const [serverUrl, setServerUrl] = useState('192.168.1.151:8096')
+  const [serverUrl, setServerUrl] = useState('')
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
 
@@ -35,7 +35,7 @@ export default function LoginScreen() {
                 type="text"
                 value={serverUrl}
                 onChange={e => setServerUrl(e.target.value)}
-                placeholder="endereço:porta"
+                placeholder="http://192.168.1.100:8096"
                 className="w-full bg-bg-elevated border border-border rounded-xl px-10 py-3 text-sm text-text-primary placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-accent transition"
               />
             </div>
