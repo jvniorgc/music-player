@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { useParams, useNavigate } from 'react-router-dom'
 import { jellyfin, JellyfinItem } from '../../services/jellyfin'
 import { usePlayerStore } from '../../stores/player'
-import { Play, Pause, Shuffle, ListMusic, ArrowLeft } from 'lucide-react'
-import { useNavigate } from 'react-router-dom'
+import { useLibraryStore } from '../../stores/library'
+import { useToastStore } from '../../stores/toast'
+import { Play, Pause, Shuffle, ListMusic, ArrowLeft, Pencil, Trash2, MoreHorizontal, X as XIcon } from 'lucide-react'
+import { InputModal, ConfirmModal } from '../UI/Modal'
 
 function formatDuration(ticks?: number): string {
   if (!ticks) return ''
@@ -20,18 +22,70 @@ export default function PlaylistView() {
   const [tracks, setTracks] = useState<JellyfinItem[]>([])
   const [loading, setLoading] = useState(true)
   const { playItems, currentTrack, isPlaying, togglePlay } = usePlayerStore()
+  const { fetchPlaylists } = useLibraryStore()
+  const toast = useToastStore(s => s.show)
 
-  useEffect(() => {
+  const [showRename, setShowRename] = useState(false)
+  const [showDelete, setShowDelete] = useState(false)
+  const [trackMenu, setTrackMenu] = useState<{ index: number; x: number; y: number } | null>(null)
+
+  const loadData = () => {
     if (!id) return
     setLoading(true)
-
     Promise.all([
       jellyfin.getPlaylistItems(id).then(r => setTracks(r.Items)),
       fetch(`${jellyfin.serverUrl}/Users/${jellyfin.userId}/Items/${id}`, {
         headers: { 'X-Emby-Authorization': `MediaBrowser Token="${jellyfin.token}"` }
       }).then(r => r.json()).then(setPlaylist)
     ]).finally(() => setLoading(false))
-  }, [id])
+  }
+
+  useEffect(() => { loadData() }, [id])
+
+  useEffect(() => {
+    if (!trackMenu) return
+    const close = () => setTrackMenu(null)
+    window.addEventListener('click', close)
+    return () => window.removeEventListener('click', close)
+  }, [trackMenu])
+
+  const handleRename = async (name: string) => {
+    if (!id) return
+    try {
+      await jellyfin.renameItem(id, name)
+      setPlaylist(prev => prev ? { ...prev, Name: name } : prev)
+      fetchPlaylists()
+      toast('Playlist renomeada', 'success')
+    } catch (err) {
+      console.error('Failed to rename playlist:', err)
+      toast('Não foi possível renomear esta playlist', 'error')
+    }
+  }
+
+  const handleDelete = async () => {
+    if (!id) return
+    try {
+      await jellyfin.deleteItem(id)
+      fetchPlaylists()
+      toast('Playlist excluída', 'success')
+      navigate('/playlists')
+    } catch (err) {
+      console.error('Failed to delete playlist:', err)
+      toast('Não foi possível excluir. Playlists baseadas em arquivos não podem ser excluídas.', 'error')
+    }
+  }
+
+  const handleRemoveTrack = async (track: JellyfinItem) => {
+    if (!id || !track.PlaylistItemId) return
+    try {
+      await jellyfin.removeFromPlaylist(id, [track.PlaylistItemId])
+      setTracks(prev => prev.filter(t => t.PlaylistItemId !== track.PlaylistItemId))
+      toast('Música removida da playlist', 'success')
+    } catch (err) {
+      console.error('Failed to remove track:', err)
+      toast('Não foi possível remover. A playlist pode ser somente leitura.', 'error')
+    }
+  }
 
   if (loading) {
     return <div className="flex items-center justify-center py-24 text-text-tertiary">Carregando...</div>
@@ -90,63 +144,135 @@ export default function PlaylistView() {
               <Shuffle size={15} />
               Aleatório
             </button>
+            <button
+              onClick={() => setShowRename(true)}
+              className="p-2.5 rounded-full bg-white/10 hover:bg-white/15 text-text-secondary hover:text-text-primary transition-colors"
+              title="Renomear"
+            >
+              <Pencil size={15} />
+            </button>
+            <button
+              onClick={() => setShowDelete(true)}
+              className="p-2.5 rounded-full bg-white/10 hover:bg-white/15 text-text-secondary hover:text-red-400 transition-colors"
+              title="Excluir"
+            >
+              <Trash2 size={15} />
+            </button>
           </div>
         </div>
       </div>
 
-      <div className="bg-bg-secondary/40 rounded-xl overflow-hidden">
-        {tracks.map((track, i) => {
-          const isCurrent = currentTrack?.id === track.Id
-          const albumImage = track.AlbumId ? jellyfin.getImageUrl(track.AlbumId, undefined, 80) : null
+      {tracks.length > 0 ? (
+        <div className="bg-bg-secondary/40 rounded-xl overflow-hidden">
+          {tracks.map((track, i) => {
+            const isCurrent = currentTrack?.id === track.Id
+            const albumImage = track.AlbumId ? jellyfin.getImageUrl(track.AlbumId, undefined, 80) : null
 
-          return (
-            <div
-              key={`${track.Id}-${i}`}
-              className={`flex items-center gap-4 px-5 py-3 hover:bg-white/5 transition-colors cursor-pointer group ${
-                isCurrent ? 'bg-white/5' : ''
-              }`}
-              onClick={() => playItems(tracks, i)}
-            >
-              <div className="w-7 text-right">
-                {isCurrent && isPlaying ? (
-                  <div className="flex items-center justify-end gap-[2px]">
-                    <div className="w-[3px] h-3 bg-accent rounded-full animate-pulse" />
-                    <div className="w-[3px] h-4 bg-accent rounded-full animate-pulse" style={{ animationDelay: '0.15s' }} />
-                    <div className="w-[3px] h-2 bg-accent rounded-full animate-pulse" style={{ animationDelay: '0.3s' }} />
-                  </div>
+            return (
+              <div
+                key={`${track.Id}-${i}`}
+                className={`flex items-center gap-4 px-5 py-3 hover:bg-white/5 transition-colors cursor-pointer group ${
+                  isCurrent ? 'bg-white/5' : ''
+                }`}
+                onClick={() => playItems(tracks, i)}
+                onContextMenu={e => {
+                  e.preventDefault()
+                  setTrackMenu({ index: i, x: e.clientX, y: e.clientY })
+                }}
+              >
+                <div className="w-7 text-right">
+                  {isCurrent && isPlaying ? (
+                    <div className="flex items-center justify-end gap-[2px]">
+                      <div className="w-[3px] h-3 bg-accent rounded-full animate-pulse" />
+                      <div className="w-[3px] h-4 bg-accent rounded-full animate-pulse" style={{ animationDelay: '0.15s' }} />
+                      <div className="w-[3px] h-2 bg-accent rounded-full animate-pulse" style={{ animationDelay: '0.3s' }} />
+                    </div>
+                  ) : (
+                    <>
+                      <span className={`text-sm tabular-nums group-hover:hidden ${isCurrent ? 'text-accent' : 'text-text-tertiary'}`}>
+                        {i + 1}
+                      </span>
+                      <Play size={14} className="text-white hidden group-hover:block ml-auto" fill="white" />
+                    </>
+                  )}
+                </div>
+
+                {albumImage ? (
+                  <img src={albumImage} className="w-10 h-10 rounded object-cover" alt="" loading="lazy" />
                 ) : (
-                  <>
-                    <span className={`text-sm tabular-nums group-hover:hidden ${isCurrent ? 'text-accent' : 'text-text-tertiary'}`}>
-                      {i + 1}
-                    </span>
-                    <Play size={14} className="text-white hidden group-hover:block ml-auto" fill="white" />
-                  </>
+                  <div className="w-10 h-10 rounded bg-bg-elevated flex items-center justify-center">
+                    <ListMusic size={16} className="text-text-tertiary" />
+                  </div>
+                )}
+
+                <div className="min-w-0 flex-1">
+                  <p className={`text-sm font-medium truncate ${isCurrent ? 'text-accent' : ''}`}>{track.Name}</p>
+                  <p className="text-xs text-text-secondary truncate">
+                    {track.Artists?.join(', ') || track.AlbumArtist || 'Desconhecido'}
+                    {track.Album ? ` — ${track.Album}` : ''}
+                  </p>
+                </div>
+
+                <span className="text-xs text-text-tertiary tabular-nums shrink-0">
+                  {formatDuration(track.RunTimeTicks)}
+                </span>
+
+                <button
+                  onClick={e => {
+                    e.stopPropagation()
+                    setTrackMenu({ index: i, x: e.clientX, y: e.clientY })
+                  }}
+                  className="p-1.5 rounded-full opacity-0 group-hover:opacity-100 hover:bg-white/10 text-text-tertiary transition-all shrink-0"
+                >
+                  <MoreHorizontal size={14} />
+                </button>
+
+                {/* Track context menu */}
+                {trackMenu?.index === i && (
+                  <div
+                    className="fixed z-50 bg-bg-elevated border border-border rounded-xl shadow-2xl py-1.5 min-w-[180px]"
+                    style={{ left: trackMenu.x, top: trackMenu.y }}
+                    onClick={e => e.stopPropagation()}
+                  >
+                    <button
+                      onClick={() => { setTrackMenu(null); handleRemoveTrack(track) }}
+                      className="flex items-center gap-3 w-full px-4 py-2 text-sm text-red-400 hover:bg-white/10 transition-colors"
+                    >
+                      <XIcon size={14} />
+                      Remover da Playlist
+                    </button>
+                  </div>
                 )}
               </div>
+            )
+          })}
+        </div>
+      ) : (
+        <div className="flex flex-col items-center justify-center py-16 text-text-tertiary">
+          <ListMusic size={40} className="mb-3 opacity-50" />
+          <p className="text-sm">Playlist vazia</p>
+        </div>
+      )}
 
-              {albumImage ? (
-                <img src={albumImage} className="w-10 h-10 rounded object-cover" alt="" loading="lazy" />
-              ) : (
-                <div className="w-10 h-10 rounded bg-bg-elevated flex items-center justify-center">
-                  <ListMusic size={16} className="text-text-tertiary" />
-                </div>
-              )}
+      <InputModal
+        open={showRename}
+        title="Renomear Playlist"
+        placeholder="Novo nome"
+        initialValue={playlist?.Name || ''}
+        confirmLabel="Renomear"
+        onClose={() => setShowRename(false)}
+        onConfirm={handleRename}
+      />
 
-              <div className="min-w-0 flex-1">
-                <p className={`text-sm font-medium truncate ${isCurrent ? 'text-accent' : ''}`}>{track.Name}</p>
-                <p className="text-xs text-text-secondary truncate">
-                  {track.Artists?.join(', ') || track.AlbumArtist || 'Desconhecido'}
-                  {track.Album ? ` — ${track.Album}` : ''}
-                </p>
-              </div>
-
-              <span className="text-xs text-text-tertiary tabular-nums shrink-0">
-                {formatDuration(track.RunTimeTicks)}
-              </span>
-            </div>
-          )
-        })}
-      </div>
+      <ConfirmModal
+        open={showDelete}
+        title="Excluir Playlist"
+        message={`Tem certeza que deseja excluir "${playlist?.Name}"? Esta ação não pode ser desfeita.`}
+        confirmLabel="Excluir"
+        destructive
+        onClose={() => setShowDelete(false)}
+        onConfirm={handleDelete}
+      />
     </div>
   )
 }

@@ -3,6 +3,7 @@ import Sidebar from './Sidebar'
 import NowPlayingBar from './NowPlayingBar'
 import QueueView from '../Player/QueueView'
 import FullScreenPlayer from '../Player/FullScreenPlayer'
+import ToastContainer from '../UI/ToastContainer'
 import { usePlayerStore } from '../../stores/player'
 import { useEffect } from 'react'
 
@@ -29,6 +30,7 @@ export default function AppLayout() {
       </div>
       <NowPlayingBar />
       {showFullScreen && <FullScreenPlayer />}
+      <ToastContainer />
     </div>
   )
 }

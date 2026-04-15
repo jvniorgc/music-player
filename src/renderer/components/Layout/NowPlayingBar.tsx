@@ -1,11 +1,15 @@
+import { useState } from 'react'
 import { usePlayerStore } from '../../stores/player'
 import { useDownloadStore } from '../../stores/download'
+import { useLibraryStore } from '../../stores/library'
+import { useToastStore } from '../../stores/toast'
 import { jellyfin } from '../../services/jellyfin'
 import {
   Play, Pause, SkipBack, SkipForward, Volume2, VolumeX,
   Shuffle, Repeat, Repeat1, ListMusic, ChevronUp,
-  Download, Check
+  Download, Check, ListPlus
 } from 'lucide-react'
+import { PlaylistPicker, InputModal } from '../UI/Modal'
 
 function formatTime(seconds: number): string {
   if (!isFinite(seconds)) return '0:00'
@@ -21,6 +25,11 @@ export default function NowPlayingBar() {
     toggleRepeat, setShowFullScreen, setShowQueue
   } = usePlayerStore()
   const { isDownloaded, startDownload } = useDownloadStore()
+  const { playlists, fetchPlaylists } = useLibraryStore()
+
+  const [showPicker, setShowPicker] = useState(false)
+  const [showCreatePlaylist, setShowCreatePlaylist] = useState(false)
+  const toast = useToastStore(s => s.show)
 
   if (!currentTrack) {
     return (
@@ -131,6 +140,14 @@ export default function NowPlayingBar() {
           </span>
 
           <button
+            onClick={() => { fetchPlaylists(); setShowPicker(true) }}
+            className="p-1.5 transition-colors text-text-tertiary hover:text-text-secondary"
+            title="Adicionar à playlist"
+          >
+            <ListPlus size={15} />
+          </button>
+
+          <button
             onClick={() => !downloaded && startDownload(item)}
             className={`p-1.5 transition-colors ${downloaded ? 'text-accent' : 'text-text-tertiary hover:text-text-secondary'}`}
             title={downloaded ? 'Baixado' : 'Baixar'}
@@ -167,6 +184,43 @@ export default function NowPlayingBar() {
           </button>
         </div>
       </div>
+
+      <PlaylistPicker
+        open={showPicker}
+        playlists={playlists}
+        onClose={() => setShowPicker(false)}
+        onSelect={async (playlistId) => {
+          try {
+            await jellyfin.addToPlaylist(playlistId, [item.Id])
+            toast('Adicionada à playlist', 'success')
+          } catch (err) {
+            console.error('Failed to add to playlist:', err)
+            toast('Não foi possível adicionar à playlist', 'error')
+          }
+        }}
+        onCreate={() => {
+          setShowPicker(false)
+          setShowCreatePlaylist(true)
+        }}
+      />
+
+      <InputModal
+        open={showCreatePlaylist}
+        title="Nova Playlist"
+        placeholder="Nome da playlist"
+        confirmLabel="Criar"
+        onClose={() => setShowCreatePlaylist(false)}
+        onConfirm={async (name) => {
+          try {
+            await jellyfin.createPlaylist(name, [item.Id])
+            fetchPlaylists()
+            toast('Playlist criada', 'success')
+          } catch (err) {
+            console.error('Failed to create playlist:', err)
+            toast('Erro ao criar playlist', 'error')
+          }
+        }}
+      />
     </div>
   )
 }

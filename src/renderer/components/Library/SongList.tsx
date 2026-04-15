@@ -1,9 +1,11 @@
-import { useEffect, useCallback, useRef } from 'react'
+import { useEffect, useCallback, useRef, useState } from 'react'
 import { useLibraryStore } from '../../stores/library'
 import { usePlayerStore } from '../../stores/player'
 import { useDownloadStore } from '../../stores/download'
+import { useToastStore } from '../../stores/toast'
 import { jellyfin, JellyfinItem } from '../../services/jellyfin'
-import { Play, Loader2, Download, Check, Music } from 'lucide-react'
+import { Play, Loader2, Download, Check, Music, MoreHorizontal, ListPlus } from 'lucide-react'
+import { PlaylistPicker, InputModal } from '../UI/Modal'
 
 function formatDuration(ticks?: number): string {
   if (!ticks) return ''
@@ -14,13 +16,19 @@ function formatDuration(ticks?: number): string {
 }
 
 export default function SongList() {
-  const { songs, totalSongs, isLoading, fetchSongs, loadMoreSongs } = useLibraryStore()
+  const { songs, totalSongs, playlists, isLoading, fetchSongs, loadMoreSongs, fetchPlaylists } = useLibraryStore()
   const { playItems, currentTrack, isPlaying } = usePlayerStore()
   const { isDownloaded, startDownload } = useDownloadStore()
+  const toast = useToastStore(s => s.show)
   const loaderRef = useRef<HTMLDivElement>(null)
+
+  const [pickerSong, setPickerSong] = useState<JellyfinItem | null>(null)
+  const [showCreatePlaylist, setShowCreatePlaylist] = useState(false)
+  const [pendingSong, setPendingSong] = useState<JellyfinItem | null>(null)
 
   useEffect(() => {
     if (songs.length === 0) fetchSongs()
+    if (playlists.length === 0) fetchPlaylists()
   }, [])
 
   const observerCallback = useCallback((entries: IntersectionObserverEntry[]) => {
@@ -34,6 +42,32 @@ export default function SongList() {
     if (loaderRef.current) observer.observe(loaderRef.current)
     return () => observer.disconnect()
   }, [observerCallback])
+
+  const handleAddToPlaylist = async (playlistId: string) => {
+    if (!pickerSong) return
+    try {
+      await jellyfin.addToPlaylist(playlistId, [pickerSong.Id])
+      toast('Adicionada à playlist', 'success')
+    } catch (err) {
+      console.error('Failed to add to playlist:', err)
+      toast('Não foi possível adicionar à playlist', 'error')
+    }
+    setPickerSong(null)
+  }
+
+  const handleCreateAndAdd = async (name: string) => {
+    const song = pendingSong || pickerSong
+    if (!song) return
+    try {
+      await jellyfin.createPlaylist(name, [song.Id])
+      fetchPlaylists()
+      toast('Playlist criada', 'success')
+    } catch (err) {
+      console.error('Failed to create playlist:', err)
+      toast('Erro ao criar playlist', 'error')
+    }
+    setPendingSong(null)
+  }
 
   return (
     <div className="fade-in">
@@ -51,7 +85,7 @@ export default function SongList() {
         <span className="flex-1">Título</span>
         <span className="w-40 hidden md:block">Álbum</span>
         <span className="w-12 text-right">⏱</span>
-        <span className="w-8" />
+        <span className="w-16" />
       </div>
 
       <div className="bg-bg-secondary/30 rounded-xl overflow-hidden">
@@ -112,17 +146,29 @@ export default function SongList() {
                 {formatDuration(song.RunTimeTicks)}
               </span>
 
-              <button
-                onClick={(e) => {
-                  e.stopPropagation()
-                  if (!downloaded) startDownload(song)
-                }}
-                className={`w-8 flex justify-center ${
-                  downloaded ? 'text-accent' : 'text-text-tertiary opacity-0 group-hover:opacity-100'
-                } transition-all`}
-              >
-                {downloaded ? <Check size={14} /> : <Download size={14} />}
-              </button>
+              <div className="w-16 flex justify-end gap-1">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setPickerSong(song)
+                  }}
+                  className="text-text-tertiary opacity-0 group-hover:opacity-100 hover:text-text-secondary transition-all p-1"
+                  title="Adicionar à playlist"
+                >
+                  <ListPlus size={14} />
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    if (!downloaded) startDownload(song)
+                  }}
+                  className={`p-1 ${
+                    downloaded ? 'text-accent' : 'text-text-tertiary opacity-0 group-hover:opacity-100'
+                  } transition-all`}
+                >
+                  {downloaded ? <Check size={14} /> : <Download size={14} />}
+                </button>
+              </div>
             </div>
           )
         })}
@@ -131,6 +177,27 @@ export default function SongList() {
       <div ref={loaderRef} className="py-8 flex justify-center">
         {isLoading && <Loader2 size={24} className="animate-spin text-text-tertiary" />}
       </div>
+
+      <PlaylistPicker
+        open={!!pickerSong}
+        playlists={playlists}
+        onClose={() => setPickerSong(null)}
+        onSelect={handleAddToPlaylist}
+        onCreate={() => {
+          setPendingSong(pickerSong)
+          setPickerSong(null)
+          setShowCreatePlaylist(true)
+        }}
+      />
+
+      <InputModal
+        open={showCreatePlaylist}
+        title="Nova Playlist"
+        placeholder="Nome da playlist"
+        confirmLabel="Criar"
+        onClose={() => { setShowCreatePlaylist(false); setPendingSong(null) }}
+        onConfirm={handleCreateAndAdd}
+      />
     </div>
   )
 }

@@ -41,6 +41,7 @@ export interface JellyfinItem {
     Size: number
     Bitrate: number
   }[]
+  PlaylistItemId?: string
 }
 
 export interface JellyfinItemsResponse {
@@ -104,9 +105,14 @@ class JellyfinService {
         ...options?.headers
       }
     })
-    if (!res.ok) throw new Error(`API error: ${res.status} ${res.statusText}`)
+    if (!res.ok) {
+      const body = await res.text().catch(() => '')
+      throw new Error(`API error: ${res.status} ${res.statusText} - ${body}`)
+    }
     if (res.status === 204) return undefined as T
-    return res.json()
+    const text = await res.text()
+    if (!text) return undefined as T
+    return JSON.parse(text)
   }
 
   async authenticate(serverUrl: string, username: string, password: string): Promise<JellyfinAuth> {
@@ -170,11 +176,19 @@ class JellyfinService {
   }
 
   async getPlaylists(): Promise<JellyfinItemsResponse> {
-    return this.request(`/Users/${this.userId}/Items?IncludeItemTypes=Playlist&Recursive=true&SortBy=SortName&Fields=ChildCount,PrimaryImageAspectRatio`)
+    const res = await this.request<JellyfinItemsResponse>(
+      `/Users/${this.userId}/Items?IncludeItemTypes=Playlist&Recursive=true&SortBy=SortName&Fields=ChildCount,PrimaryImageAspectRatio,Path`
+    )
+    // Filter out file-based M3U playlists (auto-created by library scan, often buggy/read-only)
+    const filtered = res.Items.filter(item => {
+      const path = (item as any).Path || ''
+      return !path.endsWith('.m3u') && !path.endsWith('.m3u8')
+    })
+    return { Items: filtered, TotalRecordCount: filtered.length }
   }
 
   async getPlaylistItems(playlistId: string): Promise<JellyfinItemsResponse> {
-    return this.request(`/Playlists/${playlistId}/Items?UserId=${this.userId}&Fields=MediaSources,RunTimeTicks,AlbumArtist,Album,AlbumId`)
+    return this.request(`/Playlists/${playlistId}/Items?UserId=${this.userId}&Fields=MediaSources,RunTimeTicks,AlbumArtist,Album,AlbumId,PlaylistItemId`)
   }
 
   async getRecentlyPlayed(limit = 20): Promise<JellyfinItemsResponse> {
@@ -217,6 +231,47 @@ class JellyfinService {
     await this.request('/Sessions/Playing/Stopped', {
       method: 'POST',
       body: JSON.stringify({ ItemId: itemId, PositionTicks: positionTicks })
+    })
+  }
+
+  // --- Playlists CRUD ---
+
+  async createPlaylist(name: string, itemIds: string[] = []): Promise<{ Id: string }> {
+    return this.request('/Playlists', {
+      method: 'POST',
+      body: JSON.stringify({ Name: name, Ids: itemIds, UserId: this.userId, MediaType: 'Audio' })
+    })
+  }
+
+  async deleteItem(itemId: string): Promise<void> {
+    return this.request(`/Items/${itemId}`, { method: 'DELETE' })
+  }
+
+  async renameItem(itemId: string, name: string): Promise<void> {
+    // Jellyfin requires the full item DTO for updates
+    const item = await this.request<any>(`/Users/${this.userId}/Items/${itemId}`)
+    item.Name = name
+    return this.request(`/Items/${itemId}`, {
+      method: 'POST',
+      body: JSON.stringify(item)
+    })
+  }
+
+  async addToPlaylist(playlistId: string, itemIds: string[]): Promise<void> {
+    return this.request(`/Playlists/${playlistId}/Items?Ids=${itemIds.join(',')}&UserId=${this.userId}`, {
+      method: 'POST'
+    })
+  }
+
+  async removeFromPlaylist(playlistId: string, entryIds: string[]): Promise<void> {
+    return this.request(`/Playlists/${playlistId}/Items?EntryIds=${entryIds.join(',')}`, {
+      method: 'DELETE'
+    })
+  }
+
+  async movePlaylistItem(playlistId: string, itemId: string, newIndex: number): Promise<void> {
+    return this.request(`/Playlists/${playlistId}/Items/${itemId}/Move/${newIndex}`, {
+      method: 'POST'
     })
   }
 
