@@ -124,6 +124,9 @@ export const useLibraryStore = create<LibraryState>((set, get) => ({
     set({ isLoading: true })
     get().reset()
     try {
+      // Clear audio cache to remove stale entries
+      await window.api.clearCache()
+
       await Promise.all([
         get().fetchAlbums(0),
         get().fetchArtists(0),

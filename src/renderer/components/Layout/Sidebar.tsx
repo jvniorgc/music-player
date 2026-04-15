@@ -1,6 +1,8 @@
 import { NavLink, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../../stores/auth'
 import { useLibraryStore } from '../../stores/library'
+import { useDownloadStore } from '../../stores/download'
+import { useToastStore } from '../../stores/toast'
 import {
   Home, Disc3, Users, Music, ListMusic, Search, LogOut, Download, RefreshCw
 } from 'lucide-react'
@@ -22,6 +24,8 @@ const libraryItems = [
 export default function Sidebar() {
   const { logout, auth } = useAuthStore()
   const { playlists, fetchPlaylists, refreshAll, isLoading } = useLibraryStore()
+  const { loadDownloads } = useDownloadStore()
+  const toast = useToastStore(s => s.show)
   const navigate = useNavigate()
   const [refreshing, setRefreshing] = useState(false)
 
@@ -37,7 +41,9 @@ export default function Sidebar() {
   const handleRefresh = async () => {
     setRefreshing(true)
     await refreshAll()
+    await loadDownloads()
     setRefreshing(false)
+    toast('Biblioteca sincronizada', 'success')
   }
 
   return (
