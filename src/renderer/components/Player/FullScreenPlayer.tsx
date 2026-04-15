@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { usePlayerStore } from '../../stores/player'
 import { jellyfin } from '../../services/jellyfin'
 import {
@@ -19,6 +20,14 @@ export default function FullScreenPlayer() {
     setShowFullScreen
   } = usePlayerStore()
 
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setShowFullScreen(false)
+    }
+    window.addEventListener('keydown', handleKey)
+    return () => window.removeEventListener('keydown', handleKey)
+  }, [setShowFullScreen])
+
   if (!currentTrack) return null
   const item = currentTrack.item
 
@@ -34,7 +43,7 @@ export default function FullScreenPlayer() {
     <div className="fixed inset-0 z-50 bg-black/95 backdrop-blur-3xl flex flex-col items-center justify-center fade-in">
       {/* Background blur image */}
       {imageUrl && (
-        <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <img src={imageUrl} className="w-full h-full object-cover blur-[80px] opacity-30 scale-110" alt="" />
         </div>
       )}
@@ -42,7 +51,7 @@ export default function FullScreenPlayer() {
       {/* Close button */}
       <button
         onClick={() => setShowFullScreen(false)}
-        className="absolute top-6 left-1/2 -translate-x-1/2 p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors z-10"
+        className="absolute top-6 left-1/2 -translate-x-1/2 p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors z-10 no-drag"
       >
         <ChevronDown size={20} />
       </button>

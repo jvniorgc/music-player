@@ -21,7 +21,7 @@ export default function AppLayout() {
         <main className="flex-1 min-w-0 overflow-y-auto relative">
           {/* Top drag region */}
           <div className="h-13 drag-region sticky top-0 z-10 bg-bg-primary/80 backdrop-blur-xl" />
-          <div className="px-8 pb-8 -mt-1">
+          <div className="px-8 pb-8 pt-2">
             <Outlet />
           </div>
         </main>
