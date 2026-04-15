@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { playback, QueueTrack, RepeatMode } from '../services/playback'
-import { JellyfinItem } from '../services/jellyfin'
+import { JellyfinItem, jellyfin } from '../services/jellyfin'
 
 interface PlayerState {
   currentTrack: QueueTrack | null
@@ -72,6 +72,17 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
   setShowQueue: (show) => set({ showQueue: show }),
 
   initListeners: () => {
+    // Set up Media Session action handlers for OS media controls
+    if ('mediaSession' in navigator) {
+      navigator.mediaSession.setActionHandler('play', () => playback.togglePlay())
+      navigator.mediaSession.setActionHandler('pause', () => playback.togglePlay())
+      navigator.mediaSession.setActionHandler('previoustrack', () => playback.previous())
+      navigator.mediaSession.setActionHandler('nexttrack', () => playback.next())
+      navigator.mediaSession.setActionHandler('seekto', (details) => {
+        if (details.seekTime != null) playback.seek(details.seekTime)
+      })
+    }
+
     return playback.on((event, data) => {
       switch (event) {
         case 'trackchange':
@@ -83,21 +94,35 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
           })
           if (data && 'mediaSession' in navigator) {
             const item = data.item
+            const artworkId = item.AlbumId || item.Id
+            const artworkUrl = artworkId ? jellyfin.getImageUrl(artworkId, item.ImageTags?.Primary, 512) : undefined
             navigator.mediaSession.metadata = new MediaMetadata({
               title: item.Name,
               artist: item.Artists?.join(', ') || item.AlbumArtist || '',
-              album: item.Album || ''
+              album: item.Album || '',
+              artwork: artworkUrl ? [
+                { src: artworkUrl, sizes: '512x512', type: 'image/jpeg' }
+              ] : undefined
             })
           }
           break
         case 'timeupdate':
           set({ currentTime: data.currentTime, duration: data.duration })
+          if ('mediaSession' in navigator && data.duration > 0) {
+            navigator.mediaSession.setPositionState({
+              duration: data.duration,
+              position: Math.min(data.currentTime, data.duration),
+              playbackRate: 1
+            })
+          }
           break
         case 'playing':
           set({ isPlaying: true })
+          if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'playing'
           break
         case 'pause':
           set({ isPlaying: false })
+          if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'paused'
           break
         case 'buffering':
           set({ isBuffering: data })
