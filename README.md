@@ -3,7 +3,7 @@
 Um player de música desktop para servidores [Jellyfin](https://jellyfin.org/), inspirado na UI/UX do Apple Music. Construído com Electron, React e TypeScript.
 
 ![Version](https://img.shields.io/badge/version-0.1.0-blue)
-![Platform](https://img.shields.io/badge/platform-macOS-lightgrey)
+![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Windows-lightgrey)
 ![Electron](https://img.shields.io/badge/electron-33.4.0-47848F)
 
 ## ✨ Features
@@ -106,6 +106,32 @@ open "dist/mac-arm64/Jellyfin Music Player.app"
 
 > Na primeira execução, o macOS pode bloquear o app por não ter assinatura. Vá em **Ajustes > Privacidade e Segurança** e clique "Abrir Mesmo Assim".
 
+### Build (Windows)
+
+A build para Windows deve ser executada em uma máquina Windows, pois o `better-sqlite3` é um módulo nativo que precisa ser compilado para o OS alvo.
+
+```powershell
+# Clone o repositório
+git clone https://github.com/jvniorgc/music-player.git
+cd music-player
+
+# Instale as dependências
+npm install
+
+# Gere o instalador
+npm run build:win
+```
+
+O instalador será gerado em `dist/Jellyfin Music Player Setup {version}.exe`.
+
+**Pré-requisitos para Windows:**
+- **Node.js** 20+ e **npm** 9+
+- **Python 3** e **Visual Studio Build Tools** (necessários para compilar o `better-sqlite3`)
+  - Instale com: `npm install --global windows-build-tools` (PowerShell como Admin)
+  - Ou instale o [Visual Studio Build Tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/) com o workload "Desktop development with C++"
+
+> **Nota:** Cross-compilation do macOS para Windows não é suportada devido a módulos nativos. Use GitHub Actions ou uma máquina Windows para gerar builds.
+
 ## 📁 Estrutura do Projeto
 
 ```
@@ -149,6 +175,7 @@ Para o Soulseek, o app se conecta ao **slskd** (configurado no código em `servi
 | `npm run dev` | Inicia em modo de desenvolvimento |
 | `npm run build` | Compila o projeto (electron-vite) |
 | `npm run build:mac` | Gera o .app e .dmg para macOS |
+| `npm run build:win` | Gera o .exe instalador para Windows |
 
 ## 📄 Licença
 
