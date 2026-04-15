@@ -6,7 +6,26 @@
   "scripts": {
     "dev": "ELECTRON_RUN_AS_NODE= electron-vite dev",
     "build": "electron-vite build",
+    "build:mac": "electron-vite build && electron-builder --mac",
     "preview": "electron-vite preview"
+  },
+  "build": {
+    "appId": "com.jvniorgc.jellyfin-music-player",
+    "productName": "Jellyfin Music Player",
+    "mac": {
+      "target": "dmg",
+      "category": "public.app-category.music",
+      "icon": "build/icon.icns"
+    },
+    "files": [
+      "out/**/*",
+      "package.json",
+      "node_modules/better-sqlite3/**/*"
+    ],
+    "directories": {
+      "output": "dist"
+    },
+    "npmRebuild": true
   },
   "dependencies": {
     "better-sqlite3": "^12.9.0",
@@ -23,6 +42,7 @@
     "@types/react-dom": "^18.3.2",
     "@vitejs/plugin-react": "^4.3.4",
     "electron": "^33.4.0",
+    "electron-builder": "^26.8.1",
     "electron-vite": "^5.0.0",
     "tailwindcss": "^4.2.2",
     "typescript": "^5.7.2",
