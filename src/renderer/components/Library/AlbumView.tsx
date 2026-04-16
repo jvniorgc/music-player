@@ -157,7 +157,7 @@ export default function AlbumView() {
               }`}
               onClick={() => playItems(tracks, i)}
             >
-              <div className="w-7 text-right">
+              <div className="w-7 text-right relative">
                 {isCurrent && isPlaying ? (
                   <div className="flex items-center justify-end gap-[2px]">
                     <div className="w-[3px] h-3 bg-accent rounded-full animate-pulse" />
@@ -165,12 +165,12 @@ export default function AlbumView() {
                     <div className="w-[3px] h-2 bg-accent rounded-full animate-pulse" style={{ animationDelay: '0.3s' }} />
                   </div>
                 ) : (
-                  <span className={`text-sm tabular-nums ${isCurrent ? 'text-accent' : 'text-text-tertiary group-hover:hidden'}`}>
-                    {track.IndexNumber || i + 1}
-                  </span>
-                )}
-                {!isCurrent && (
-                  <Play size={14} className="text-white hidden group-hover:block ml-auto" fill="white" />
+                  <>
+                    <span className={`text-sm tabular-nums ${isCurrent ? 'text-accent' : 'text-text-tertiary group-hover:invisible'}`}>
+                      {track.IndexNumber || i + 1}
+                    </span>
+                    <Play size={14} className="text-white invisible group-hover:visible absolute right-0 top-1/2 -translate-y-1/2" fill="white" />
+                  </>
                 )}
               </div>
 
