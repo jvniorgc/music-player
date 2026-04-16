@@ -3,19 +3,39 @@ import {
   startSearch, getSearch, getSearchResponses, deleteSearch, downloadFiles, getDownloads,
   SlskdResponse, SlskdFile, SlskdSearch, SlskdTransferGroup,
   isAudioFile, getFileName, getFileExtension, formatFileSize, formatSpeed, formatDuration,
-  groupFilesByDirectory
+  groupFilesByDirectory, configure, getConfig, deriveDefaultUrl, isConfigured
 } from '../../services/slskd'
 import { jellyfin } from '../../services/jellyfin'
 import { useToastStore } from '../../stores/toast'
 import {
   Search, Loader2, Download, FolderDown, ChevronDown, ChevronRight,
-  User, HardDrive, Zap, Check, X, Music, AlertCircle, RefreshCw
+  User, HardDrive, Zap, Check, X, Music, AlertCircle, RefreshCw, Settings
 } from 'lucide-react'
 
 type Tab = 'search' | 'transfers'
 
 export default function SoulseekView() {
   const toast = useToastStore(s => s.show)
+
+  // Settings state
+  const [showSettings, setShowSettings] = useState(false)
+  const [settingsUrl, setSettingsUrl] = useState('')
+  const [settingsUser, setSettingsUser] = useState('')
+  const [settingsPass, setSettingsPass] = useState('')
+  const [testingConnection, setTestingConnection] = useState(false)
+  const [connected, setConnected] = useState<boolean | null>(null)
+
+  // Auto-configure on mount
+  useEffect(() => {
+    if (!isConfigured()) {
+      const defaultUrl = deriveDefaultUrl(jellyfin.serverUrl)
+      configure({ url: defaultUrl, username: 'slskd', password: 'slskd' })
+    }
+    const cfg = getConfig()
+    setSettingsUrl(cfg.url)
+    setSettingsUser(cfg.username)
+    setSettingsPass(cfg.password)
+  }, [])
 
   // Search state
   const [query, setQuery] = useState('')
@@ -192,9 +212,112 @@ export default function SoulseekView() {
     })
   }
 
+  const handleSaveSettings = () => {
+    configure({ url: settingsUrl, username: settingsUser, password: settingsPass })
+    setConnected(null)
+    setShowSettings(false)
+    toast('Configurações do slskd salvas', 'success')
+  }
+
+  const handleTestConnection = async () => {
+    setTestingConnection(true)
+    setConnected(null)
+    try {
+      configure({ url: settingsUrl, username: settingsUser, password: settingsPass })
+      const res = await fetch(`${settingsUrl.replace(/\/+$/, '')}/api/v0/session`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: settingsUser, password: settingsPass })
+      })
+      setConnected(res.ok)
+    } catch {
+      setConnected(false)
+    } finally {
+      setTestingConnection(false)
+    }
+  }
+
   return (
     <div className="fade-in">
-      <h1 className="text-3xl font-bold tracking-tight mb-6">Soulseek</h1>
+      <div className="flex items-center gap-3 mb-6">
+        <h1 className="text-3xl font-bold tracking-tight">Soulseek</h1>
+        <button
+          onClick={() => setShowSettings(!showSettings)}
+          className={`p-2 rounded-lg transition-colors ${showSettings ? 'bg-white/10 text-accent' : 'text-text-tertiary hover:text-text-primary hover:bg-white/5'}`}
+          title="Configurações do slskd"
+        >
+          <Settings size={18} />
+        </button>
+      </div>
+
+      {/* Settings Panel */}
+      {showSettings && (
+        <div className="bg-bg-elevated border border-border rounded-xl p-5 mb-6">
+          <h3 className="text-sm font-semibold mb-4">Conexão slskd</h3>
+          <div className="space-y-3">
+            <div>
+              <label className="block text-xs font-medium text-text-secondary mb-1 ml-1">Endereço do servidor</label>
+              <input
+                type="text"
+                value={settingsUrl}
+                onChange={e => setSettingsUrl(e.target.value)}
+                placeholder="http://192.168.1.100:5030"
+                className="w-full bg-bg-primary border border-border rounded-lg px-4 py-2.5 text-sm text-text-primary placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-accent transition"
+              />
+            </div>
+            <div className="flex gap-3">
+              <div className="flex-1">
+                <label className="block text-xs font-medium text-text-secondary mb-1 ml-1">Usuário</label>
+                <input
+                  type="text"
+                  value={settingsUser}
+                  onChange={e => setSettingsUser(e.target.value)}
+                  placeholder="slskd"
+                  className="w-full bg-bg-primary border border-border rounded-lg px-4 py-2.5 text-sm text-text-primary placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-accent transition"
+                />
+              </div>
+              <div className="flex-1">
+                <label className="block text-xs font-medium text-text-secondary mb-1 ml-1">Senha</label>
+                <input
+                  type="password"
+                  value={settingsPass}
+                  onChange={e => setSettingsPass(e.target.value)}
+                  placeholder="senha"
+                  className="w-full bg-bg-primary border border-border rounded-lg px-4 py-2.5 text-sm text-text-primary placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-accent transition"
+                />
+              </div>
+            </div>
+            <div className="flex items-center gap-3 pt-2">
+              <button
+                onClick={handleTestConnection}
+                disabled={testingConnection || !settingsUrl}
+                className="flex items-center gap-2 bg-white/10 hover:bg-white/15 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-40"
+              >
+                {testingConnection ? <Loader2 size={14} className="animate-spin" /> : <Zap size={14} />}
+                Testar conexão
+              </button>
+              <button
+                onClick={handleSaveSettings}
+                disabled={!settingsUrl}
+                className="flex items-center gap-2 bg-accent hover:bg-accent-hover text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-40"
+              >
+                <Check size={14} />
+                Salvar
+              </button>
+              {connected === true && (
+                <span className="flex items-center gap-1 text-sm text-green-400">
+                  <Check size={14} /> Conectado
+                </span>
+              )}
+              {connected === false && (
+                <span className="flex items-center gap-1 text-sm text-red-400">
+                  <X size={14} /> Falha na conexão
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Tabs */}
       <div className="flex gap-1 mb-6 bg-bg-elevated/50 rounded-xl p-1 w-fit">

@@ -1,8 +1,42 @@
-const SLSKD_URL = 'http://192.168.1.151:5030'
-const SLSKD_USER = 'slskd'
-const SLSKD_PASS = 'slskd'
+const SLSKD_DEFAULT_PORT = '5030'
+const SLSKD_DEFAULT_USER = 'slskd'
+const SLSKD_DEFAULT_PASS = 'slskd'
 
+let slskdUrl = ''
+let slskdUser = SLSKD_DEFAULT_USER
+let slskdPass = SLSKD_DEFAULT_PASS
 let token: string | null = null
+
+export interface SlskdConfig {
+  url: string
+  username: string
+  password: string
+}
+
+export function configure(config: SlskdConfig): void {
+  slskdUrl = config.url.replace(/\/+$/, '')
+  slskdUser = config.username
+  slskdPass = config.password
+  token = null // force re-auth
+}
+
+export function getConfig(): SlskdConfig {
+  return { url: slskdUrl, username: slskdUser, password: slskdPass }
+}
+
+/** Derive default slskd URL from a Jellyfin server URL */
+export function deriveDefaultUrl(jellyfinUrl: string): string {
+  try {
+    const u = new URL(jellyfinUrl)
+    return `${u.protocol}//${u.hostname}:${SLSKD_DEFAULT_PORT}`
+  } catch {
+    return ''
+  }
+}
+
+export function isConfigured(): boolean {
+  return slskdUrl.length > 0
+}
 
 export interface SlskdFile {
   filename: string
@@ -61,10 +95,11 @@ export interface SlskdTransferGroup {
 }
 
 async function authenticate(): Promise<string> {
-  const res = await fetch(`${SLSKD_URL}/api/v0/session`, {
+  if (!slskdUrl) throw new Error('slskd não configurado')
+  const res = await fetch(`${slskdUrl}/api/v0/session`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username: SLSKD_USER, password: SLSKD_PASS })
+    body: JSON.stringify({ username: slskdUser, password: slskdPass })
   })
   if (!res.ok) throw new Error(`Auth failed: ${res.status}`)
   const data = await res.json()
@@ -78,9 +113,10 @@ async function getToken(): Promise<string> {
 }
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
+  if (!slskdUrl) throw new Error('slskd não configurado')
   let tok = await getToken()
 
-  let res = await fetch(`${SLSKD_URL}${path}`, {
+  let res = await fetch(`${slskdUrl}${path}`, {
     ...options,
     headers: {
       'Authorization': `Bearer ${tok}`,
@@ -92,7 +128,7 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
   // Re-auth on 401
   if (res.status === 401) {
     tok = await authenticate()
-    res = await fetch(`${SLSKD_URL}${path}`, {
+    res = await fetch(`${slskdUrl}${path}`, {
       ...options,
       headers: {
         'Authorization': `Bearer ${tok}`,
