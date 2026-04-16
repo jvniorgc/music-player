@@ -359,15 +359,60 @@ class JellyfinService {
   }
 
   async getLyrics(itemId: string): Promise<{ Text: string; Start?: number }[]> {
+    // Try Jellyfin embedded lyrics first
     try {
       const res = await fetch(`${this.serverUrl}/Audio/${itemId}/Lyrics?api_key=${this.token}`)
-      if (!res.ok) return []
-      const data = await res.json()
-      return data.Lyrics || []
-    } catch {
-      return []
+      if (res.ok) {
+        const data = await res.json()
+        if (data.Lyrics && data.Lyrics.length > 0) return data.Lyrics
+      }
+    } catch { /* fallback below */ }
+
+    // Fallback: fetch from LRCLIB using track metadata
+    try {
+      const item = await this.request<JellyfinItem>(`/Users/${this.userId}/Items/${itemId}`)
+      const artist = item.Artists?.[0] || item.AlbumArtist || ''
+      const track = item.Name || ''
+      const album = item.Album || ''
+      if (!artist || !track) return []
+
+      const params = new URLSearchParams({ artist_name: artist, track_name: track })
+      if (album) params.set('album_name', album)
+
+      const lrcRes = await fetch(`https://lrclib.net/api/get?${params}`, {
+        headers: { 'User-Agent': 'JellyfinMusicPlayer/1.0.0' }
+      })
+      if (!lrcRes.ok) return []
+      const lrc = await lrcRes.json()
+
+      // Prefer synced lyrics (with timestamps)
+      if (lrc.syncedLyrics) {
+        return parseLRC(lrc.syncedLyrics)
+      }
+      // Fall back to plain lyrics
+      if (lrc.plainLyrics) {
+        return lrc.plainLyrics.split('\n').filter((l: string) => l.trim()).map((l: string) => ({ Text: l }))
+      }
+    } catch { /* no lyrics available */ }
+
+    return []
+  }
+}
+
+function parseLRC(lrc: string): { Text: string; Start?: number }[] {
+  const lines: { Text: string; Start?: number }[] = []
+  for (const line of lrc.split('\n')) {
+    const match = line.match(/^\[(\d{2}):(\d{2})\.(\d{2,3})\]\s*(.*)$/)
+    if (match) {
+      const min = parseInt(match[1])
+      const sec = parseInt(match[2])
+      const ms = parseInt(match[3].padEnd(3, '0'))
+      const ticks = (min * 60 + sec + ms / 1000) * 10000000
+      const text = match[4].trim()
+      if (text) lines.push({ Text: text, Start: ticks })
     }
   }
+  return lines
 }
 
 export const jellyfin = new JellyfinService()

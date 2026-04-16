@@ -51,13 +51,12 @@ export default function FullScreenPlayer() {
     setLyrics([])
     setHasLyrics(false)
 
-    if (item.HasLyrics) {
-      jellyfin.getLyrics(item.Id).then(lines => {
-        const filtered = lines.filter(l => l.Text.trim())
-        setLyrics(filtered)
-        setHasLyrics(filtered.length > 0)
-      })
-    }
+    // Always try to fetch lyrics (Jellyfin embedded + LRCLIB fallback)
+    jellyfin.getLyrics(item.Id).then(lines => {
+      const filtered = lines.filter(l => l.Text.trim())
+      setLyrics(filtered)
+      setHasLyrics(filtered.length > 0)
+    })
   }, [currentTrack])
 
   // Auto-scroll for timed lyrics
@@ -108,10 +107,10 @@ export default function FullScreenPlayer() {
         <ChevronDown size={20} />
       </button>
 
-      {/* Main content: side by side */}
-      <div className="relative z-10 flex items-center gap-12 max-w-5xl w-full px-12 h-[80vh]">
+      {/* Main content: side by side when lyrics, centered when not */}
+      <div className={`relative z-10 flex items-center gap-12 w-full px-12 h-[80vh] ${hasLyrics ? 'max-w-5xl' : 'max-w-lg justify-center'}`}>
         {/* Left side: Art + Info + Controls */}
-        <div className="flex flex-col items-center w-96 shrink-0">
+        <div className={`flex flex-col items-center shrink-0 ${hasLyrics ? 'w-96' : 'w-full'}`}>
           {/* Album Art */}
           <div className="w-72 h-72 rounded-2xl overflow-hidden shadow-2xl shadow-black/50 mb-8">
             {imageUrl ? (
