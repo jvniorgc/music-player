@@ -77,11 +77,11 @@ export default function FullScreenPlayer() {
 
   const progress = duration > 0 ? (currentTime / duration) * 100 : 0
 
-  // Find active lyric index for timed lyrics
+  // Find active lyric index for timed lyrics (offset ahead by 0.8s to compensate perceived delay)
   const isTimed = lyrics.length > 0 && lyrics[0].Start !== undefined
   let activeLyricIndex = -1
   if (isTimed) {
-    const currentTicks = currentTime * 10000000
+    const currentTicks = (currentTime + 0.8) * 10000000
     for (let i = lyrics.length - 1; i >= 0; i--) {
       if (lyrics[i].Start !== undefined && lyrics[i].Start! <= currentTicks) {
         activeLyricIndex = i
