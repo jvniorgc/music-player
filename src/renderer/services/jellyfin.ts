@@ -42,6 +42,7 @@ export interface JellyfinItem {
     Bitrate: number
   }[]
   PlaylistItemId?: string
+  HasLyrics?: boolean
 }
 
 export interface JellyfinItemsResponse {
@@ -167,7 +168,7 @@ class JellyfinService {
   }
 
   async getAlbumItems(albumId: string): Promise<JellyfinItemsResponse> {
-    return this.request(`/Users/${this.userId}/Items?ParentId=${albumId}&SortBy=ParentIndexNumber,IndexNumber,SortName&Fields=MediaSources,RunTimeTicks`)
+    return this.request(`/Users/${this.userId}/Items?ParentId=${albumId}&SortBy=ParentIndexNumber,IndexNumber,SortName&Fields=MediaSources,RunTimeTicks,HasLyrics`)
   }
 
   async getArtists(startIndex = 0, limit = 100): Promise<JellyfinItemsResponse> {
@@ -181,7 +182,7 @@ class JellyfinService {
   }
 
   async getSongs(startIndex = 0, limit = 100, sortBy = 'SortName'): Promise<JellyfinItemsResponse> {
-    const res = await this.request<JellyfinItemsResponse>(`/Users/${this.userId}/Items?IncludeItemTypes=Audio&Recursive=true&SortBy=${sortBy}&SortOrder=Ascending&StartIndex=${startIndex}&Limit=${limit}&Fields=MediaSources,RunTimeTicks,AlbumArtist,Album,AlbumId`)
+    const res = await this.request<JellyfinItemsResponse>(`/Users/${this.userId}/Items?IncludeItemTypes=Audio&Recursive=true&SortBy=${sortBy}&SortOrder=Ascending&StartIndex=${startIndex}&Limit=${limit}&Fields=MediaSources,RunTimeTicks,AlbumArtist,Album,AlbumId,HasLyrics`)
     return this.sanitizeItems(res)
   }
 
@@ -198,16 +199,16 @@ class JellyfinService {
   }
 
   async getPlaylistItems(playlistId: string): Promise<JellyfinItemsResponse> {
-    return this.request(`/Playlists/${playlistId}/Items?UserId=${this.userId}&Fields=MediaSources,RunTimeTicks,AlbumArtist,Album,AlbumId,PlaylistItemId`)
+    return this.request(`/Playlists/${playlistId}/Items?UserId=${this.userId}&Fields=MediaSources,RunTimeTicks,AlbumArtist,Album,AlbumId,PlaylistItemId,HasLyrics`)
   }
 
   async getRecentlyPlayed(limit = 20): Promise<JellyfinItemsResponse> {
-    const res = await this.request<JellyfinItemsResponse>(`/Users/${this.userId}/Items?IncludeItemTypes=Audio&Recursive=true&SortBy=DatePlayed&SortOrder=Descending&Limit=${limit}&Fields=RunTimeTicks,AlbumArtist,Album,AlbumId&Filters=IsPlayed`)
+    const res = await this.request<JellyfinItemsResponse>(`/Users/${this.userId}/Items?IncludeItemTypes=Audio&Recursive=true&SortBy=DatePlayed&SortOrder=Descending&Limit=${limit}&Fields=RunTimeTicks,AlbumArtist,Album,AlbumId,HasLyrics&Filters=IsPlayed`)
     return this.sanitizeItems(res)
   }
 
   async getFrequentlyPlayed(limit = 20): Promise<JellyfinItemsResponse> {
-    const res = await this.request<JellyfinItemsResponse>(`/Users/${this.userId}/Items?IncludeItemTypes=Audio&Recursive=true&SortBy=PlayCount&SortOrder=Descending&Limit=${limit}&Fields=RunTimeTicks,AlbumArtist,Album,AlbumId&Filters=IsPlayed`)
+    const res = await this.request<JellyfinItemsResponse>(`/Users/${this.userId}/Items?IncludeItemTypes=Audio&Recursive=true&SortBy=PlayCount&SortOrder=Descending&Limit=${limit}&Fields=RunTimeTicks,AlbumArtist,Album,AlbumId,HasLyrics&Filters=IsPlayed`)
     return this.sanitizeItems(res)
   }
 
@@ -220,7 +221,7 @@ class JellyfinService {
     const [albums, artists, songs] = await Promise.all([
       this.request<JellyfinItemsResponse>(`/Users/${this.userId}/Items?SearchTerm=${encodeURIComponent(query)}&IncludeItemTypes=MusicAlbum&Recursive=true&Limit=${limit}&Fields=PrimaryImageAspectRatio,ProductionYear,AlbumArtist`),
       this.request<JellyfinItemsResponse>(`/Users/${this.userId}/Items?SearchTerm=${encodeURIComponent(query)}&IncludeItemTypes=MusicArtist&Recursive=true&Limit=${limit}&Fields=PrimaryImageAspectRatio`),
-      this.request<JellyfinItemsResponse>(`/Users/${this.userId}/Items?SearchTerm=${encodeURIComponent(query)}&IncludeItemTypes=Audio&Recursive=true&Limit=${limit}&Fields=RunTimeTicks,AlbumArtist,Album,AlbumId`)
+      this.request<JellyfinItemsResponse>(`/Users/${this.userId}/Items?SearchTerm=${encodeURIComponent(query)}&IncludeItemTypes=Audio&Recursive=true&Limit=${limit}&Fields=RunTimeTicks,AlbumArtist,Album,AlbumId,HasLyrics`)
     ])
     return {
       albums: this.sanitizeItems(albums).Items,
@@ -355,6 +356,17 @@ class JellyfinService {
 
   getDownloadUrl(itemId: string): string {
     return `${this.serverUrl}/Items/${itemId}/Download?api_key=${this.token}`
+  }
+
+  async getLyrics(itemId: string): Promise<{ Text: string; Start?: number }[]> {
+    try {
+      const res = await fetch(`${this.serverUrl}/Audio/${itemId}/Lyrics?api_key=${this.token}`)
+      if (!res.ok) return []
+      const data = await res.json()
+      return data.Lyrics || []
+    } catch {
+      return []
+    }
   }
 }
 
