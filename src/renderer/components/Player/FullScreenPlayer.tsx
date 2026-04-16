@@ -1,6 +1,7 @@
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { usePlayerStore } from '../../stores/player'
+import { playback } from '../../services/playback'
 import { jellyfin } from '../../services/jellyfin'
 import {
   Play, Pause, SkipBack, SkipForward, Shuffle, Repeat, Repeat1,
@@ -29,9 +30,12 @@ export default function FullScreenPlayer() {
 
   const [lyrics, setLyrics] = useState<LyricLine[]>([])
   const [hasLyrics, setHasLyrics] = useState(false)
+  const [activeLyricIndex, setActiveLyricIndex] = useState(-1)
   const lyricsContainerRef = useRef<HTMLDivElement>(null)
   const activeLyricRef = useRef<HTMLParagraphElement>(null)
   const lastTrackIdRef = useRef<string | null>(null)
+  const lyricsRef = useRef<LyricLine[]>([])
+  const rafRef = useRef<number>(0)
 
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
@@ -50,21 +54,50 @@ export default function FullScreenPlayer() {
 
     setLyrics([])
     setHasLyrics(false)
+    setActiveLyricIndex(-1)
+    lyricsRef.current = []
 
     // Always try to fetch lyrics (Jellyfin embedded + LRCLIB fallback)
     jellyfin.getLyrics(item.Id).then(lines => {
       const filtered = lines.filter(l => l.Text.trim())
       setLyrics(filtered)
+      lyricsRef.current = filtered
       setHasLyrics(filtered.length > 0)
     })
   }, [currentTrack])
 
-  // Auto-scroll for timed lyrics
+  // High-frequency sync loop: read audio currentTime directly at ~60fps
+  useEffect(() => {
+    let prevIndex = -1
+    const tick = () => {
+      const lines = lyricsRef.current
+      const isTimed = lines.length > 0 && lines[0].Start !== undefined
+      if (isTimed) {
+        const currentTicks = playback.currentTime * 10000000
+        let idx = -1
+        for (let i = lines.length - 1; i >= 0; i--) {
+          if (lines[i].Start !== undefined && lines[i].Start! <= currentTicks) {
+            idx = i
+            break
+          }
+        }
+        if (idx !== prevIndex) {
+          prevIndex = idx
+          setActiveLyricIndex(idx)
+        }
+      }
+      rafRef.current = requestAnimationFrame(tick)
+    }
+    rafRef.current = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(rafRef.current)
+  }, [])
+
+  // Auto-scroll when active lyric changes
   useEffect(() => {
     if (hasLyrics && activeLyricRef.current && lyricsContainerRef.current) {
       activeLyricRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' })
     }
-  }, [currentTime, hasLyrics])
+  }, [activeLyricIndex, hasLyrics])
 
   if (!currentTrack) return null
   const item = currentTrack.item
@@ -76,19 +109,7 @@ export default function FullScreenPlayer() {
       : null
 
   const progress = duration > 0 ? (currentTime / duration) * 100 : 0
-
-  // Find active lyric index for timed lyrics (offset ahead by 0.8s to compensate perceived delay)
   const isTimed = lyrics.length > 0 && lyrics[0].Start !== undefined
-  let activeLyricIndex = -1
-  if (isTimed) {
-    const currentTicks = (currentTime + 0.8) * 10000000
-    for (let i = lyrics.length - 1; i >= 0; i--) {
-      if (lyrics[i].Start !== undefined && lyrics[i].Start! <= currentTicks) {
-        activeLyricIndex = i
-        break
-      }
-    }
-  }
 
   return (
     <div className="fixed inset-0 z-50 bg-black/95 backdrop-blur-3xl flex items-center justify-center fade-in">
