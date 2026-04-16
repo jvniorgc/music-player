@@ -33,7 +33,7 @@ export default function NowPlayingBar() {
 
   if (!currentTrack) {
     return (
-      <div className="h-20 bg-bg-secondary/90 backdrop-blur-xl border-t border-border-subtle flex items-center justify-center">
+      <div className="h-20 bg-bg-secondary/90 backdrop-blur-xl border-b border-border-subtle flex items-center justify-center shrink-0">
         <p className="text-text-tertiary text-sm">Nenhuma música tocando</p>
       </div>
     )
@@ -50,9 +50,9 @@ export default function NowPlayingBar() {
   const downloaded = isDownloaded(item.Id)
 
   return (
-    <div className="h-20 bg-bg-secondary/90 backdrop-blur-xl border-t border-border-subtle flex flex-col relative">
-      {/* Progress bar - thin line at top */}
-      <div className="absolute top-0 left-0 right-0 h-[3px] bg-white/10 cursor-pointer group"
+    <div className="h-20 bg-bg-secondary/90 backdrop-blur-xl border-b border-border-subtle flex flex-col relative shrink-0">
+      {/* Progress bar - thin line at bottom */}
+      <div className="absolute bottom-0 left-0 right-0 h-[3px] bg-white/10 cursor-pointer group z-10"
         onClick={(e) => {
           const rect = e.currentTarget.getBoundingClientRect()
           const pct = (e.clientX - rect.left) / rect.width
