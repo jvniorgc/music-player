@@ -33,7 +33,7 @@ export default function NowPlayingBar() {
 
   if (!currentTrack) {
     return (
-      <div className="h-20 bg-bg-secondary/90 backdrop-blur-xl border-b border-border-subtle flex items-center justify-center shrink-0">
+      <div className="h-14 bg-bg-secondary/90 backdrop-blur-xl border-b border-border-subtle flex items-center justify-center shrink-0 drag-region">
         <p className="text-text-tertiary text-sm">Nenhuma música tocando</p>
       </div>
     )
@@ -50,9 +50,9 @@ export default function NowPlayingBar() {
   const downloaded = isDownloaded(item.Id)
 
   return (
-    <div className="h-20 bg-bg-secondary/90 backdrop-blur-xl border-b border-border-subtle flex flex-col relative shrink-0">
+    <div className="h-14 bg-bg-secondary/90 backdrop-blur-xl border-b border-border-subtle flex flex-col relative shrink-0 drag-region">
       {/* Progress bar - thin line at bottom */}
-      <div className="absolute bottom-0 left-0 right-0 h-[3px] bg-white/10 cursor-pointer group z-10"
+      <div className="absolute bottom-0 left-0 right-0 h-[3px] bg-white/10 cursor-pointer group z-10 no-drag"
         onClick={(e) => {
           const rect = e.currentTarget.getBoundingClientRect()
           const pct = (e.clientX - rect.left) / rect.width
@@ -69,7 +69,7 @@ export default function NowPlayingBar() {
         />
       </div>
 
-      <div className="flex-1 flex items-center px-4 gap-4">
+      <div className="flex-1 flex items-center px-4 gap-4 no-drag">
         {/* Track info */}
         <div
           className="flex items-center gap-3 w-64 min-w-0 cursor-pointer"
@@ -78,17 +78,17 @@ export default function NowPlayingBar() {
           {imageUrl ? (
             <img
               src={imageUrl}
-              className="w-12 h-12 rounded-lg object-cover shadow-lg"
+              className="w-9 h-9 rounded-md object-cover shadow-lg"
               alt=""
             />
           ) : (
-            <div className="w-12 h-12 rounded-lg bg-bg-elevated flex items-center justify-center">
-              <ListMusic size={20} className="text-text-tertiary" />
+            <div className="w-9 h-9 rounded-md bg-bg-elevated flex items-center justify-center">
+              <ListMusic size={16} className="text-text-tertiary" />
             </div>
           )}
           <div className="min-w-0">
-            <p className="text-sm font-medium truncate">{item.Name}</p>
-            <p className="text-xs text-text-secondary truncate">
+            <p className="text-[13px] font-medium truncate">{item.Name}</p>
+            <p className="text-[11px] text-text-secondary truncate">
               {item.Artists?.join(', ') || item.AlbumArtist || 'Artista Desconhecido'}
             </p>
           </div>
