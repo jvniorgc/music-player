@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { usePlayerStore } from '../../stores/player'
 import { jellyfin } from '../../services/jellyfin'
 import {
@@ -14,6 +15,7 @@ function formatTime(seconds: number): string {
 }
 
 export default function FullScreenPlayer() {
+  const navigate = useNavigate()
   const {
     currentTrack, isPlaying, currentTime, duration, volume, shuffle, repeat,
     togglePlay, next, previous, seek, setVolume, toggleShuffle, toggleRepeat,
@@ -72,10 +74,29 @@ export default function FullScreenPlayer() {
         <div className="text-center mb-8 w-full">
           <h2 className="text-2xl font-bold truncate">{item.Name}</h2>
           <p className="text-lg text-accent mt-1 truncate">
-            {item.Artists?.join(', ') || item.AlbumArtist || 'Artista Desconhecido'}
+            {item.ArtistItems?.length ? (
+              item.ArtistItems.map((a, i) => (
+                <span key={a.Id}>
+                  {i > 0 && ', '}
+                  <span
+                    onClick={() => { setShowFullScreen(false); navigate(`/artist/${a.Id}`) }}
+                    className="hover:underline cursor-pointer"
+                  >
+                    {a.Name}
+                  </span>
+                </span>
+              ))
+            ) : (
+              item.AlbumArtist || 'Artista Desconhecido'
+            )}
           </p>
           {item.Album && (
-            <p className="text-sm text-text-secondary mt-1 truncate">{item.Album}</p>
+            <p
+              onClick={() => { if (item.AlbumId) { setShowFullScreen(false); navigate(`/album/${item.AlbumId}`) } }}
+              className={`text-sm text-text-secondary mt-1 truncate ${item.AlbumId ? 'hover:underline cursor-pointer hover:text-text-primary transition-colors' : ''}`}
+            >
+              {item.Album}
+            </p>
           )}
         </div>
 
