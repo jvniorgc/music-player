@@ -119,13 +119,20 @@ export default function HomePage() {
             </button>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-5">
-            {recentlyAdded.slice(0, 12).map(item => (
-              <AlbumCard
-                key={item.Id}
-                item={item}
-                onClick={() => navigate(`/album/${item.Id}`)}
-              />
-            ))}
+            {recentlyAdded.slice(0, 12).map((item, idx) => {
+              // Show exactly 2 rows per breakpoint:
+              // xs=2cols→4, sm=3cols→6, md=4cols→8, lg=5cols→10, xl=6cols→12
+              let cls = ''
+              if (idx >= 10) cls = 'hidden xl:block'
+              else if (idx >= 8) cls = 'hidden lg:block'
+              else if (idx >= 6) cls = 'hidden md:block'
+              else if (idx >= 4) cls = 'hidden sm:block'
+              return (
+                <div key={item.Id} className={cls}>
+                  <AlbumCard item={item} onClick={() => navigate(`/album/${item.Id}`)} />
+                </div>
+              )
+            })}
           </div>
         </section>
       )}
