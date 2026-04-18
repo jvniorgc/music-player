@@ -135,33 +135,36 @@ input[type="range"]:hover::-webkit-slider-thumb {
   );
 }
 
-/* Animated background for fullscreen player */
-@keyframes bg-drift-1 {
-  0%   { transform: translate(0%, 0%)     scale(1);    }
-  25%  { transform: translate(4%, 3%)     scale(1.08); }
-  50%  { transform: translate(-3%, 5%)    scale(1.05); }
-  75%  { transform: translate(-5%, -2%)   scale(1.10); }
-  100% { transform: translate(0%, 0%)     scale(1);    }
+/* Apple Music-style animated background blobs */
+@keyframes blob-float-1 {
+  0%   { transform: translate(0%,    0%)   scale(1.00); }
+  20%  { transform: translate(10%,  -12%)  scale(1.08); }
+  40%  { transform: translate(18%,   6%)   scale(0.96); }
+  60%  { transform: translate(7%,   18%)   scale(1.05); }
+  80%  { transform: translate(-9%,   7%)   scale(1.10); }
+  100% { transform: translate(0%,    0%)   scale(1.00); }
 }
 
-@keyframes bg-drift-2 {
-  0%   { transform: translate(0%, 0%)     scale(1.05); }
-  33%  { transform: translate(-5%, -4%)   scale(1);    }
-  66%  { transform: translate(4%, -5%)    scale(1.08); }
-  100% { transform: translate(0%, 0%)     scale(1.05); }
+@keyframes blob-float-2 {
+  0%   { transform: translate(0%,    0%)   scale(1.05); }
+  25%  { transform: translate(-14%,  -9%)  scale(0.95); }
+  50%  { transform: translate(-6%,  -20%)  scale(1.12); }
+  75%  { transform: translate(12%,  -9%)   scale(0.98); }
+  100% { transform: translate(0%,    0%)   scale(1.05); }
 }
 
-.bg-drift-1 {
-  position: absolute;
-  inset: -20%;
-  animation: bg-drift-1 22s ease-in-out infinite;
-  will-change: transform;
+@keyframes blob-float-3 {
+  0%   { transform: translate(0%,    0%)   scale(1.00); }
+  30%  { transform: translate(-18%,  14%)  scale(1.14); }
+  55%  { transform: translate(-10%,  -9%)  scale(0.92); }
+  80%  { transform: translate(6%,    6%)   scale(1.07); }
+  100% { transform: translate(0%,    0%)   scale(1.00); }
 }
 
-.bg-drift-2 {
-  position: absolute;
-  inset: -20%;
-  animation: bg-drift-2 30s ease-in-out infinite;
-  animation-delay: -10s;
-  will-change: transform;
+@keyframes blob-float-4 {
+  0%   { transform: translate(0%,    0%)   scale(1.08); }
+  35%  { transform: translate(16%,  -12%)  scale(1.00); }
+  65%  { transform: translate(7%,   16%)   scale(1.15); }
+  85%  { transform: translate(-12%,  6%)   scale(0.95); }
+  100% { transform: translate(0%,    0%)   scale(1.08); }
 }

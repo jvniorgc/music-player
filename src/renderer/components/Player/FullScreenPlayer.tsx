@@ -7,6 +7,7 @@ import {
   Play, Pause, SkipBack, SkipForward, Shuffle, Repeat, Repeat1,
   ChevronDown, Volume2, VolumeX, ListMusic
 } from 'lucide-react'
+import AnimatedBackground from './AnimatedBackground'
 
 function formatTime(seconds: number): string {
   if (!isFinite(seconds)) return '0:00'
@@ -112,18 +113,9 @@ export default function FullScreenPlayer() {
   const isTimed = lyrics.length > 0 && lyrics[0].Start !== undefined
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/95 backdrop-blur-3xl flex items-center justify-center fade-in">
-      {/* Background blur image with subtle motion */}
-      {imageUrl && (
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="bg-drift-1">
-            <img src={imageUrl} className="w-full h-full object-cover blur-[80px] opacity-30" alt="" />
-          </div>
-          <div className="bg-drift-2">
-            <img src={imageUrl} className="w-full h-full object-cover blur-[70px] opacity-20" alt="" />
-          </div>
-        </div>
-      )}
+    <div className="fixed inset-0 z-50 flex items-center justify-center fade-in">
+      <AnimatedBackground imageUrl={imageUrl} />
+
 
       {/* Close button */}
       <button
