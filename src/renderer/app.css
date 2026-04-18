@@ -135,31 +135,33 @@ input[type="range"]:hover::-webkit-slider-thumb {
   );
 }
 
-/* Animated background blobs for fullscreen player */
+/* Animated background for fullscreen player */
 @keyframes bg-drift-1 {
-  0%   { transform: translate3d(-3%, -2%, 0) scale(1.25) rotate(0deg); }
-  50%  { transform: translate3d(4%, 3%, 0) scale(1.4) rotate(8deg); }
-  100% { transform: translate3d(-3%, -2%, 0) scale(1.25) rotate(0deg); }
+  0%   { transform: translate(0%, 0%)     scale(1);    }
+  25%  { transform: translate(4%, 3%)     scale(1.08); }
+  50%  { transform: translate(-3%, 5%)    scale(1.05); }
+  75%  { transform: translate(-5%, -2%)   scale(1.10); }
+  100% { transform: translate(0%, 0%)     scale(1);    }
 }
 
 @keyframes bg-drift-2 {
-  0%   { transform: translate3d(3%, 2%, 0) scale(1.35) rotate(0deg); }
-  50%  { transform: translate3d(-4%, -3%, 0) scale(1.2) rotate(-10deg); }
-  100% { transform: translate3d(3%, 2%, 0) scale(1.35) rotate(0deg); }
-}
-
-@keyframes bg-pulse {
-  0%, 100% { opacity: 0.28; }
-  50%      { opacity: 0.38; }
+  0%   { transform: translate(0%, 0%)     scale(1.05); }
+  33%  { transform: translate(-5%, -4%)   scale(1);    }
+  66%  { transform: translate(4%, -5%)    scale(1.08); }
+  100% { transform: translate(0%, 0%)     scale(1.05); }
 }
 
 .bg-drift-1 {
-  animation: bg-drift-1 24s ease-in-out infinite, bg-pulse 14s ease-in-out infinite;
-  will-change: transform, opacity;
+  position: absolute;
+  inset: -20%;
+  animation: bg-drift-1 22s ease-in-out infinite;
+  will-change: transform;
 }
 
 .bg-drift-2 {
-  animation: bg-drift-2 32s ease-in-out infinite, bg-pulse 18s ease-in-out infinite;
-  animation-delay: -6s, -3s;
-  will-change: transform, opacity;
+  position: absolute;
+  inset: -20%;
+  animation: bg-drift-2 30s ease-in-out infinite;
+  animation-delay: -10s;
+  will-change: transform;
 }
