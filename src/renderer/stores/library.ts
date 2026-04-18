@@ -69,10 +69,23 @@ export const useLibraryStore = create<LibraryState>((set, get) => ({
   fetchSongs: async (startIndex = 0) => {
     set({ isLoading: true })
     try {
-      const res = await jellyfin.getSongs(startIndex, 10000)
+      const PAGE = 1000
+      const first = await jellyfin.getSongs(startIndex, PAGE)
+      const total = first.TotalRecordCount
+      let all = first.Items
+
+      if (total > PAGE) {
+        const pages: Promise<{ Items: JellyfinItem[] }>[] = []
+        for (let idx = PAGE; idx < total; idx += PAGE) {
+          pages.push(jellyfin.getSongs(idx, PAGE))
+        }
+        const results = await Promise.all(pages)
+        for (const r of results) all = all.concat(r.Items)
+      }
+
       set({
-        songs: startIndex === 0 ? res.Items : [...get().songs, ...res.Items],
-        totalSongs: res.TotalRecordCount,
+        songs: startIndex === 0 ? all : [...get().songs, ...all],
+        totalSongs: total,
         isLoading: false
       })
     } catch (err) {
