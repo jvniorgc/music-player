@@ -69,7 +69,7 @@ export const useLibraryStore = create<LibraryState>((set, get) => ({
   fetchSongs: async (startIndex = 0) => {
     set({ isLoading: true })
     try {
-      const res = await jellyfin.getSongs(startIndex, 100)
+      const res = await jellyfin.getSongs(startIndex, 10000)
       set({
         songs: startIndex === 0 ? res.Items : [...get().songs, ...res.Items],
         totalSongs: res.TotalRecordCount,
