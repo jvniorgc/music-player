@@ -78,14 +78,14 @@ async function extractColors(url: string): Promise<string[]> {
   } catch { return FALLBACK }
 }
 
-// Each blob is 200×200% of the container, centered at -50%/-50%,
-// with the radial gradient focal point in a different quadrant.
-// This guarantees no visible edges anywhere on screen.
-const BLOBS: Array<{ keyframe: string; duration: number; delay: number; cx: string; cy: string }> = [
-  { keyframe: 'blob-float-1', duration: 26, delay:   0, cx: '22%', cy: '22%' },
-  { keyframe: 'blob-float-2', duration: 34, delay: -10, cx: '78%', cy: '75%' },
-  { keyframe: 'blob-float-3', duration: 28, delay: -18, cx: '78%', cy: '22%' },
-  { keyframe: 'blob-float-4', duration: 32, delay:  -7, cx: '22%', cy: '78%' },
+// Each blob is positioned so its center lands in a different screen quadrant.
+// Size 130% ensures neighboring blobs overlap at the screen center.
+// Gradient is radial from center of the div, so focal point = blob center.
+const BLOBS: Array<{ keyframe: string; duration: number; delay: number; top: string; left: string }> = [
+  { keyframe: 'blob-float-1', duration: 26, delay:   0, top: '-30%', left: '-30%' }, // top-left
+  { keyframe: 'blob-float-2', duration: 34, delay: -10, top:   '0%', left:   '0%' }, // bottom-right
+  { keyframe: 'blob-float-3', duration: 28, delay: -18, top: '-30%', left:   '0%' }, // top-right
+  { keyframe: 'blob-float-4', duration: 32, delay:  -7, top:   '0%', left: '-30%' }, // bottom-left
 ]
 
 interface Props { imageUrl: string | null }
@@ -111,11 +111,11 @@ export default function AnimatedBackground({ imageUrl }: Props) {
           key={i}
           style={{
             position: 'absolute',
-            top: '-50%',
-            left: '-50%',
-            width: '200%',
-            height: '200%',
-            background: `radial-gradient(ellipse at ${b.cx} ${b.cy}, ${colors[i]}d0 0%, ${colors[i]}60 38%, ${colors[i]}10 60%, transparent 72%)`,
+            top: b.top,
+            left: b.left,
+            width: '130%',
+            height: '130%',
+            background: `radial-gradient(ellipse at center, ${colors[i]}cc 0%, ${colors[i]}55 50%, transparent 75%)`,
             animation: `${b.keyframe} ${b.duration}s ease-in-out infinite`,
             animationDelay: `${b.delay}s`,
             willChange: 'transform',
@@ -123,8 +123,7 @@ export default function AnimatedBackground({ imageUrl }: Props) {
         />
       ))}
 
-      {/* Dark overlay for readability */}
-      <div className="absolute inset-0 bg-black/55" />
+      <div className="absolute inset-0 bg-black/50" />
     </div>
   )
 }
