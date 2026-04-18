@@ -78,14 +78,13 @@ async function extractColors(url: string): Promise<string[]> {
   } catch { return FALLBACK }
 }
 
-// Each blob is positioned so its center lands in a different screen quadrant.
-// Size 130% ensures neighboring blobs overlap at the screen center.
-// Gradient is radial from center of the div, so focal point = blob center.
-const BLOBS: Array<{ keyframe: string; duration: number; delay: number; top: string; left: string }> = [
-  { keyframe: 'blob-float-1', duration: 26, delay:   0, top: '-30%', left: '-30%' }, // top-left
-  { keyframe: 'blob-float-2', duration: 34, delay: -10, top:   '0%', left:   '0%' }, // bottom-right
-  { keyframe: 'blob-float-3', duration: 28, delay: -18, top: '-30%', left:   '0%' }, // top-right
-  { keyframe: 'blob-float-4', duration: 32, delay:  -7, top:   '0%', left: '-30%' }, // bottom-left
+// Blobs positioned in different areas, each with filter:blur to
+// soften rectangular edges into smooth organic shapes.
+const BLOBS: Array<{ keyframe: string; duration: number; delay: number; top: string; left: string; w: string; h: string }> = [
+  { keyframe: 'blob-float-1', duration: 26, delay:   0, top: '-25%', left: '-20%', w: '85%', h: '85%' },
+  { keyframe: 'blob-float-2', duration: 34, delay: -10, top:  '28%', left:  '35%', w: '80%', h: '80%' },
+  { keyframe: 'blob-float-3', duration: 28, delay: -18, top: '-20%', left:  '42%', w: '75%', h: '75%' },
+  { keyframe: 'blob-float-4', duration: 32, delay:  -7, top:  '32%', left: '-12%', w: '78%', h: '78%' },
 ]
 
 interface Props { imageUrl: string | null }
@@ -113,9 +112,11 @@ export default function AnimatedBackground({ imageUrl }: Props) {
             position: 'absolute',
             top: b.top,
             left: b.left,
-            width: '130%',
-            height: '130%',
-            background: `radial-gradient(ellipse at center, ${colors[i]}cc 0%, ${colors[i]}55 50%, transparent 75%)`,
+            width: b.w,
+            height: b.h,
+            borderRadius: '50%',
+            background: `radial-gradient(ellipse at center, ${colors[i]}e0 0%, ${colors[i]}80 40%, transparent 70%)`,
+            filter: 'blur(80px)',
             animation: `${b.keyframe} ${b.duration}s ease-in-out infinite`,
             animationDelay: `${b.delay}s`,
             willChange: 'transform',
