@@ -24,35 +24,27 @@ function toHex(r: number, g: number, b: number): string {
 }
 
 function buildPalette(data: Uint8ClampedArray): string[] {
-  type Pixel = { r: number; g: number; b: number; h: number; s: number; l: number }
-
+  type Pixel = { r: number; g: number; b: number; h: number; s: number }
   const pixels: Pixel[] = []
   for (let i = 0; i < data.length; i += 4) {
     const r = data[i], g = data[i + 1], b = data[i + 2]
     const [h, s, l] = rgbToHsl(r, g, b)
-    // skip near-black, near-white and near-grey
     if (l < 0.1 || l > 0.92 || s < 0.12) continue
-    pixels.push({ r, g, b, h, s, l })
+    pixels.push({ r, g, b, h, s })
   }
 
   if (pixels.length < 8) return FALLBACK
 
-  // Sort by hue, then divide into 4 equal hue buckets
   pixels.sort((a, b) => a.h - b.h)
   const buckets: Pixel[][] = [[], [], [], []]
   const step = Math.ceil(pixels.length / 4)
-  for (let i = 0; i < 4; i++) {
-    buckets[i] = pixels.slice(i * step, (i + 1) * step)
-  }
+  for (let i = 0; i < 4; i++) buckets[i] = pixels.slice(i * step, (i + 1) * step)
 
   return buckets.map((bucket, idx) => {
-    const src = bucket.length > 0 ? bucket : pixels.slice(0, 4) // fallback to first bucket
-    // Average the bucket's colors
+    const src = bucket.length > 0 ? bucket : pixels.slice(0, Math.max(1, Math.floor(pixels.length / 4)))
     let r = 0, g = 0, b = 0
     for (const p of src) { r += p.r; g += p.g; b += p.b }
     r /= src.length; g /= src.length; b /= src.length
-
-    // Boost saturation
     const avg = (r + g + b) / 3
     const boost = idx % 2 === 0 ? 1.7 : 1.4
     return toHex(avg + (r - avg) * boost, avg + (g - avg) * boost, avg + (b - avg) * boost)
@@ -65,7 +57,6 @@ async function extractColors(url: string): Promise<string[]> {
     const resp = await fetch(url)
     const blob = await resp.blob()
     const objectUrl = URL.createObjectURL(blob)
-
     const colors = await new Promise<string[]>((resolve) => {
       const img = new Image()
       img.onload = () => {
@@ -82,27 +73,22 @@ async function extractColors(url: string): Promise<string[]> {
       img.onerror = () => { URL.revokeObjectURL(objectUrl); resolve(FALLBACK) }
       img.src = objectUrl
     })
-
     paletteCache.set(url, colors)
     return colors
   } catch { return FALLBACK }
 }
 
-interface Props { imageUrl: string | null }
-
-const BLOBS: Array<{
-  keyframe: string
-  duration: number
-  delay: number
-  top: string
-  left: string
-  size: string
-}> = [
-  { keyframe: 'blob-float-1', duration: 26, delay: 0,   top: '-25%', left: '-20%', size: '85%' },
-  { keyframe: 'blob-float-2', duration: 34, delay: -10, top: '28%',  left: '35%',  size: '80%' },
-  { keyframe: 'blob-float-3', duration: 28, delay: -18, top: '-20%', left: '42%',  size: '75%' },
-  { keyframe: 'blob-float-4', duration: 32, delay: -7,  top: '32%',  left: '-12%', size: '78%' },
+// Each blob is 200×200% of the container, centered at -50%/-50%,
+// with the radial gradient focal point in a different quadrant.
+// This guarantees no visible edges anywhere on screen.
+const BLOBS: Array<{ keyframe: string; duration: number; delay: number; cx: string; cy: string }> = [
+  { keyframe: 'blob-float-1', duration: 26, delay:   0, cx: '22%', cy: '22%' },
+  { keyframe: 'blob-float-2', duration: 34, delay: -10, cx: '78%', cy: '75%' },
+  { keyframe: 'blob-float-3', duration: 28, delay: -18, cx: '78%', cy: '22%' },
+  { keyframe: 'blob-float-4', duration: 32, delay:  -7, cx: '22%', cy: '78%' },
 ]
+
+interface Props { imageUrl: string | null }
 
 export default function AnimatedBackground({ imageUrl }: Props) {
   const [colors, setColors] = useState<string[]>(FALLBACK)
@@ -118,30 +104,27 @@ export default function AnimatedBackground({ imageUrl }: Props) {
 
   return (
     <div className="absolute inset-0 overflow-hidden pointer-events-none">
-      {/* Base layer */}
       <div className="absolute inset-0 bg-black" />
 
-      {/* Animated color blobs */}
       {BLOBS.map((b, i) => (
         <div
           key={i}
           style={{
             position: 'absolute',
-            top: b.top,
-            left: b.left,
-            width: b.size,
-            height: b.size,
-            background: `radial-gradient(ellipse at center, ${colors[i]}e0 0%, ${colors[i]}80 35%, ${colors[i]}20 65%, transparent 80%)`,
+            top: '-50%',
+            left: '-50%',
+            width: '200%',
+            height: '200%',
+            background: `radial-gradient(ellipse at ${b.cx} ${b.cy}, ${colors[i]}d0 0%, ${colors[i]}60 38%, ${colors[i]}10 60%, transparent 72%)`,
             animation: `${b.keyframe} ${b.duration}s ease-in-out infinite`,
             animationDelay: `${b.delay}s`,
             willChange: 'transform',
-            transition: 'background 1.8s ease',
           }}
         />
       ))}
 
       {/* Dark overlay for readability */}
-      <div className="absolute inset-0 bg-black/50" />
+      <div className="absolute inset-0 bg-black/55" />
     </div>
   )
 }
