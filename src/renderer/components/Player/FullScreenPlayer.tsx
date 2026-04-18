@@ -113,10 +113,19 @@ export default function FullScreenPlayer() {
 
   return (
     <div className="fixed inset-0 z-50 bg-black/95 backdrop-blur-3xl flex items-center justify-center fade-in">
-      {/* Background blur image */}
+      {/* Background blur image with subtle motion */}
       {imageUrl && (
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <img src={imageUrl} className="w-full h-full object-cover blur-[80px] opacity-30 scale-110" alt="" />
+          <img
+            src={imageUrl}
+            className="absolute inset-0 w-full h-full object-cover blur-[80px] bg-drift-1"
+            alt=""
+          />
+          <img
+            src={imageUrl}
+            className="absolute inset-0 w-full h-full object-cover blur-[100px] mix-blend-screen bg-drift-2"
+            alt=""
+          />
         </div>
       )}
 
