@@ -43,6 +43,8 @@ export interface JellyfinItem {
   }[]
   PlaylistItemId?: string
   HasLyrics?: boolean
+  Container?: string
+  Path?: string
 }
 
 export interface JellyfinItemsResponse {

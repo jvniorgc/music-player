@@ -100,7 +100,21 @@ export default function AlbumView() {
           <p className="text-xs font-medium text-text-tertiary uppercase tracking-wider mb-2">Álbum</p>
           <h1 className="text-3xl font-bold tracking-tight mb-2 truncate">{album.Name}</h1>
           <p className="text-lg text-accent font-medium mb-1 truncate">
-            {album.AlbumArtist || album.ArtistItems?.[0]?.Name}
+            {album.ArtistItems && album.ArtistItems.length > 0 ? (
+              album.ArtistItems.map((a, i) => (
+                <span key={a.Id}>
+                  {i > 0 && ', '}
+                  <button
+                    className="hover:underline cursor-pointer"
+                    onClick={() => navigate(`/artist/${a.Id}`)}
+                  >
+                    {a.Name}
+                  </button>
+                </span>
+              ))
+            ) : (
+              album.AlbumArtist || ''
+            )}
           </p>
           <div className="flex items-center gap-2 text-sm text-text-secondary">
             {album.ProductionYear && <span>{album.ProductionYear}</span>}

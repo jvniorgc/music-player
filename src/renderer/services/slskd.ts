@@ -180,6 +180,18 @@ export async function getDownloads(): Promise<SlskdTransferGroup[]> {
   return request<SlskdTransferGroup[]>('/api/v0/transfers/downloads')
 }
 
+export async function removeDownload(username: string, id: string): Promise<void> {
+  return request<void>(`/api/v0/transfers/downloads/${encodeURIComponent(username)}/${encodeURIComponent(id)}?remove=true`, {
+    method: 'DELETE'
+  })
+}
+
+export async function removeCompletedDownloads(): Promise<void> {
+  return request<void>('/api/v0/transfers/downloads/all/completed', {
+    method: 'DELETE'
+  })
+}
+
 export async function getApplicationInfo(): Promise<{ server: { isConnected: boolean; isLoggedIn: boolean } }> {
   return request('/api/v0/application')
 }
