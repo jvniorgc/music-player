@@ -1,7 +1,7 @@
 import { app, BrowserWindow, ipcMain, shell, session, net } from 'electron'
 import { join } from 'path'
 import { initDatabase, getDatabase } from './database'
-import { existsSync, mkdirSync, createWriteStream, unlinkSync, statSync } from 'fs'
+import { existsSync, mkdirSync, createWriteStream, unlinkSync, statSync, readdirSync } from 'fs'
 import { Readable } from 'stream'
 
 let mainWindow: BrowserWindow | null = null
@@ -25,6 +25,21 @@ function ensureDirs() {
   for (const dir of [DOWNLOADS_DIR, CACHE_DIR, CACHE_ART_DIR, CACHE_AUDIO_DIR]) {
     if (!existsSync(dir)) mkdirSync(dir, { recursive: true })
   }
+}
+
+function clearSessionCaches() {
+  const db = getDatabase()
+
+  // Clear audio cache files
+  if (existsSync(CACHE_AUDIO_DIR)) {
+    for (const file of readdirSync(CACHE_AUDIO_DIR)) {
+      try { unlinkSync(join(CACHE_AUDIO_DIR, file)) } catch {}
+    }
+  }
+  db.prepare('DELETE FROM audio_cache').run()
+
+  // Clear session lyrics cache (downloaded_lyrics persists)
+  db.prepare('DELETE FROM lyrics_cache').run()
 }
 
 function createWindow() {
@@ -124,6 +139,7 @@ function setupIPC() {
       unlinkSync(row.file_path)
     }
     db.prepare('DELETE FROM downloads WHERE item_id = ?').run(itemId)
+    db.prepare('DELETE FROM downloaded_lyrics WHERE item_id = ?').run(itemId)
   })
 
   ipcMain.handle('download:list', () => {
@@ -187,6 +203,26 @@ function setupIPC() {
     db.prepare('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)').run(key, value)
   })
 
+  // --- Lyrics Cache ---
+  ipcMain.handle('lyrics:get', (_e, itemId: string) => {
+    const row = db.prepare('SELECT lyrics FROM lyrics_cache WHERE item_id = ?').get(itemId) as { lyrics: string } | undefined
+    return row?.lyrics || null
+  })
+
+  ipcMain.handle('lyrics:save', (_e, itemId: string, lyrics: string) => {
+    db.prepare('INSERT OR REPLACE INTO lyrics_cache (item_id, lyrics) VALUES (?, ?)').run(itemId, lyrics)
+  })
+
+  // --- Downloaded Lyrics (persistent, for offline) ---
+  ipcMain.handle('lyrics:get-downloaded', (_e, itemId: string) => {
+    const row = db.prepare('SELECT lyrics FROM downloaded_lyrics WHERE item_id = ?').get(itemId) as { lyrics: string } | undefined
+    return row?.lyrics || null
+  })
+
+  ipcMain.handle('lyrics:save-downloaded', (_e, itemId: string, lyrics: string) => {
+    db.prepare('INSERT OR REPLACE INTO downloaded_lyrics (item_id, lyrics) VALUES (?, ?)').run(itemId, lyrics)
+  })
+
   // --- File protocol for cached/downloaded audio ---
   ipcMain.handle('file:get-url', (_e, filePath: string) => {
     if (existsSync(filePath)) {
@@ -221,6 +257,7 @@ app.whenReady().then(() => {
   initPaths()
   ensureDirs()
   initDatabase()
+  clearSessionCaches()
   setupIPC()
 
   // Handle file protocol for local audio playback via custom scheme

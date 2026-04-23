@@ -45,6 +45,17 @@ export function initDatabase(): void {
       value TEXT
     );
 
+    CREATE TABLE IF NOT EXISTS lyrics_cache (
+      item_id TEXT PRIMARY KEY,
+      lyrics TEXT NOT NULL,
+      created_at DATETIME DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS downloaded_lyrics (
+      item_id TEXT PRIMARY KEY,
+      lyrics TEXT NOT NULL
+    );
+
     CREATE TABLE IF NOT EXISTS playback_state (
       id INTEGER PRIMARY KEY DEFAULT 1,
       queue TEXT,

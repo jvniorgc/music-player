@@ -399,6 +399,28 @@ class JellyfinService {
 
     return []
   }
+  async getLyricsWithCache(itemId: string): Promise<{ Text: string; Start?: number }[]> {
+    // Check persistent downloaded lyrics first (offline)
+    try {
+      const downloaded = await window.api.getDownloadedLyrics(itemId)
+      if (downloaded) return JSON.parse(downloaded)
+    } catch {}
+
+    // Check session cache
+    try {
+      const cached = await window.api.getCachedLyrics(itemId)
+      if (cached) return JSON.parse(cached)
+    } catch {}
+
+    const lines = await this.getLyrics(itemId)
+
+    // Save to session cache (even empty results to avoid re-fetching)
+    try {
+      await window.api.saveLyrics(itemId, JSON.stringify(lines))
+    } catch {}
+
+    return lines
+  }
 }
 
 function parseLRC(lrc: string): { Text: string; Start?: number }[] {

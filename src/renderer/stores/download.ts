@@ -102,6 +102,11 @@ export const useDownloadStore = create<DownloadState>((set, get) => ({
         }
         return { downloads: newMap }
       })
+
+      // Fetch and persist lyrics for offline use
+      jellyfin.getLyricsWithCache(itemId).then(lines => {
+        window.api.saveDownloadedLyrics(itemId, JSON.stringify(lines)).catch(() => {})
+      }).catch(() => {})
     }))
 
     unsubs.push(window.api.onDownloadError(({ itemId }) => {

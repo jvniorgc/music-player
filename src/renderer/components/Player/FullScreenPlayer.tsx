@@ -58,8 +58,8 @@ export default function FullScreenPlayer() {
     setActiveLyricIndex(-1)
     lyricsRef.current = []
 
-    // Always try to fetch lyrics (Jellyfin embedded + LRCLIB fallback)
-    jellyfin.getLyrics(item.Id).then(lines => {
+    // Always try to fetch lyrics (cache-first, then Jellyfin embedded + LRCLIB fallback)
+    jellyfin.getLyricsWithCache(item.Id).then(lines => {
       const filtered = lines.filter(l => l.Text.trim())
       setLyrics(filtered)
       lyricsRef.current = filtered

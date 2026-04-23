@@ -29,6 +29,14 @@ const api = {
   getSetting: (key: string) => ipcRenderer.invoke('settings:get', key),
   setSetting: (key: string, value: string) => ipcRenderer.invoke('settings:set', key, value),
 
+  // Lyrics Cache
+  getCachedLyrics: (itemId: string) => ipcRenderer.invoke('lyrics:get', itemId),
+  saveLyrics: (itemId: string, lyrics: string) => ipcRenderer.invoke('lyrics:save', itemId, lyrics),
+
+  // Downloaded Lyrics (persistent, for offline)
+  getDownloadedLyrics: (itemId: string) => ipcRenderer.invoke('lyrics:get-downloaded', itemId),
+  saveDownloadedLyrics: (itemId: string, lyrics: string) => ipcRenderer.invoke('lyrics:save-downloaded', itemId, lyrics),
+
   // File access
   getFileUrl: (filePath: string) => ipcRenderer.invoke('file:get-url', filePath),
 

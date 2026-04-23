@@ -151,6 +151,9 @@ class PlaybackService {
 
       // Preload next track
       this.preloadNext()
+
+      // Preload lyrics for upcoming tracks
+      this.preloadUpcomingLyrics()
     } catch (err: any) {
       console.error('[Playback] Play error:', err)
 
@@ -196,6 +199,44 @@ class PlaybackService {
         this.preloadAudio.src = url
       }
     })
+  }
+
+  private getUpcomingTrackIds(count: number): string[] {
+    const ids: string[] = []
+    const visited = new Set<number>()
+    let idx = this._currentIndex
+
+    for (let i = 0; i < count; i++) {
+      if (this._shuffle) {
+        const shufflePos = this._shuffleOrder.indexOf(idx)
+        const nextPos = shufflePos + 1
+        if (nextPos < this._shuffleOrder.length) {
+          idx = this._shuffleOrder[nextPos]
+        } else if (this._repeat === 'all') {
+          idx = this._shuffleOrder[0]
+        } else {
+          break
+        }
+      } else {
+        idx = idx + 1
+        if (idx >= this._queue.length) {
+          if (this._repeat === 'all') idx = 0
+          else break
+        }
+      }
+
+      if (visited.has(idx)) break
+      visited.add(idx)
+      if (this._queue[idx]) ids.push(this._queue[idx].id)
+    }
+    return ids
+  }
+
+  private preloadUpcomingLyrics() {
+    const ids = this.getUpcomingTrackIds(3)
+    for (const id of ids) {
+      jellyfin.getLyricsWithCache(id).catch(() => {})
+    }
   }
 
   setQueue(items: JellyfinItem[], startIndex = 0) {
