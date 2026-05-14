@@ -68,8 +68,7 @@
          run: npm ci
 
        - name: Build & Package
-         run: npx electron-vite build && npx electron-builder --linux AppImage --publish
- never
+         run: npx electron-vite build && npx electron-builder --linux AppImage --publish never
 
        - name: Upload Linux artifact
          uses: actions/upload-artifact@v4
