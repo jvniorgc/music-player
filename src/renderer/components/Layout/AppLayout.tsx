@@ -19,7 +19,7 @@ export default function AppLayout() {
   return (
     <div className="h-full flex flex-col bg-bg-primary">
       {/* Window controls - fixed top right */}
-      <div className="fixed top-0 right-0 z-50 drag-region">
+      <div className="fixed top-0 right-0 z-50">
         <WindowControls />
       </div>
       <div className="flex-1 flex min-h-0">
