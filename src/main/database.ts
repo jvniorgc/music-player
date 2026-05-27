@@ -56,14 +56,6 @@ export function initDatabase(): void {
       lyrics TEXT NOT NULL
     );
 
-    CREATE TABLE IF NOT EXISTS playlist_ownership (
-      server_id TEXT NOT NULL,
-      playlist_id TEXT NOT NULL,
-      user_id TEXT NOT NULL,
-      created_at DATETIME DEFAULT (datetime('now')),
-      PRIMARY KEY (server_id, playlist_id)
-    );
-
     CREATE TABLE IF NOT EXISTS playback_state (
       id INTEGER PRIMARY KEY DEFAULT 1,
       queue TEXT,

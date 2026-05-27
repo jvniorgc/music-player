@@ -275,15 +275,30 @@ class JellyfinService {
       body: JSON.stringify({ Name: name, Ids: itemIds, UserId: this.userId, MediaType: 'Audio' })
     })
     try {
-      await window.api.recordPlaylistOwner({
-        serverId: this.serverId,
-        playlistId: res.Id,
-        userId: this.userId
-      })
+      await this.setItemOwnerTag(res.Id, this.userId)
     } catch (e) {
-      console.warn('Failed to record playlist ownership', e)
+      console.warn('Failed to set owner tag on new playlist', e)
     }
     return res
+  }
+
+  private ownerTag(userId: string): string {
+    return `mp-owner:${userId}`
+  }
+
+  private async setItemOwnerTag(itemId: string, userId: string): Promise<void> {
+    const item = await this.request<any>(`/Users/${this.userId}/Items/${itemId}`)
+    const tag = this.ownerTag(userId)
+    const existingTags: string[] = Array.isArray(item.Tags) ? item.Tags : []
+    if (existingTags.includes(tag)) return
+    // Strip any stale mp-owner tags (a playlist should have a single owner)
+    const newTags = existingTags.filter(t => !t.startsWith('mp-owner:'))
+    newTags.push(tag)
+    item.Tags = newTags
+    await this.request(`/Items/${itemId}`, {
+      method: 'POST',
+      body: JSON.stringify(item)
+    })
   }
 
   async deleteItem(itemId: string): Promise<void> {
@@ -380,10 +395,9 @@ class JellyfinService {
   }
 
   async getUserPlaylists(userId: string): Promise<JellyfinItemsResponse> {
-    const res = await this.request<{ Items: (JellyfinItem & { Path?: string })[], TotalRecordCount: number }>(
-      `/Users/${userId}/Items?IncludeItemTypes=Playlist&Recursive=true&SortBy=SortName&Fields=ChildCount,PrimaryImageAspectRatio,Path`
+    const res = await this.request<{ Items: (JellyfinItem & { Path?: string; Tags?: string[] })[], TotalRecordCount: number }>(
+      `/Users/${userId}/Items?IncludeItemTypes=Playlist&Recursive=true&SortBy=SortName&Fields=ChildCount,PrimaryImageAspectRatio,Path,Tags`
     )
-    // Drop empty-named or file-system M3U playlists
     const candidates = res.Items.filter(item => {
       if (!item.Name || item.Name.trim() === '') return false
       const path = item.Path || ''
@@ -391,44 +405,39 @@ class JellyfinService {
       return true
     })
 
-    let ownedIds = new Set<string>()
-    try {
-      const ids = await window.api.getOwnedPlaylists({ serverId: this.serverId, userId })
-      ownedIds = new Set(ids)
-    } catch (e) {
-      console.warn('Failed to load playlist ownership', e)
-    }
+    const ownerTag = this.ownerTag(userId)
+    const tagged = candidates.filter(item => Array.isArray(item.Tags) && item.Tags.includes(ownerTag))
 
-    // For the logged-in user's own profile, probe /Playlists/{id}/Users to
-    // auto-discover ownership for playlists that were not created via this app.
-    // The endpoint returns 200 only for the playlist owner; 403 otherwise.
+    // For the logged-in user's own profile, auto-discover (and tag) playlists
+    // they own but that haven't been tagged yet (e.g., legacy playlists, or
+    // created before this app added tagging). /Playlists/{id}/Users returns
+    // 200 only for the owner, 403 otherwise.
     if (userId === this.userId) {
-      const unknown = candidates.filter(item => !ownedIds.has(item.Id))
-      const probes = await Promise.all(
-        unknown.map(async item => {
+      const untagged = candidates.filter(item => !Array.isArray(item.Tags) || !item.Tags.includes(ownerTag))
+      const discovered = await Promise.all(
+        untagged.map(async item => {
+          // Skip if any mp-owner tag already exists (owned by someone else)
+          if (Array.isArray(item.Tags) && item.Tags.some(t => t.startsWith('mp-owner:'))) {
+            return null
+          }
           try {
             const r = await fetch(`${this.serverUrl}/Playlists/${item.Id}/Users`, {
               headers: { 'X-Emby-Authorization': this.authHeader() }
             })
-            return r.status === 200 ? item.Id : null
+            return r.status === 200 ? item : null
           } catch {
             return null
           }
         })
       )
-      const discovered = probes.filter((id): id is string => id !== null)
-      for (const id of discovered) {
-        ownedIds.add(id)
-        window.api.recordPlaylistOwner({
-          serverId: this.serverId,
-          playlistId: id,
-          userId: this.userId
-        }).catch(() => {})
+      const owned = discovered.filter((i): i is (JellyfinItem & { Path?: string; Tags?: string[] }) => i !== null)
+      for (const item of owned) {
+        this.setItemOwnerTag(item.Id, this.userId).catch(() => {})
+        tagged.push(item)
       }
     }
 
-    const filtered = candidates.filter(item => ownedIds.has(item.Id))
-    return { Items: filtered, TotalRecordCount: filtered.length }
+    return { Items: tagged, TotalRecordCount: tagged.length }
   }
 
   /**
