@@ -1,25 +1,61 @@
-import { useEffect, useRef, useCallback } from 'react'
+import { useEffect, useRef, useCallback, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useLibraryStore } from '../../stores/library'
 import { usePlayerStore } from '../../stores/player'
 import { jellyfin, JellyfinItem } from '../../services/jellyfin'
 import { Play, Loader2 } from 'lucide-react'
 
+type SortOption = 'alphabetical' | 'recent'
+
 export default function AlbumGrid() {
   const { albums, totalAlbums, isLoading, fetchAlbums, loadMoreAlbums } = useLibraryStore()
   const navigate = useNavigate()
   const loaderRef = useRef<HTMLDivElement>(null)
+  const [sort, setSort] = useState<SortOption>('alphabetical')
+  const [localAlbums, setLocalAlbums] = useState<JellyfinItem[]>([])
+  const [localTotal, setLocalTotal] = useState(0)
+  const [localLoading, setLocalLoading] = useState(false)
+
+  const isDefault = sort === 'alphabetical'
+  const displayAlbums = isDefault ? albums : localAlbums
+  const displayTotal = isDefault ? totalAlbums : localTotal
+  const displayLoading = isDefault ? isLoading : localLoading
 
   useEffect(() => {
-    if (albums.length === 0) fetchAlbums()
-  }, [])
+    if (sort === 'alphabetical') {
+      if (albums.length === 0) fetchAlbums()
+    } else {
+      setLocalLoading(true)
+      jellyfin.getAlbums(0, 100, 'DateCreated', 'Descending').then(res => {
+        setLocalAlbums(res.Items)
+        setLocalTotal(res.TotalRecordCount)
+        setLocalLoading(false)
+      }).catch(() => setLocalLoading(false))
+    }
+  }, [sort])
+
+  const loadMore = useCallback(async () => {
+    if (isDefault) {
+      loadMoreAlbums()
+    } else {
+      if (localAlbums.length >= localTotal) return
+      setLocalLoading(true)
+      try {
+        const res = await jellyfin.getAlbums(localAlbums.length, 100, 'DateCreated', 'Descending')
+        setLocalAlbums(prev => [...prev, ...res.Items])
+        setLocalTotal(res.TotalRecordCount)
+      } finally {
+        setLocalLoading(false)
+      }
+    }
+  }, [isDefault, localAlbums.length, localTotal])
 
   // Infinite scroll
   const observerCallback = useCallback((entries: IntersectionObserverEntry[]) => {
-    if (entries[0].isIntersecting && !isLoading && albums.length < totalAlbums) {
-      loadMoreAlbums()
+    if (entries[0].isIntersecting && !displayLoading && displayAlbums.length < displayTotal) {
+      loadMore()
     }
-  }, [isLoading, albums.length, totalAlbums])
+  }, [displayLoading, displayAlbums.length, displayTotal, loadMore])
 
   useEffect(() => {
     const observer = new IntersectionObserver(observerCallback, { threshold: 0.1 })
@@ -32,14 +68,22 @@ export default function AlbumGrid() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Albums</h1>
-          {totalAlbums > 0 && (
-            <p className="text-sm text-text-secondary mt-1">{totalAlbums} albums</p>
+          {displayTotal > 0 && (
+            <p className="text-sm text-text-secondary mt-1">{displayTotal} albums</p>
           )}
         </div>
+        <select
+          value={sort}
+          onChange={e => setSort(e.target.value as SortOption)}
+          className="bg-bg-elevated border border-border rounded-lg px-3 py-1.5 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-accent/50"
+        >
+          <option value="alphabetical">A–Z</option>
+          <option value="recent">Recently added</option>
+        </select>
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-5">
-        {albums.map(item => (
+        {displayAlbums.map(item => (
           <AlbumCard
             key={item.Id}
             item={item}
@@ -49,7 +93,7 @@ export default function AlbumGrid() {
       </div>
 
       <div ref={loaderRef} className="py-8 flex justify-center">
-        {isLoading && <Loader2 size={24} className="animate-spin text-text-tertiary" />}
+        {displayLoading && <Loader2 size={24} className="animate-spin text-text-tertiary" />}
       </div>
     </div>
   )
