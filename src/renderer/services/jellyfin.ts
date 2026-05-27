@@ -134,7 +134,7 @@ class JellyfinService {
   /** Filter out items with empty/missing names (broken metadata) */
   private sanitizeItems(response: JellyfinItemsResponse): JellyfinItemsResponse {
     const filtered = response.Items.filter(item => item.Name && item.Name.trim() !== '')
-    return { Items: filtered, TotalRecordCount: filtered.length }
+    return { Items: filtered, TotalRecordCount: response.TotalRecordCount }
   }
 
   async authenticate(serverUrl: string, username: string, password: string): Promise<JellyfinAuth> {
