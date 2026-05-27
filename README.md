@@ -1,182 +1,130 @@
-# 🎵 Jellyfin Music Player
+<div align="center">
+  <img src="build/icon.png" width="120" height="120" alt="Jellyfin Music Player" />
 
-Um player de música desktop para servidores [Jellyfin](https://jellyfin.org/), inspirado na UI/UX do Apple Music. Construído com Electron, React e TypeScript.
+  # Jellyfin Music Player
 
-![Version](https://img.shields.io/badge/version-0.1.0-blue)
-![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Windows-lightgrey)
-![Electron](https://img.shields.io/badge/electron-33.4.0-47848F)
+  A desktop music player for [Jellyfin](https://jellyfin.org/) servers, inspired by Apple Music.
 
-## ✨ Features
+  [![Version](https://img.shields.io/badge/version-0.2.1-blue?style=flat-square)](https://github.com/jvniorgc/music-player/releases)
+  [![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Windows%20%7C%20Linux-lightgrey?style=flat-square)](#download)
+  [![Electron](https://img.shields.io/badge/electron-33-47848F?style=flat-square&logo=electron&logoColor=white)](https://www.electronjs.org/)
+  [![TypeScript](https://img.shields.io/badge/typescript-5-3178C6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 
-### 🎶 Player
-- Streaming direto do servidor Jellyfin
-- Fila de reprodução com drag & reorder
-- Shuffle e repeat (single/all)
-- Player em tela cheia com artwork
-- Integração com controles de mídia do macOS (Control Center) — artwork, play/pause, next/prev, seek
+</div>
 
-### 📚 Biblioteca
-- Navegação por álbuns, artistas e músicas
-- Busca global com resultados agrupados
-- Visualização de álbum com lista de faixas
-- Páginas de artista com discografia
-- Seção "Ouvidos Recentemente" e "Adicionados Recentemente"
+---
 
-### 📋 Playlists
-- Criar, renomear e excluir playlists
-- Adicionar/remover músicas das playlists
-- Gerenciamento completo via API do Jellyfin
+<!-- TODO: add screenshots here -->
+<!-- ![Screenshot](docs/screenshot.png) -->
 
-### ✏️ Metadados
-- Busca de metadados via MusicBrainz
-- Atualização de título, artista, ano e gênero
-- Upload de capa de álbum a partir do Cover Art Archive
-- Opção de limpar todos os metadados
+## Features
 
-### 🔍 Soulseek (via slskd)
-- Busca de músicas na rede Soulseek
-- Resultados agrupados por usuário e pasta
-- Download direto para a biblioteca de músicas
-- Monitoramento de transferências em tempo real
+- [x] Direct streaming from Jellyfin server
+- [x] Playback queue with drag & reorder
+- [x] Shuffle and repeat (single/all)
+- [x] Full-screen player with artwork
+- [x] System media controls (macOS Control Center)
+- [x] Browse albums, artists, and songs
+- [x] Global search with grouped results
+- [x] Playlists — create, rename, delete, add/remove tracks
+- [x] Local audio cache with LRU eviction (2 GB)
+- [x] Download for offline playback
+- [x] Metadata editor via MusicBrainz + Cover Art Archive
+- [x] Soulseek integration via [slskd](https://github.com/slskd/slskd)
+- [ ] [Request a feature](https://github.com/jvniorgc/music-player/issues/new)
 
-### ⚡ Performance
-- Cache local de áudio com SQLite (better-sqlite3)
-- Download de músicas para reprodução offline
-- Botão de refresh para sincronizar biblioteca com o servidor
-- Filtro automático de itens com metadados vazios/corrompidos
+## Download
 
-## 📸 Screenshots
+| Platform | Format | Command |
+|---|---|---|
+| macOS | `.dmg` | `npm run build:mac` |
+| Windows | `.exe` (NSIS) | `npm run build:win` |
+| Linux | `.AppImage` | via [GitHub Actions](https://github.com/jvniorgc/music-player/actions) |
 
-> *Em desenvolvimento — screenshots serão adicionados em breve.*
+> Builds are published under **Releases** when a `v*` tag is pushed.
 
-## 🛠️ Tech Stack
+## Development
 
-| Tecnologia | Uso |
+### Prerequisites
+
+- [Node.js](https://nodejs.org/) 20+
+- A [Jellyfin](https://jellyfin.org/) server accessible on the network
+- *(Optional)* [slskd](https://github.com/slskd/slskd) for Soulseek
+
+**Windows:** requires [Visual Studio Build Tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/) with the "Desktop development with C++" workload to compile `better-sqlite3`.
+
+### Setup
+
+```bash
+git clone https://github.com/jvniorgc/music-player.git
+cd music-player
+npm install
+```
+
+### Scripts
+
+| Command | Description |
 |---|---|
-| **Electron 33** | Runtime desktop |
-| **React 18** | UI framework |
-| **TypeScript 5** | Type safety |
-| **Tailwind CSS 4** | Estilização |
-| **Zustand 5** | Gerenciamento de estado |
-| **better-sqlite3** | Cache local e downloads |
-| **electron-vite** | Build tooling |
-| **electron-builder** | Empacotamento macOS |
+| `npm run dev` | Start in development mode with hot-reload |
+| `npm run build` | Compile the project (electron-vite) |
+| `npm run build:mac` | Compile + package `.dmg` for macOS |
+| `npm run build:win` | Compile + package `.exe` for Windows |
 
-## 🚀 Getting Started
+### Platform Notes
 
-### Pré-requisitos
+<details>
+<summary><strong>macOS</strong></summary>
 
-- **Node.js** 20+
-- **npm** 9+
-- Um servidor **Jellyfin** acessível na rede
-- *(Opcional)* **slskd** para integração com Soulseek
-
-### Instalação
+The DMG is generated in `dist/`. On first launch, macOS may block the unsigned app:
 
 ```bash
-# Clone o repositório
-git clone https://github.com/jvniorgc/music-player.git
-cd music-player
-
-# Instale as dependências
-npm install
+xattr -cr "dist/mac-arm64/Jellyfin Music Player.app"
 ```
 
-### Desenvolvimento
+Or go to **System Settings > Privacy & Security > Open Anyway**.
 
-```bash
-npm run dev
-```
+</details>
 
-> **Nota:** Se estiver usando o terminal integrado do VS Code, o app já desativa a variável `ELECTRON_RUN_AS_NODE` automaticamente.
+<details>
+<summary><strong>Windows</strong></summary>
 
-### Build (macOS)
+Cross-compilation is not supported due to native modules. Build on a Windows machine or use the CI workflow.
 
-```bash
-npm run build:mac
-```
+The installer is generated at `dist/Jellyfin Music Player Setup {version}.exe`.
 
-O DMG será gerado em `dist/Jellyfin Music Player-{version}-arm64.dmg`.
+</details>
 
-Para executar diretamente sem instalar:
+## Tech Stack
 
-```bash
-open "dist/mac-arm64/Jellyfin Music Player.app"
-```
+| | Technology | Version |
+|---|---|---|
+| ⚡ | [Electron](https://www.electronjs.org/) | 33 |
+| ⚛️ | [React](https://react.dev/) | 18 |
+| 🎨 | [Tailwind CSS](https://tailwindcss.com/) | 4 |
+| 🐻 | [Zustand](https://zustand.docs.pmnd.rs/) | 5 |
+| 🗄️ | [better-sqlite3](https://github.com/WiseLibs/better-sqlite3) | 12 |
+| 📦 | [electron-vite](https://electron-vite.org/) | 5 |
 
-> Na primeira execução, o macOS pode bloquear o app por não ter assinatura. Vá em **Ajustes > Privacidade e Segurança** e clique "Abrir Mesmo Assim".
-
-### Build (Windows)
-
-A build para Windows deve ser executada em uma máquina Windows, pois o `better-sqlite3` é um módulo nativo que precisa ser compilado para o OS alvo.
-
-```powershell
-# Clone o repositório
-git clone https://github.com/jvniorgc/music-player.git
-cd music-player
-
-# Instale as dependências
-npm install
-
-# Gere o instalador
-npm run build:win
-```
-
-O instalador será gerado em `dist/Jellyfin Music Player Setup {version}.exe`.
-
-**Pré-requisitos para Windows:**
-- **Node.js** 20+ e **npm** 9+
-- **Python 3** e **Visual Studio Build Tools** (necessários para compilar o `better-sqlite3`)
-  - Instale com: `npm install --global windows-build-tools` (PowerShell como Admin)
-  - Ou instale o [Visual Studio Build Tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/) com o workload "Desktop development with C++"
-
-> **Nota:** Cross-compilation do macOS para Windows não é suportada devido a módulos nativos. Use GitHub Actions ou uma máquina Windows para gerar builds.
-
-## 📁 Estrutura do Projeto
+## Architecture
 
 ```
 src/
-├── main/               # Processo principal do Electron
-│   └── index.ts        # IPC handlers, cache, downloads
-├── preload/            # Bridge segura entre main e renderer
-│   └── index.ts
-└── renderer/           # Interface React
-    ├── components/
-    │   ├── Auth/       # Tela de login
-    │   ├── Home/       # Página inicial
-    │   ├── Layout/     # Sidebar, NowPlayingBar, AppLayout
-    │   ├── Library/    # Álbuns, artistas, playlists, downloads
-    │   ├── Metadata/   # Editor de metadados (MusicBrainz)
-    │   ├── Player/     # Fullscreen player, fila
-    │   ├── Search/     # Busca global
-    │   ├── Soulseek/   # Integração slskd
-    │   └── UI/         # Modais, toasts
-    ├── services/
-    │   ├── jellyfin.ts # Cliente API Jellyfin
-    │   ├── playback.ts # Engine de reprodução
-    │   ├── musicbrainz.ts # API MusicBrainz
-    │   └── slskd.ts    # Cliente API slskd
-    └── stores/         # Zustand stores (auth, library, player, toast)
+├── main/          → Main process: IPC, SQLite, downloads, audio cache
+├── preload/       → Context bridge (window.api) — sole main↔renderer channel
+└── renderer/      → React SPA (HashRouter)
+    ├── components/   UI organized by domain (Auth, Library, Player, etc.)
+    ├── services/     API clients: jellyfin, playback, musicbrainz, slskd
+    └── stores/       Global state with Zustand (auth, library, player, download, toast)
 ```
 
-## ⚙️ Configuração
+The renderer has **no** Node.js access — all system communication goes through the preload bridge via `ipcRenderer.invoke`.
 
-Na tela de login, forneça:
+## Configuration
 
-1. **URL do servidor** — ex: `http://192.168.1.100:8096`
-2. **Usuário** e **senha** do Jellyfin
+On the login screen, provide your Jellyfin server URL (e.g. `http://192.168.1.100:8096`) and credentials.
 
-Para o Soulseek, o app se conecta ao **slskd** (configurado no código em `services/slskd.ts`).
+Soulseek integration connects to an [slskd](https://github.com/slskd/slskd) instance — configurable in the app preferences.
 
-## 📝 Scripts
+## License
 
-| Comando | Descrição |
-|---|---|
-| `npm run dev` | Inicia em modo de desenvolvimento |
-| `npm run build` | Compila o projeto (electron-vite) |
-| `npm run build:mac` | Gera o .app e .dmg para macOS |
-| `npm run build:win` | Gera o .exe instalador para Windows |
-
-## 📄 Licença
-
-Este projeto é de uso pessoal. Todos os direitos reservados.
+This project is for personal use. All rights reserved.
