@@ -85,6 +85,10 @@ class JellyfinService {
     return this.auth?.token || ''
   }
 
+  get serverId() {
+    return this.auth?.serverId || ''
+  }
+
   setAuth(auth: JellyfinAuth) {
     this.auth = auth
   }
@@ -266,10 +270,20 @@ class JellyfinService {
   // --- Playlists CRUD ---
 
   async createPlaylist(name: string, itemIds: string[] = []): Promise<{ Id: string }> {
-    return this.request('/Playlists', {
+    const res = await this.request<{ Id: string }>('/Playlists', {
       method: 'POST',
       body: JSON.stringify({ Name: name, Ids: itemIds, UserId: this.userId, MediaType: 'Audio' })
     })
+    try {
+      await window.api.recordPlaylistOwner({
+        serverId: this.serverId,
+        playlistId: res.Id,
+        userId: this.userId
+      })
+    } catch (e) {
+      console.warn('Failed to record playlist ownership', e)
+    }
+    return res
   }
 
   async deleteItem(itemId: string): Promise<void> {
@@ -366,17 +380,54 @@ class JellyfinService {
   }
 
   async getUserPlaylists(userId: string): Promise<JellyfinItemsResponse> {
-    const res = await this.request<{ Items: (JellyfinItem & { OwnerUserId?: string; Path?: string })[], TotalRecordCount: number }>(
-      `/Users/${userId}/Items?IncludeItemTypes=Playlist&Recursive=true&SortBy=SortName&Fields=ChildCount,PrimaryImageAspectRatio,Path,OwnerUserId`
+    const res = await this.request<{ Items: (JellyfinItem & { Path?: string })[], TotalRecordCount: number }>(
+      `/Users/${userId}/Items?IncludeItemTypes=Playlist&Recursive=true&SortBy=SortName&Fields=ChildCount,PrimaryImageAspectRatio,Path`
     )
-    const filtered = res.Items.filter(item => {
+    // Drop empty-named or file-system M3U playlists
+    const candidates = res.Items.filter(item => {
       if (!item.Name || item.Name.trim() === '') return false
       const path = item.Path || ''
       if (path.endsWith('.m3u') || path.endsWith('.m3u8')) return false
-      // Filter by ownership: only show playlists created by this user
-      if (item.OwnerUserId && item.OwnerUserId !== userId) return false
       return true
     })
+
+    let ownedIds = new Set<string>()
+    try {
+      const ids = await window.api.getOwnedPlaylists({ serverId: this.serverId, userId })
+      ownedIds = new Set(ids)
+    } catch (e) {
+      console.warn('Failed to load playlist ownership', e)
+    }
+
+    // For the logged-in user's own profile, probe /Playlists/{id}/Users to
+    // auto-discover ownership for playlists that were not created via this app.
+    // The endpoint returns 200 only for the playlist owner; 403 otherwise.
+    if (userId === this.userId) {
+      const unknown = candidates.filter(item => !ownedIds.has(item.Id))
+      const probes = await Promise.all(
+        unknown.map(async item => {
+          try {
+            const r = await fetch(`${this.serverUrl}/Playlists/${item.Id}/Users`, {
+              headers: { 'X-Emby-Authorization': this.authHeader() }
+            })
+            return r.status === 200 ? item.Id : null
+          } catch {
+            return null
+          }
+        })
+      )
+      const discovered = probes.filter((id): id is string => id !== null)
+      for (const id of discovered) {
+        ownedIds.add(id)
+        window.api.recordPlaylistOwner({
+          serverId: this.serverId,
+          playlistId: id,
+          userId: this.userId
+        }).catch(() => {})
+      }
+    }
+
+    const filtered = candidates.filter(item => ownedIds.has(item.Id))
     return { Items: filtered, TotalRecordCount: filtered.length }
   }
 

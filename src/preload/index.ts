@@ -11,6 +11,14 @@ const api = {
     ipcRenderer.invoke('db:save-auth', data),
   clearAuth: () => ipcRenderer.invoke('db:clear-auth'),
 
+  // Playlist ownership tracking
+  recordPlaylistOwner: (data: { serverId: string; playlistId: string; userId: string }) =>
+    ipcRenderer.invoke('playlists:record-owner', data),
+  getOwnedPlaylists: (data: { serverId: string; userId: string }) =>
+    ipcRenderer.invoke('playlists:get-owned', data),
+  removePlaylistOwner: (data: { serverId: string; playlistId: string }) =>
+    ipcRenderer.invoke('playlists:remove-owner', data),
+
   // Downloads
   startDownload: (data: { itemId: string; url: string; filename: string; metadata: string }) =>
     ipcRenderer.invoke('download:start', data),

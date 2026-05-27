@@ -92,6 +92,26 @@ function setupIPC() {
     db.prepare('DELETE FROM auth').run()
   })
 
+  // --- Playlist ownership tracking ---
+  ipcMain.handle('playlists:record-owner', (_e, data: { serverId: string; playlistId: string; userId: string }) => {
+    db.prepare(
+      'INSERT OR REPLACE INTO playlist_ownership (server_id, playlist_id, user_id) VALUES (?, ?, ?)'
+    ).run(data.serverId, data.playlistId, data.userId)
+  })
+
+  ipcMain.handle('playlists:get-owned', (_e, data: { serverId: string; userId: string }) => {
+    const rows = db.prepare(
+      'SELECT playlist_id FROM playlist_ownership WHERE server_id = ? AND user_id = ?'
+    ).all(data.serverId, data.userId) as { playlist_id: string }[]
+    return rows.map(r => r.playlist_id)
+  })
+
+  ipcMain.handle('playlists:remove-owner', (_e, data: { serverId: string; playlistId: string }) => {
+    db.prepare(
+      'DELETE FROM playlist_ownership WHERE server_id = ? AND playlist_id = ?'
+    ).run(data.serverId, data.playlistId)
+  })
+
   // --- Downloads ---
   ipcMain.handle('download:start', async (_e, data: { itemId: string; url: string; filename: string; metadata: string }) => {
     const filePath = join(DOWNLOADS_DIR, `${data.itemId}.audio`)
