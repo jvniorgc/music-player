@@ -48,7 +48,7 @@ export default function Sidebar() {
   }
 
   return (
-    <aside className="w-60 h-full bg-bg-secondary/80 backdrop-blur-xl border-r border-border-subtle flex flex-col">
+    <aside className="w-60 h-full bg-bg-secondary/80 backdrop-blur-xl border-r border-border-subtle flex flex-col pt-4">
       {/* Main nav */}
       <nav className="px-3 space-y-0.5">
         {navItems.map(item => (
