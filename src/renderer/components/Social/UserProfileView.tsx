@@ -2,10 +2,11 @@ import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { jellyfin, JellyfinItem, JellyfinUser } from '../../services/jellyfin'
 import { usePlayerStore } from '../../stores/player'
-import { ArrowLeft, ListMusic, Loader2, Play } from 'lucide-react'
+import { ArrowLeft, ListMusic, Loader2 } from 'lucide-react'
 
 type ViewMode = 'artists' | 'albums' | 'songs'
 type TimePeriod = '7d' | '30d' | '3m' | '1y' | 'all'
+type GridSize = '3x3' | '4x4' | '5x5'
 
 const TIME_LABELS: Record<TimePeriod, string> = {
   '7d': '7 dias',
@@ -14,6 +15,9 @@ const TIME_LABELS: Record<TimePeriod, string> = {
   '1y': '1 ano',
   'all': 'All-time',
 }
+
+const GRID_COLS: Record<GridSize, number> = { '3x3': 3, '4x4': 4, '5x5': 5 }
+const GRID_COUNT: Record<GridSize, number> = { '3x3': 9, '4x4': 16, '5x5': 25 }
 
 function getMinDate(period: TimePeriod): string | undefined {
   if (period === 'all') return undefined
@@ -43,6 +47,7 @@ export default function UserProfileView() {
   const [topItems, setTopItems] = useState<(JellyfinItem & { periodPlayCount?: number })[]>([])
   const [viewMode, setViewMode] = useState<ViewMode>('artists')
   const [timePeriod, setTimePeriod] = useState<TimePeriod>('7d')
+  const [gridSize, setGridSize] = useState<GridSize>('3x3')
   const [loading, setLoading] = useState(true)
   const [topLoading, setTopLoading] = useState(false)
 
@@ -71,13 +76,14 @@ export default function UserProfileView() {
       setTopLoading(true)
       try {
         const minDate = getMinDate(timePeriod)
+        const count = GRID_COUNT[gridSize]
         let items: (JellyfinItem & { periodPlayCount?: number })[]
         if (viewMode === 'artists') {
-          items = await jellyfin.getUserTopArtists(id, 20, minDate)
+          items = await jellyfin.getUserTopArtists(id, count, minDate)
         } else if (viewMode === 'albums') {
-          items = await jellyfin.getUserTopAlbums(id, 20, minDate)
+          items = await jellyfin.getUserTopAlbums(id, count, minDate)
         } else {
-          items = await jellyfin.getUserTopSongs(id, 20, minDate)
+          items = await jellyfin.getUserTopSongs(id, count, minDate)
         }
         setTopItems(items)
       } catch (err) {
@@ -88,7 +94,7 @@ export default function UserProfileView() {
       }
     }
     loadTop()
-  }, [id, viewMode, timePeriod])
+  }, [id, viewMode, timePeriod, gridSize])
 
   if (loading) {
     return (
@@ -109,6 +115,8 @@ export default function UserProfileView() {
   const imageUrl = user.PrimaryImageTag
     ? jellyfin.getUserImageUrl(user.Id, user.PrimaryImageTag, 300)
     : null
+
+  const cols = GRID_COLS[gridSize]
 
   return (
     <div className="fade-in space-y-8">
@@ -147,11 +155,11 @@ export default function UserProfileView() {
         </section>
       )}
 
-      {/* Top Section */}
+      {/* Top Chart Section */}
       <section>
-        <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
+        <div className="flex items-center justify-between mb-5 flex-wrap gap-3">
           <h2 className="text-xl font-bold">Top</h2>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <select
               value={viewMode}
               onChange={e => setViewMode(e.target.value as ViewMode)}
@@ -170,6 +178,15 @@ export default function UserProfileView() {
                 <option key={key} value={key}>{TIME_LABELS[key]}</option>
               ))}
             </select>
+            <select
+              value={gridSize}
+              onChange={e => setGridSize(e.target.value as GridSize)}
+              className="bg-bg-elevated border border-border rounded-lg px-3 py-1.5 text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
+            >
+              <option value="3x3">3×3</option>
+              <option value="4x4">4×4</option>
+              <option value="5x5">5×5</option>
+            </select>
           </div>
         </div>
 
@@ -182,17 +199,83 @@ export default function UserProfileView() {
             Nenhum dado para este período
           </div>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-5">
-            {topItems.map((item, index) => (
-              viewMode === 'artists'
-                ? <TopArtistCard key={item.Id} item={item} rank={index + 1} onClick={() => navigate(`/artist/${item.Id}`)} />
-                : viewMode === 'albums'
-                  ? <TopAlbumCard key={item.Id} item={item} rank={index + 1} onClick={() => navigate(`/album/${item.Id}`)} />
-                  : <TopSongCard key={item.Id} item={item} rank={index + 1} />
+          <div
+            className="grid gap-1"
+            style={{ gridTemplateColumns: `repeat(${cols}, 1fr)` }}
+          >
+            {topItems.slice(0, GRID_COUNT[gridSize]).map((item, index) => (
+              <ChartCell
+                key={item.Id}
+                item={item}
+                rank={index + 1}
+                viewMode={viewMode}
+                onClick={() => {
+                  if (viewMode === 'artists') navigate(`/artist/${item.Id}`)
+                  else if (viewMode === 'albums') navigate(`/album/${item.Id}`)
+                  else usePlayerStore.getState().playItems([item])
+                }}
+              />
             ))}
           </div>
         )}
       </section>
+    </div>
+  )
+}
+
+function ChartCell({ item, rank, viewMode, onClick }: {
+  item: JellyfinItem & { periodPlayCount?: number }
+  rank: number
+  viewMode: ViewMode
+  onClick: () => void
+}) {
+  const plays = item.periodPlayCount ?? item.UserData?.PlayCount
+
+  let imageUrl: string | null = null
+  if (viewMode === 'songs') {
+    imageUrl = item.AlbumId ? jellyfin.getImageUrl(item.AlbumId, undefined, 300) : null
+  } else {
+    imageUrl = item.ImageTags?.Primary
+      ? jellyfin.getImageUrl(item.Id, item.ImageTags.Primary, 300)
+      : null
+  }
+
+  const subtitle = viewMode === 'artists'
+    ? (plays != null ? `${plays} plays` : '')
+    : viewMode === 'albums'
+      ? (item.AlbumArtist || '')
+      : (item.Artists?.join(', ') || item.AlbumArtist || '')
+
+  return (
+    <div className="group relative aspect-square cursor-pointer overflow-hidden bg-bg-elevated" onClick={onClick}>
+      {imageUrl ? (
+        <img src={imageUrl} className="w-full h-full object-cover" alt="" loading="lazy" />
+      ) : (
+        <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-bg-elevated to-bg-tertiary">
+          <span className="text-3xl opacity-40">
+            {viewMode === 'artists' ? '🎤' : viewMode === 'albums' ? '💿' : '🎵'}
+          </span>
+        </div>
+      )}
+      {/* Gradient overlay for text readability */}
+      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-80 group-hover:opacity-90 transition-opacity" />
+      {/* Rank badge */}
+      <div className="absolute top-1.5 left-1.5 min-w-5 h-5 px-1 rounded bg-black/70 flex items-center justify-center">
+        <span className="text-[10px] font-bold text-white leading-none">{rank}</span>
+      </div>
+      {/* Play count badge */}
+      {plays != null && viewMode !== 'artists' && (
+        <div className="absolute top-1.5 right-1.5 px-1.5 h-5 rounded bg-black/70 flex items-center justify-center">
+          <span className="text-[10px] text-white/90 leading-none">{plays} ▶</span>
+        </div>
+      )}
+      {/* Bottom text overlay */}
+      <div className="absolute bottom-0 left-0 right-0 p-2">
+        <p className="text-xs font-semibold text-white truncate leading-tight">{item.Name}</p>
+        {subtitle && (
+          <p className="text-[10px] text-white/70 truncate leading-tight mt-0.5">{subtitle}</p>
+        )}
+      </div>
     </div>
   )
 }
@@ -218,114 +301,6 @@ function PlaylistCard({ item, onClick }: { item: JellyfinItem; onClick: () => vo
       {item.ChildCount != null && (
         <p className="text-xs text-text-secondary">{item.ChildCount} faixas</p>
       )}
-    </div>
-  )
-}
-
-function TopArtistCard({ item, rank, onClick }: { item: JellyfinItem & { periodPlayCount?: number }; rank: number; onClick: () => void }) {
-  const imageUrl = item.ImageTags?.Primary
-    ? jellyfin.getImageUrl(item.Id, item.ImageTags.Primary)
-    : null
-  const plays = item.periodPlayCount ?? item.UserData?.PlayCount
-
-  return (
-    <div className="group cursor-pointer text-center" onClick={onClick}>
-      <div className="relative aspect-square rounded-full overflow-hidden bg-bg-elevated mb-3 mx-auto shadow-lg shadow-black/20">
-        {imageUrl ? (
-          <img src={imageUrl} className="w-full h-full object-cover" alt="" loading="lazy" />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-bg-elevated to-bg-tertiary">
-            <span className="text-4xl">🎤</span>
-          </div>
-        )}
-        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors rounded-full" />
-        <div className="absolute top-1.5 left-1.5 w-6 h-6 rounded-full bg-black/70 flex items-center justify-center">
-          <span className="text-xs font-bold text-white">{rank}</span>
-        </div>
-      </div>
-      <p className="text-sm font-medium truncate">{item.Name}</p>
-      {plays != null && (
-        <p className="text-xs text-text-secondary">{plays} plays</p>
-      )}
-    </div>
-  )
-}
-
-function TopAlbumCard({ item, rank, onClick }: { item: JellyfinItem & { periodPlayCount?: number }; rank: number; onClick: () => void }) {
-  const imageUrl = item.ImageTags?.Primary
-    ? jellyfin.getImageUrl(item.Id, item.ImageTags.Primary)
-    : null
-  const { playItems } = usePlayerStore()
-  const plays = item.periodPlayCount ?? item.UserData?.PlayCount
-
-  const handlePlay = async (e: React.MouseEvent) => {
-    e.stopPropagation()
-    try {
-      const res = await jellyfin.getAlbumItems(item.Id)
-      if (res.Items.length > 0) playItems(res.Items)
-    } catch {}
-  }
-
-  return (
-    <div className="group cursor-pointer" onClick={onClick}>
-      <div className="relative aspect-square rounded-xl overflow-hidden bg-bg-elevated mb-3 shadow-lg shadow-black/20">
-        {imageUrl ? (
-          <img src={imageUrl} className="w-full h-full object-cover" alt="" loading="lazy" />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-bg-elevated to-bg-tertiary">
-            <span className="text-4xl">💿</span>
-          </div>
-        )}
-        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors" />
-        <div className="absolute top-2 left-2 w-6 h-6 rounded-md bg-black/70 flex items-center justify-center">
-          <span className="text-xs font-bold text-white">{rank}</span>
-        </div>
-        <button
-          onClick={handlePlay}
-          className="absolute bottom-3 right-3 w-10 h-10 bg-accent rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 transform translate-y-1 group-hover:translate-y-0 shadow-lg shadow-black/30"
-        >
-          <Play size={18} className="text-white ml-0.5" fill="white" />
-        </button>
-      </div>
-      <p className="text-sm font-medium truncate">{item.Name}</p>
-      <p className="text-xs text-text-secondary truncate">
-        {item.AlbumArtist || ''}
-        {plays != null ? ` · ${plays} plays` : ''}
-      </p>
-    </div>
-  )
-}
-
-function TopSongCard({ item, rank }: { item: JellyfinItem & { periodPlayCount?: number }; rank: number }) {
-  const { playItems } = usePlayerStore()
-  const imageUrl = item.AlbumId ? jellyfin.getImageUrl(item.AlbumId, undefined, 80) : null
-  const plays = item.periodPlayCount ?? item.UserData?.PlayCount
-
-  return (
-    <div className="group cursor-pointer" onClick={() => playItems([item])}>
-      <div className="relative aspect-square rounded-xl overflow-hidden bg-bg-elevated mb-3 shadow-lg shadow-black/20">
-        {imageUrl ? (
-          <img src={imageUrl} className="w-full h-full object-cover" alt="" loading="lazy" />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-bg-elevated to-bg-tertiary">
-            <span className="text-4xl">🎵</span>
-          </div>
-        )}
-        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors" />
-        <div className="absolute top-2 left-2 w-6 h-6 rounded-md bg-black/70 flex items-center justify-center">
-          <span className="text-xs font-bold text-white">{rank}</span>
-        </div>
-        <button
-          className="absolute bottom-3 right-3 w-10 h-10 bg-accent rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 transform translate-y-1 group-hover:translate-y-0 shadow-lg shadow-black/30"
-        >
-          <Play size={18} className="text-white ml-0.5" fill="white" />
-        </button>
-      </div>
-      <p className="text-sm font-medium truncate">{item.Name}</p>
-      <p className="text-xs text-text-secondary truncate">
-        {item.Artists?.join(', ') || item.AlbumArtist || ''}
-        {plays != null ? ` · ${plays} plays` : ''}
-      </p>
     </div>
   )
 }
