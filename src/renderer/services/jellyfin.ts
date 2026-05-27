@@ -6,6 +6,15 @@ export interface JellyfinAuth {
   serverId: string
 }
 
+export interface JellyfinUser {
+  Id: string
+  Name: string
+  PrimaryImageTag?: string
+  HasPassword?: boolean
+  LastLoginDate?: string
+  LastActivityDate?: string
+}
+
 export interface JellyfinItem {
   Id: string
   Name: string
@@ -343,6 +352,38 @@ class JellyfinService {
     return this.request(`/Playlists/${playlistId}/Items/${itemId}/Move/${newIndex}`, {
       method: 'POST'
     })
+  }
+
+  // --- Social / Users ---
+
+  async getUsers(): Promise<JellyfinUser[]> {
+    return this.request<JellyfinUser[]>('/Users')
+  }
+
+  getUserImageUrl(userId: string, imageTag?: string, maxSize = 200): string {
+    const tag = imageTag ? `&tag=${imageTag}` : ''
+    return `${this.serverUrl}/Users/${userId}/Images/Primary?maxHeight=${maxSize}&maxWidth=${maxSize}${tag}&quality=90&api_key=${this.token}`
+  }
+
+  async getUserPlaylists(userId: string): Promise<JellyfinItemsResponse> {
+    const res = await this.request<JellyfinItemsResponse>(
+      `/Users/${userId}/Items?IncludeItemTypes=Playlist&Recursive=true&SortBy=SortName&Fields=ChildCount,PrimaryImageAspectRatio`
+    )
+    return this.sanitizeItems(res)
+  }
+
+  async getUserTopArtists(userId: string, limit = 20, minDate?: string): Promise<JellyfinItemsResponse> {
+    let url = `/Users/${userId}/Items?IncludeItemTypes=MusicArtist&Recursive=true&SortBy=PlayCount&SortOrder=Descending&Limit=${limit}&Fields=PrimaryImageAspectRatio,SongCount,AlbumCount&Filters=IsPlayed`
+    if (minDate) url += `&MinDateLastPlayed=${minDate}`
+    const res = await this.request<JellyfinItemsResponse>(url)
+    return this.sanitizeItems(res)
+  }
+
+  async getUserTopAlbums(userId: string, limit = 20, minDate?: string): Promise<JellyfinItemsResponse> {
+    let url = `/Users/${userId}/Items?IncludeItemTypes=MusicAlbum&Recursive=true&SortBy=PlayCount&SortOrder=Descending&Limit=${limit}&Fields=PrimaryImageAspectRatio,ProductionYear,AlbumArtist&Filters=IsPlayed`
+    if (minDate) url += `&MinDateLastPlayed=${minDate}`
+    const res = await this.request<JellyfinItemsResponse>(url)
+    return this.sanitizeItems(res)
   }
 
   // --- URLs ---

@@ -4,7 +4,7 @@ import { useLibraryStore } from '../../stores/library'
 import { useDownloadStore } from '../../stores/download'
 import { useToastStore } from '../../stores/toast'
 import {
-  Home, Disc3, Users, Music, ListMusic, Search, LogOut, Download, RefreshCw, Share2
+  Home, Disc3, Users, Music, ListMusic, Search, LogOut, Download, RefreshCw, Share2, Globe
 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
@@ -20,6 +20,7 @@ const libraryItems = [
   { to: '/playlists', icon: ListMusic, label: 'Playlists' },
   { to: '/downloads', icon: Download, label: 'Downloads' },
   { to: '/soulseek', icon: Share2, label: 'Soulseek' },
+  { to: '/social', icon: Globe, label: 'Social' },
 ]
 
 export default function Sidebar() {
