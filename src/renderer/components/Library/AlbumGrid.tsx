@@ -1,75 +1,116 @@
 import { useEffect, useRef, useCallback, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useLibraryStore } from '../../stores/library'
 import { usePlayerStore } from '../../stores/player'
 import { jellyfin, JellyfinItem } from '../../services/jellyfin'
 import { Play, Loader2 } from 'lucide-react'
 
 type SortOption = 'alphabetical' | 'recent'
 
+const PAGE_SIZE = 60
+// How many pages to keep in memory around the current viewport
+const KEEP_PAGES = 3
+
+function getSortParams(sort: SortOption): { sortBy: string; sortOrder: string } {
+  return sort === 'recent'
+    ? { sortBy: 'DateCreated', sortOrder: 'Descending' }
+    : { sortBy: 'SortName', sortOrder: 'Ascending' }
+}
+
 export default function AlbumGrid() {
-  const { albums, totalAlbums, isLoading, fetchAlbums, loadMoreAlbums } = useLibraryStore()
   const navigate = useNavigate()
-  const loaderRef = useRef<HTMLDivElement>(null)
   const [sort, setSort] = useState<SortOption>('alphabetical')
-  const [localAlbums, setLocalAlbums] = useState<JellyfinItem[]>([])
-  const [localTotal, setLocalTotal] = useState(0)
-  const [localLoading, setLocalLoading] = useState(false)
+  const [totalAlbums, setTotalAlbums] = useState(0)
+  const [pages, setPages] = useState<Map<number, JellyfinItem[]>>(new Map())
+  const [loadingPages, setLoadingPages] = useState<Set<number>>(new Set())
+  const containerRef = useRef<HTMLDivElement>(null)
+  const sentinelRefs = useRef<Map<number, HTMLDivElement>>(new Map())
 
-  const isDefault = sort === 'alphabetical'
-  const displayAlbums = isDefault ? albums : localAlbums
-  const displayTotal = isDefault ? totalAlbums : localTotal
-  const displayLoading = isDefault ? isLoading : localLoading
-
+  // Fetch total count on mount and sort change
   useEffect(() => {
-    if (sort === 'alphabetical') {
-      if (albums.length === 0) fetchAlbums()
-    } else {
-      setLocalLoading(true)
-      jellyfin.getAlbums(0, 100, 'DateCreated', 'Descending').then(res => {
-        setLocalAlbums(res.Items)
-        setLocalTotal(res.TotalRecordCount)
-        setLocalLoading(false)
-      }).catch(() => setLocalLoading(false))
+    setPages(new Map())
+    setLoadingPages(new Set())
+    const { sortBy, sortOrder } = getSortParams(sort)
+    jellyfin.getAlbums(0, 0, sortBy, sortOrder).then(res => {
+      setTotalAlbums(res.TotalRecordCount)
+    })
+    // Load first page immediately
+    loadPage(0)
+  }, [sort])
+
+  const totalPages = Math.ceil(totalAlbums / PAGE_SIZE)
+
+  const loadPage = useCallback(async (pageIndex: number) => {
+    setLoadingPages(prev => {
+      if (prev.has(pageIndex)) return prev
+      const next = new Set(prev)
+      next.add(pageIndex)
+      return next
+    })
+    const { sortBy, sortOrder } = getSortParams(sort)
+    try {
+      const res = await jellyfin.getAlbums(pageIndex * PAGE_SIZE, PAGE_SIZE, sortBy, sortOrder)
+      setTotalAlbums(res.TotalRecordCount)
+      setPages(prev => {
+        const next = new Map(prev)
+        next.set(pageIndex, res.Items)
+        return next
+      })
+    } finally {
+      setLoadingPages(prev => {
+        const next = new Set(prev)
+        next.delete(pageIndex)
+        return next
+      })
     }
   }, [sort])
 
-  const loadMore = useCallback(async () => {
-    if (isDefault) {
-      loadMoreAlbums()
-    } else {
-      if (localAlbums.length >= localTotal) return
-      setLocalLoading(true)
-      try {
-        const res = await jellyfin.getAlbums(localAlbums.length, 100, 'DateCreated', 'Descending')
-        setLocalAlbums(prev => [...prev, ...res.Items])
-        setLocalTotal(res.TotalRecordCount)
-      } finally {
-        setLocalLoading(false)
+  // Evict pages far from a given page index
+  const evictDistantPages = useCallback((currentPage: number) => {
+    setPages(prev => {
+      let changed = false
+      const next = new Map(prev)
+      for (const key of next.keys()) {
+        if (Math.abs(key - currentPage) > KEEP_PAGES) {
+          next.delete(key)
+          changed = true
+        }
       }
-    }
-  }, [isDefault, localAlbums.length, localTotal])
+      return changed ? next : prev
+    })
+  }, [])
 
-  // Infinite scroll
-  const observerCallback = useCallback((entries: IntersectionObserverEntry[]) => {
-    if (entries[0].isIntersecting && !displayLoading && displayAlbums.length < displayTotal) {
-      loadMore()
-    }
-  }, [displayLoading, displayAlbums.length, displayTotal, loadMore])
-
+  // Observe page sentinels entering viewport to trigger loads + evictions
   useEffect(() => {
-    const observer = new IntersectionObserver(observerCallback, { threshold: 0.1 })
-    if (loaderRef.current) observer.observe(loaderRef.current)
+    if (totalPages === 0) return
+    const observer = new IntersectionObserver(
+      entries => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) {
+            const pageIndex = Number(entry.target.getAttribute('data-page'))
+            if (!isNaN(pageIndex)) {
+              if (!pages.has(pageIndex) && !loadingPages.has(pageIndex)) {
+                loadPage(pageIndex)
+              }
+              evictDistantPages(pageIndex)
+            }
+          }
+        }
+      },
+      { rootMargin: '400px' }
+    )
+    sentinelRefs.current.forEach(el => observer.observe(el))
     return () => observer.disconnect()
-  }, [observerCallback])
+  }, [totalPages, pages, loadingPages, loadPage, evictDistantPages])
+
+  const isLoading = loadingPages.size > 0 && pages.size === 0
 
   return (
-    <div className="fade-in">
+    <div className="fade-in" ref={containerRef}>
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Albums</h1>
-          {displayTotal > 0 && (
-            <p className="text-sm text-text-secondary mt-1">{displayTotal} albums</p>
+          {totalAlbums > 0 && (
+            <p className="text-sm text-text-secondary mt-1">{totalAlbums} albums</p>
           )}
         </div>
         <select
@@ -82,19 +123,43 @@ export default function AlbumGrid() {
         </select>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-5">
-        {displayAlbums.map(item => (
-          <AlbumCard
-            key={item.Id}
-            item={item}
-            onClick={() => navigate(`/album/${item.Id}`)}
-          />
-        ))}
-      </div>
+      {isLoading && (
+        <div className="flex justify-center py-12">
+          <Loader2 size={24} className="animate-spin text-text-tertiary" />
+        </div>
+      )}
 
-      <div ref={loaderRef} className="py-8 flex justify-center">
-        {displayLoading && <Loader2 size={24} className="animate-spin text-text-tertiary" />}
-      </div>
+      {Array.from({ length: totalPages }, (_, pageIndex) => (
+        <div key={`${sort}-${pageIndex}`}>
+          <div
+            ref={el => { if (el) sentinelRefs.current.set(pageIndex, el); else sentinelRefs.current.delete(pageIndex) }}
+            data-page={pageIndex}
+            className="h-0"
+          />
+          {pages.has(pageIndex) ? (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-5 mb-5">
+              {pages.get(pageIndex)!.map(item => (
+                <AlbumCard
+                  key={item.Id}
+                  item={item}
+                  onClick={() => navigate(`/album/${item.Id}`)}
+                />
+              ))}
+            </div>
+          ) : (
+            <div
+              className="mb-5"
+              style={{ height: `${Math.ceil(Math.min(PAGE_SIZE, totalAlbums - pageIndex * PAGE_SIZE) / 6) * 240}px` }}
+            />
+          )}
+        </div>
+      ))}
+
+      {loadingPages.size > 0 && pages.size > 0 && (
+        <div className="py-8 flex justify-center">
+          <Loader2 size={24} className="animate-spin text-text-tertiary" />
+        </div>
+      )}
     </div>
   )
 }
