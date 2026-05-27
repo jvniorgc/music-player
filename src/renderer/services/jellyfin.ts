@@ -397,9 +397,16 @@ class JellyfinService {
 
   /**
    * Get top artists for a user within a time period using Playback Reporting plugin.
-   * Fetches play events, resolves items to artists, and aggregates.
+   * For all-time, uses native Jellyfin PlayCount (full historical data).
    */
   async getUserTopArtists(userId: string, limit = 20, minDate?: string): Promise<(JellyfinItem & { periodPlayCount?: number })[]> {
+    // All-time: use native Jellyfin API with accumulated PlayCount
+    if (!minDate) {
+      const url = `/Users/${userId}/Items?IncludeItemTypes=MusicArtist&Recursive=true&SortBy=PlayCount&SortOrder=Descending&Limit=${limit}&Fields=PrimaryImageAspectRatio,SongCount,AlbumCount&Filters=IsPlayed`
+      const res = await this.request<JellyfinItemsResponse>(url)
+      return this.sanitizeItems(res).Items
+    }
+
     try {
       const plays = await this.queryPlaybackReport(userId, minDate, 200)
       if (plays.length === 0) return []
@@ -450,8 +457,16 @@ class JellyfinService {
 
   /**
    * Get top albums for a user within a time period using Playback Reporting plugin.
+   * For all-time, uses native Jellyfin PlayCount.
    */
   async getUserTopAlbums(userId: string, limit = 20, minDate?: string): Promise<(JellyfinItem & { periodPlayCount?: number })[]> {
+    // All-time: use native Jellyfin API
+    if (!minDate) {
+      const url = `/Users/${userId}/Items?IncludeItemTypes=MusicAlbum&Recursive=true&SortBy=PlayCount&SortOrder=Descending&Limit=${limit}&Fields=PrimaryImageAspectRatio,ProductionYear,AlbumArtist&Filters=IsPlayed`
+      const res = await this.request<JellyfinItemsResponse>(url)
+      return this.sanitizeItems(res).Items
+    }
+
     try {
       const plays = await this.queryPlaybackReport(userId, minDate, 200)
       if (plays.length === 0) return []
@@ -499,8 +514,16 @@ class JellyfinService {
 
   /**
    * Get top songs for a user within a time period using Playback Reporting plugin.
+   * For all-time, uses native Jellyfin PlayCount.
    */
   async getUserTopSongs(userId: string, limit = 20, minDate?: string): Promise<(JellyfinItem & { periodPlayCount?: number })[]> {
+    // All-time: use native Jellyfin API
+    if (!minDate) {
+      const url = `/Users/${userId}/Items?IncludeItemTypes=Audio&Recursive=true&SortBy=PlayCount&SortOrder=Descending&Limit=${limit}&Fields=RunTimeTicks,AlbumArtist,Album,AlbumId,Artists,HasLyrics&Filters=IsPlayed`
+      const res = await this.request<JellyfinItemsResponse>(url)
+      return this.sanitizeItems(res).Items
+    }
+
     try {
       const plays = await this.queryPlaybackReport(userId, minDate, limit)
       if (plays.length === 0) return []
