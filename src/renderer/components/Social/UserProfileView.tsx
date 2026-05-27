@@ -156,7 +156,7 @@ export default function UserProfileView() {
       )}
 
       {/* Top Chart Section */}
-      <section>
+      <section className="max-w-[600px]">
         <div className="flex items-center justify-between mb-5 flex-wrap gap-3">
           <h2 className="text-xl font-bold">Top</h2>
           <div className="flex items-center gap-2">
@@ -199,7 +199,7 @@ export default function UserProfileView() {
           </div>
         ) : (
           <div
-            className="grid gap-0.5 max-w-[600px] mx-auto"
+            className="grid gap-0.5"
             style={{ gridTemplateColumns: `repeat(${cols}, 1fr)` }}
           >
             {topItems.slice(0, GRID_COUNT[gridSize]).map((item, index) => (
