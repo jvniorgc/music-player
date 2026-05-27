@@ -5,7 +5,7 @@
 
   A desktop music player for [Jellyfin](https://jellyfin.org/) servers, inspired by Apple Music.
 
-  [![Version](https://img.shields.io/badge/version-0.2.1-blue?style=flat-square)](https://github.com/jvniorgc/music-player/releases)
+  [![Version](https://img.shields.io/badge/version-0.3.0-blue?style=flat-square)](https://github.com/jvniorgc/music-player/releases)
   [![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Windows%20%7C%20Linux-lightgrey?style=flat-square)](#download)
   [![Electron](https://img.shields.io/badge/electron-33-47848F?style=flat-square&logo=electron&logoColor=white)](https://www.electronjs.org/)
   [![TypeScript](https://img.shields.io/badge/typescript-5-3178C6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
@@ -24,9 +24,11 @@
 - [x] Shuffle and repeat (single/all)
 - [x] Full-screen player with artwork
 - [x] System media controls (macOS Control Center)
-- [x] Browse albums, artists, and songs
-- [x] Global search with grouped results
+- [x] Browse albums and artists with infinite scroll
+- [x] Album sorting (A–Z / Recently Added)
+- [x] Global search with grouped results (artists, albums, songs)
 - [x] Playlists — create, rename, delete, add/remove tracks
+- [x] Social tab — user profiles with top artists/albums (last.fm-style)
 - [x] Local audio cache with LRU eviction (2 GB)
 - [x] Download for offline playback
 - [x] Metadata editor via MusicBrainz + Cover Art Archive
