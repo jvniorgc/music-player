@@ -156,7 +156,7 @@ export default function UserProfileView() {
       )}
 
       {/* Top Chart Section */}
-      <section className="max-w-[600px]">
+      <section className="max-w-[720px]">
         <div className="flex items-center justify-between mb-5 flex-wrap gap-3">
           <h2 className="text-xl font-bold">Top</h2>
           <div className="flex items-center gap-2">
