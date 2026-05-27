@@ -367,13 +367,14 @@ class JellyfinService {
 
   async getUserPlaylists(userId: string): Promise<JellyfinItemsResponse> {
     const res = await this.request<{ Items: (JellyfinItem & { OwnerUserId?: string; Path?: string })[], TotalRecordCount: number }>(
-      `/Users/${userId}/Items?IncludeItemTypes=Playlist&Recursive=true&SortBy=SortName&Fields=ChildCount,PrimaryImageAspectRatio,Path`
+      `/Users/${userId}/Items?IncludeItemTypes=Playlist&Recursive=true&SortBy=SortName&Fields=ChildCount,PrimaryImageAspectRatio,Path,OwnerUserId`
     )
     const filtered = res.Items.filter(item => {
       if (!item.Name || item.Name.trim() === '') return false
-      // Filter out file-based playlists (broken/read-only)
       const path = item.Path || ''
       if (path.endsWith('.m3u') || path.endsWith('.m3u8')) return false
+      // Filter by ownership: only show playlists created by this user
+      if (item.OwnerUserId && item.OwnerUserId !== userId) return false
       return true
     })
     return { Items: filtered, TotalRecordCount: filtered.length }
