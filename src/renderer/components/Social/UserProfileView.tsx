@@ -199,7 +199,7 @@ export default function UserProfileView() {
           </div>
         ) : (
           <div
-            className="grid gap-0.5 max-w-[600px]"
+            className="grid gap-0.5 max-w-[600px] mx-auto"
             style={{ gridTemplateColumns: `repeat(${cols}, 1fr)` }}
           >
             {topItems.slice(0, GRID_COUNT[gridSize]).map((item, index) => (
