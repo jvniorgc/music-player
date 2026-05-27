@@ -6,7 +6,7 @@ import { ArrowLeft, ListMusic, Loader2 } from 'lucide-react'
 
 type ViewMode = 'artists' | 'albums' | 'songs'
 type TimePeriod = '7d' | '30d' | '3m' | '1y' | 'all'
-type GridSize = '3x3' | '4x4' | '5x5'
+type GridSize = '4x2' | '5x3'
 
 const TIME_LABELS: Record<TimePeriod, string> = {
   '7d': '7 dias',
@@ -16,8 +16,8 @@ const TIME_LABELS: Record<TimePeriod, string> = {
   'all': 'All-time',
 }
 
-const GRID_COLS: Record<GridSize, number> = { '3x3': 3, '4x4': 4, '5x5': 5 }
-const GRID_COUNT: Record<GridSize, number> = { '3x3': 9, '4x4': 16, '5x5': 25 }
+const GRID_COLS: Record<GridSize, number> = { '4x2': 4, '5x3': 5 }
+const GRID_COUNT: Record<GridSize, number> = { '4x2': 8, '5x3': 15 }
 
 function getMinDate(period: TimePeriod): string | undefined {
   if (period === 'all') return undefined
@@ -47,7 +47,7 @@ export default function UserProfileView() {
   const [topItems, setTopItems] = useState<(JellyfinItem & { periodPlayCount?: number })[]>([])
   const [viewMode, setViewMode] = useState<ViewMode>('artists')
   const [timePeriod, setTimePeriod] = useState<TimePeriod>('7d')
-  const [gridSize, setGridSize] = useState<GridSize>('3x3')
+  const [gridSize, setGridSize] = useState<GridSize>('4x2')
   const [loading, setLoading] = useState(true)
   const [topLoading, setTopLoading] = useState(false)
 
@@ -183,9 +183,8 @@ export default function UserProfileView() {
               onChange={e => setGridSize(e.target.value as GridSize)}
               className="bg-bg-elevated border border-border rounded-lg px-3 py-1.5 text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
             >
-              <option value="3x3">3×3</option>
-              <option value="4x4">4×4</option>
-              <option value="5x5">5×5</option>
+              <option value="4x2">4×2</option>
+              <option value="5x3">5×3</option>
             </select>
           </div>
         </div>
