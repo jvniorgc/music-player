@@ -9,7 +9,6 @@ import AlbumGrid from './components/Library/AlbumGrid'
 import AlbumView from './components/Library/AlbumView'
 import ArtistGrid from './components/Library/ArtistGrid'
 import ArtistView from './components/Library/ArtistView'
-import SongList from './components/Library/SongList'
 import PlaylistList from './components/Library/PlaylistList'
 import PlaylistView from './components/Library/PlaylistView'
 import SearchView from './components/Search/SearchView'
@@ -75,7 +74,6 @@ export default function App() {
           <Route path="/album/:id" element={<AlbumView />} />
           <Route path="/artists" element={<ArtistGrid />} />
           <Route path="/artist/:id" element={<ArtistView />} />
-          <Route path="/songs" element={<SongList />} />
           <Route path="/playlists" element={<PlaylistList />} />
           <Route path="/playlist/:id" element={<PlaylistView />} />
           <Route path="/downloads" element={<DownloadsView />} />

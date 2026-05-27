@@ -16,7 +16,6 @@ const navItems = [
 const libraryItems = [
   { to: '/albums', icon: Disc3, label: 'Albums' },
   { to: '/artists', icon: Users, label: 'Artists' },
-  { to: '/songs', icon: Music, label: 'Songs' },
   { to: '/playlists', icon: ListMusic, label: 'Playlists' },
   { to: '/downloads', icon: Download, label: 'Downloads' },
   { to: '/soulseek', icon: Share2, label: 'Soulseek' },
