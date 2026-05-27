@@ -81,7 +81,7 @@ function TrackRow({ item, index, items }: { item: JellyfinItem; index: number; i
       <div className="min-w-0 flex-1">
         <p className="text-sm font-medium truncate">{item.Name}</p>
         <p className="text-xs text-text-secondary truncate">
-          {item.Artists?.join(', ') || item.AlbumArtist || 'Desconhecido'}
+          {item.Artists?.join(', ') || item.AlbumArtist || 'Unknown'}
           {item.Album ? ` — ${item.Album}` : ''}
         </p>
       </div>
@@ -103,19 +103,19 @@ export default function HomePage() {
   return (
     <div className="space-y-10 fade-in">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Ouvir Agora</h1>
+        <h1 className="text-3xl font-bold tracking-tight">Listen Now</h1>
       </div>
 
       {/* Recently Added Albums */}
       {recentlyAdded.length > 0 && (
         <section>
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-bold">Adicionados Recentemente</h2>
+            <h2 className="text-xl font-bold">Recently Added</h2>
             <button
               onClick={() => navigate('/albums')}
               className="text-sm text-accent hover:text-accent-hover transition-colors"
             >
-              Ver Todos
+              See All
             </button>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-5">
@@ -141,7 +141,7 @@ export default function HomePage() {
       {recentlyPlayed.length > 0 && (
         <section>
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-bold">Tocados Recentemente</h2>
+            <h2 className="text-xl font-bold">Recently Played</h2>
           </div>
           <div className="bg-bg-secondary/40 rounded-xl overflow-hidden">
             {recentlyPlayed.slice(0, 10).map((item, i) => (
@@ -154,8 +154,8 @@ export default function HomePage() {
       {!isLoading && recentlyAdded.length === 0 && recentlyPlayed.length === 0 && (
         <div className="flex flex-col items-center justify-center py-24 text-text-tertiary">
           <Clock size={48} className="mb-4 opacity-50" />
-          <h3 className="text-lg font-medium text-text-secondary mb-1">Sua biblioteca está vazia</h3>
-          <p className="text-sm">Adicione músicas ao seu servidor Jellyfin para começar</p>
+          <h3 className="text-lg font-medium text-text-secondary mb-1">Your library is empty</h3>
+          <p className="text-sm">Add songs to your Jellyfin server to get started</p>
         </div>
       )}
     </div>

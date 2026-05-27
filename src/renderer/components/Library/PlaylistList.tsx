@@ -31,11 +31,11 @@ export default function PlaylistList() {
     try {
       const res = await jellyfin.createPlaylist(name)
       await fetchPlaylists()
-      toast('Playlist criada', 'success')
+      toast('Playlist created', 'success')
       navigate(`/playlist/${res.Id}`)
     } catch (err) {
       console.error('Failed to create playlist:', err)
-      toast('Erro ao criar playlist', 'error')
+      toast('Error creating playlist', 'error')
     }
   }
 
@@ -44,10 +44,10 @@ export default function PlaylistList() {
     try {
       await jellyfin.renameItem(renameTarget.Id, name)
       await fetchPlaylists()
-      toast('Playlist renomeada', 'success')
+      toast('Playlist renamed', 'success')
     } catch (err) {
       console.error('Failed to rename playlist:', err)
-      toast('Não foi possível renomear. A playlist pode ser somente leitura.', 'error')
+      toast('Could not rename. The playlist may be read-only.', 'error')
     }
   }
 
@@ -56,10 +56,10 @@ export default function PlaylistList() {
     try {
       await jellyfin.deleteItem(deleteTarget.Id)
       await fetchPlaylists()
-      toast('Playlist excluída', 'success')
+      toast('Playlist deleted', 'success')
     } catch (err) {
       console.error('Failed to delete playlist:', err)
-      toast('Não foi possível excluir. Playlists baseadas em arquivos (.m3u) não podem ser excluídas pelo app.', 'error')
+      toast('Could not delete. File-based playlists (.m3u) cannot be deleted by the app.', 'error')
     }
   }
 
@@ -77,7 +77,7 @@ export default function PlaylistList() {
           className="flex items-center gap-2 bg-accent hover:bg-accent-hover text-white px-4 py-2 rounded-full text-sm font-semibold transition-colors"
         >
           <Plus size={16} />
-          Nova Playlist
+          New Playlist
         </button>
       </div>
 
@@ -112,7 +112,7 @@ export default function PlaylistList() {
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-medium truncate">{pl.Name}</p>
                     <p className="text-xs text-text-secondary">
-                      {pl.ChildCount ? `${pl.ChildCount} músicas` : 'Playlist'}
+                      {pl.ChildCount ? `${pl.ChildCount} songs` : 'Playlist'}
                     </p>
                   </div>
                   <button
@@ -138,14 +138,14 @@ export default function PlaylistList() {
                       className="flex items-center gap-3 w-full px-4 py-2 text-sm hover:bg-white/10 transition-colors"
                     >
                       <Pencil size={14} />
-                      Renomear
+                      Rename
                     </button>
                     <button
                       onClick={() => { setContextMenu(null); setDeleteTarget(pl) }}
                       className="flex items-center gap-3 w-full px-4 py-2 text-sm text-red-400 hover:bg-white/10 transition-colors"
                     >
                       <Trash2 size={14} />
-                      Excluir
+                      Delete
                     </button>
                   </div>
                 )}
@@ -156,42 +156,42 @@ export default function PlaylistList() {
       ) : (
         <div className="flex flex-col items-center justify-center py-24 text-text-tertiary">
           <ListMusic size={48} className="mb-4 opacity-50" />
-          <h3 className="text-lg font-medium text-text-secondary mb-1">Nenhuma playlist</h3>
-          <p className="text-sm mb-4">Crie sua primeira playlist</p>
+          <h3 className="text-lg font-medium text-text-secondary mb-1">No playlists</h3>
+          <p className="text-sm mb-4">Create your first playlist</p>
           <button
             onClick={() => setShowCreate(true)}
             className="flex items-center gap-2 bg-accent hover:bg-accent-hover text-white px-5 py-2.5 rounded-full text-sm font-semibold transition-colors"
           >
             <Plus size={16} />
-            Criar Playlist
+            Create Playlist
           </button>
         </div>
       )}
 
       <InputModal
         open={showCreate}
-        title="Nova Playlist"
-        placeholder="Nome da playlist"
-        confirmLabel="Criar"
+        title="New Playlist"
+        placeholder="Playlist name"
+        confirmLabel="Create"
         onClose={() => setShowCreate(false)}
         onConfirm={handleCreate}
       />
 
       <InputModal
         open={!!renameTarget}
-        title="Renomear Playlist"
-        placeholder="Novo nome"
+        title="Rename Playlist"
+        placeholder="New name"
         initialValue={renameTarget?.Name || ''}
-        confirmLabel="Renomear"
+        confirmLabel="Rename"
         onClose={() => setRenameTarget(null)}
         onConfirm={handleRename}
       />
 
       <ConfirmModal
         open={!!deleteTarget}
-        title="Excluir Playlist"
-        message={`Tem certeza que deseja excluir "${deleteTarget?.Name}"? Esta ação não pode ser desfeita.`}
-        confirmLabel="Excluir"
+        title="Delete Playlist"
+        message={`Are you sure you want to delete "${deleteTarget?.Name}"? This action cannot be undone.`}
+        confirmLabel="Delete"
         destructive
         onClose={() => setDeleteTarget(null)}
         onConfirm={handleDelete}

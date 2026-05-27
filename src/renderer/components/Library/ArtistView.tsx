@@ -24,7 +24,7 @@ export default function ArtistView() {
   }, [id])
 
   if (loading) {
-    return <div className="flex items-center justify-center py-24 text-text-tertiary">Carregando...</div>
+    return <div className="flex items-center justify-center py-24 text-text-tertiary">Loading...</div>
   }
 
   const imageUrl = artist?.ImageTags?.Primary
@@ -54,7 +54,7 @@ export default function ArtistView() {
             className="flex items-center gap-1 text-accent hover:text-accent-hover text-sm mb-4 transition-colors"
           >
             <ArrowLeft size={16} />
-            Voltar
+            Back
           </button>
 
           <div className="flex items-end gap-6">
@@ -62,10 +62,10 @@ export default function ArtistView() {
               <img src={imageUrl} className="w-32 h-32 rounded-full object-cover shadow-2xl border-2 border-white/10" alt="" />
             )}
             <div>
-              <p className="text-xs font-medium text-text-tertiary uppercase tracking-wider mb-1">Artista</p>
+              <p className="text-xs font-medium text-text-tertiary uppercase tracking-wider mb-1">Artist</p>
               <h1 className="text-4xl font-bold">{artist?.Name}</h1>
               {albums.length > 0 && (
-                <p className="text-sm text-text-secondary mt-1">{albums.length} álbuns</p>
+                <p className="text-sm text-text-secondary mt-1">{albums.length} albums</p>
               )}
             </div>
           </div>
@@ -74,7 +74,7 @@ export default function ArtistView() {
 
       {/* Albums */}
       <div className="px-8 mt-8">
-        <h2 className="text-xl font-bold mb-4">Discografia</h2>
+        <h2 className="text-xl font-bold mb-4">Discography</h2>
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-5">
           {albums.map(album => {
             const albumImage = jellyfin.getImageUrl(album.Id, album.ImageTags?.Primary)

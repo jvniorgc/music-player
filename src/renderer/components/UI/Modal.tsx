@@ -51,7 +51,7 @@ interface InputModalProps {
   onConfirm: (value: string) => void
 }
 
-export function InputModal({ open, title, placeholder, initialValue = '', confirmLabel = 'Confirmar', onClose, onConfirm }: InputModalProps) {
+export function InputModal({ open, title, placeholder, initialValue = '', confirmLabel = 'Confirm', onClose, onConfirm }: InputModalProps) {
   const [value, setValue] = useState(initialValue)
   const inputRef = useRef<HTMLInputElement>(null)
 
@@ -86,7 +86,7 @@ export function InputModal({ open, title, placeholder, initialValue = '', confir
           onClick={onClose}
           className="px-5 py-2 rounded-full text-sm text-text-secondary hover:text-text-primary hover:bg-white/10 transition-colors"
         >
-          Cancelar
+          Cancel
         </button>
         <button
           onClick={handleSubmit}
@@ -110,7 +110,7 @@ interface ConfirmModalProps {
   onConfirm: () => void
 }
 
-export function ConfirmModal({ open, title, message, confirmLabel = 'Confirmar', destructive, onClose, onConfirm }: ConfirmModalProps) {
+export function ConfirmModal({ open, title, message, confirmLabel = 'Confirm', destructive, onClose, onConfirm }: ConfirmModalProps) {
   return (
     <Modal open={open} title={title} onClose={onClose}>
       <p className="text-sm text-text-secondary">{message}</p>
@@ -119,7 +119,7 @@ export function ConfirmModal({ open, title, message, confirmLabel = 'Confirmar',
           onClick={onClose}
           className="px-5 py-2 rounded-full text-sm text-text-secondary hover:text-text-primary hover:bg-white/10 transition-colors"
         >
-          Cancelar
+          Cancel
         </button>
         <button
           onClick={() => { onConfirm(); onClose() }}
@@ -144,7 +144,7 @@ interface PlaylistPickerProps {
 
 export function PlaylistPicker({ open, playlists, onClose, onSelect, onCreate }: PlaylistPickerProps) {
   return (
-    <Modal open={open} title="Adicionar à Playlist" onClose={onClose}>
+    <Modal open={open} title="Add to Playlist" onClose={onClose}>
       <div className="space-y-1 max-h-64 overflow-y-auto -mx-1">
         {playlists.map(pl => (
           <button
@@ -160,7 +160,7 @@ export function PlaylistPicker({ open, playlists, onClose, onSelect, onCreate }:
         onClick={() => { onCreate(); onClose() }}
         className="w-full mt-3 px-4 py-2.5 rounded-xl text-sm font-medium text-accent border border-accent/30 hover:bg-accent/10 transition-colors"
       >
-        + Nova Playlist
+        + New Playlist
       </button>
     </Modal>
   )

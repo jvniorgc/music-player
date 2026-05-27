@@ -23,12 +23,12 @@ export default function LoginScreen() {
             <Music2 size={40} className="text-white" />
           </div>
           <h1 className="text-3xl font-bold tracking-tight">Music Player</h1>
-          <p className="text-text-secondary mt-2 text-sm">Conecte ao seu servidor Jellyfin</p>
+          <p className="text-text-secondary mt-2 text-sm">Connect to your Jellyfin server</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-xs font-medium text-text-secondary mb-1.5 ml-1">Servidor</label>
+            <label className="block text-xs font-medium text-text-secondary mb-1.5 ml-1">Server</label>
             <div className="relative">
               <Server size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-tertiary" />
               <input
@@ -42,24 +42,24 @@ export default function LoginScreen() {
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-text-secondary mb-1.5 ml-1">Usuário</label>
+            <label className="block text-xs font-medium text-text-secondary mb-1.5 ml-1">User</label>
             <input
               type="text"
               value={username}
               onChange={e => setUsername(e.target.value)}
-              placeholder="nome de usuário"
+              placeholder="username"
               className="w-full bg-bg-elevated border border-border rounded-xl px-4 py-3 text-sm text-text-primary placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-accent transition"
               autoFocus
             />
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-text-secondary mb-1.5 ml-1">Senha</label>
+            <label className="block text-xs font-medium text-text-secondary mb-1.5 ml-1">Password</label>
             <input
               type="password"
               value={password}
               onChange={e => setPassword(e.target.value)}
-              placeholder="senha"
+              placeholder="password"
               className="w-full bg-bg-elevated border border-border rounded-xl px-4 py-3 text-sm text-text-primary placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-accent transition"
             />
           </div>
@@ -79,10 +79,10 @@ export default function LoginScreen() {
             {isLoading ? (
               <>
                 <Loader2 size={18} className="animate-spin" />
-                Conectando...
+                Connecting...
               </>
             ) : (
-              'Entrar'
+              'Log in'
             )}
           </button>
         </form>

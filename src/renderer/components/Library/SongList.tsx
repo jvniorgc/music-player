@@ -47,10 +47,10 @@ export default function SongList() {
     if (!pickerSong) return
     try {
       await jellyfin.addToPlaylist(playlistId, [pickerSong.Id])
-      toast('Adicionada à playlist', 'success')
+      toast('Added to playlist', 'success')
     } catch (err) {
       console.error('Failed to add to playlist:', err)
-      toast('Não foi possível adicionar à playlist', 'error')
+      toast('Could not add to playlist', 'error')
     }
     setPickerSong(null)
   }
@@ -61,10 +61,10 @@ export default function SongList() {
     try {
       await jellyfin.createPlaylist(name, [song.Id])
       fetchPlaylists()
-      toast('Playlist criada', 'success')
+      toast('Playlist created', 'success')
     } catch (err) {
       console.error('Failed to create playlist:', err)
-      toast('Erro ao criar playlist', 'error')
+      toast('Error creating playlist', 'error')
     }
     setPendingSong(null)
   }
@@ -72,9 +72,9 @@ export default function SongList() {
   return (
     <div className="fade-in">
       <div className="mb-6">
-        <h1 className="text-3xl font-bold tracking-tight">Músicas</h1>
+        <h1 className="text-3xl font-bold tracking-tight">Songs</h1>
         {totalSongs > 0 && (
-          <p className="text-sm text-text-secondary mt-1">{totalSongs} músicas</p>
+          <p className="text-sm text-text-secondary mt-1">{totalSongs} songs</p>
         )}
       </div>
 
@@ -82,8 +82,8 @@ export default function SongList() {
       <div className="flex items-center gap-4 px-5 py-2 text-xs text-text-tertiary uppercase tracking-wider border-b border-border-subtle mb-1">
         <span className="w-8 text-right">#</span>
         <span className="w-10" />
-        <span className="flex-1">Título</span>
-        <span className="w-40 hidden md:block">Álbum</span>
+        <span className="flex-1">Title</span>
+        <span className="w-40 hidden md:block">Album</span>
         <span className="w-12 text-right">⏱</span>
         <span className="w-16" />
       </div>
@@ -134,7 +134,7 @@ export default function SongList() {
                   {song.Name}
                 </p>
                 <p className="text-xs text-text-secondary truncate">
-                  {song.Artists?.join(', ') || song.AlbumArtist || 'Desconhecido'}
+                  {song.Artists?.join(', ') || song.AlbumArtist || 'Unknown'}
                 </p>
               </div>
 
@@ -153,7 +153,7 @@ export default function SongList() {
                     setPickerSong(song)
                   }}
                   className="text-text-tertiary opacity-0 group-hover:opacity-100 hover:text-text-secondary transition-all p-1"
-                  title="Adicionar à playlist"
+                  title="Add to playlist"
                 >
                   <ListPlus size={14} />
                 </button>
@@ -192,9 +192,9 @@ export default function SongList() {
 
       <InputModal
         open={showCreatePlaylist}
-        title="Nova Playlist"
-        placeholder="Nome da playlist"
-        confirmLabel="Criar"
+        title="New Playlist"
+        placeholder="Playlist name"
+        confirmLabel="Create"
         onClose={() => { setShowCreatePlaylist(false); setPendingSong(null) }}
         onConfirm={handleCreateAndAdd}
       />

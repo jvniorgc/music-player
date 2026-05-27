@@ -37,7 +37,7 @@ export default function DownloadsView() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Downloads</h1>
           <p className="text-sm text-text-secondary mt-1">
-            {completed.length} {completed.length === 1 ? 'música baixada' : 'músicas baixadas'}
+            {completed.length} {completed.length === 1 ? 'downloaded song' : 'downloaded songs'}
           </p>
         </div>
         {completed.length > 0 && (
@@ -46,7 +46,7 @@ export default function DownloadsView() {
             className="flex items-center gap-2 bg-accent hover:bg-accent-hover text-white px-5 py-2 rounded-full text-sm font-semibold transition-colors"
           >
             <Play size={15} fill="white" className="ml-0.5" />
-            Reproduzir
+            Play
           </button>
         )}
       </div>
@@ -54,7 +54,7 @@ export default function DownloadsView() {
       {/* In progress */}
       {inProgress.length > 0 && (
         <div className="mb-8">
-          <h3 className="text-sm font-semibold text-text-tertiary uppercase tracking-wider mb-3">Baixando</h3>
+          <h3 className="text-sm font-semibold text-text-tertiary uppercase tracking-wider mb-3">Downloading</h3>
           <div className="bg-bg-secondary/40 rounded-xl overflow-hidden space-y-0.5">
             {inProgress.map(dl => (
               <div key={dl.itemId} className="flex items-center gap-4 px-5 py-3">
@@ -132,8 +132,8 @@ export default function DownloadsView() {
       ) : inProgress.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-24 text-text-tertiary">
           <HardDrive size={48} className="mb-4 opacity-50" />
-          <h3 className="text-lg font-medium text-text-secondary mb-1">Nenhum download</h3>
-          <p className="text-sm">Baixe músicas para ouvir offline</p>
+          <h3 className="text-lg font-medium text-text-secondary mb-1">No downloads</h3>
+          <p className="text-sm">Download songs to listen offline</p>
         </div>
       ) : null}
     </div>

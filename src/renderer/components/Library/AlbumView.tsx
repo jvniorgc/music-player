@@ -47,7 +47,7 @@ export default function AlbumView() {
   useEffect(() => { loadData() }, [id])
 
   if (loading || !album) {
-    return <div className="flex items-center justify-center py-24 text-text-tertiary">Carregando...</div>
+    return <div className="flex items-center justify-center py-24 text-text-tertiary">Loading...</div>
   }
 
   const imageUrl = jellyfin.getImageUrl(album.Id, album.ImageTags?.Primary, 600)
@@ -81,7 +81,7 @@ export default function AlbumView() {
         className="flex items-center gap-1 text-accent hover:text-accent-hover text-sm mb-6 transition-colors"
       >
         <ArrowLeft size={16} />
-        Voltar
+        Back
       </button>
 
       {/* Header */}
@@ -97,7 +97,7 @@ export default function AlbumView() {
         </div>
 
         <div className="flex flex-col justify-end min-w-0">
-          <p className="text-xs font-medium text-text-tertiary uppercase tracking-wider mb-2">Álbum</p>
+          <p className="text-xs font-medium text-text-tertiary uppercase tracking-wider mb-2">Album</p>
           <h1 className="text-3xl font-bold tracking-tight mb-2 truncate">{album.Name}</h1>
           <p className="text-lg text-accent font-medium mb-1 truncate">
             {album.ArtistItems && album.ArtistItems.length > 0 ? (
@@ -119,7 +119,7 @@ export default function AlbumView() {
           <div className="flex items-center gap-2 text-sm text-text-secondary">
             {album.ProductionYear && <span>{album.ProductionYear}</span>}
             {album.ProductionYear && tracks.length > 0 && <span>·</span>}
-            {tracks.length > 0 && <span>{tracks.length} músicas</span>}
+            {tracks.length > 0 && <span>{tracks.length} songs</span>}
             {tracks.length > 0 && <span>·</span>}
             <span>{formatTotalDuration(tracks)}</span>
           </div>
@@ -130,26 +130,26 @@ export default function AlbumView() {
               className="flex items-center gap-2 bg-accent hover:bg-accent-hover text-white px-6 py-2.5 rounded-full font-semibold text-sm transition-colors"
             >
               {isCurrentAlbum && isPlaying ? <Pause size={16} fill="white" /> : <Play size={16} fill="white" className="ml-0.5" />}
-              {isCurrentAlbum && isPlaying ? 'Pausar' : 'Reproduzir'}
+              {isCurrentAlbum && isPlaying ? 'Pause' : 'Play'}
             </button>
             <button
               onClick={handleShuffle}
               className="flex items-center gap-2 bg-white/10 hover:bg-white/15 text-white px-5 py-2.5 rounded-full text-sm transition-colors"
             >
               <Shuffle size={15} />
-              Aleatório
+              Shuffle
             </button>
             <button
               onClick={handleDownloadAll}
               className="p-2.5 rounded-full bg-white/10 hover:bg-white/15 transition-colors"
-              title="Baixar álbum"
+              title="Download album"
             >
               <Download size={16} />
             </button>
             <button
               onClick={() => setShowMetadata(true)}
               className="p-2.5 rounded-full bg-white/10 hover:bg-white/15 transition-colors"
-              title="Editar metadados"
+              title="Edit metadata"
             >
               <Pencil size={16} />
             </button>

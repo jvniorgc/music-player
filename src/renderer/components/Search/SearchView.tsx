@@ -59,7 +59,7 @@ export default function SearchView() {
           type="text"
           value={query}
           onChange={e => setQuery(e.target.value)}
-          placeholder="Buscar músicas, álbuns, artistas..."
+          placeholder="Search songs, albums, artists..."
           className="w-full bg-bg-elevated border border-border rounded-xl pl-11 pr-10 py-3 text-sm text-text-primary placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-accent transition"
         />
         {query && (
@@ -85,7 +85,7 @@ export default function SearchView() {
             <section>
               <div className="flex items-center gap-2 mb-3">
                 <Music size={18} className="text-accent" />
-                <h2 className="text-lg font-bold">Músicas</h2>
+                <h2 className="text-lg font-bold">Songs</h2>
               </div>
               <div className="bg-bg-secondary/40 rounded-xl overflow-hidden">
                 {results.songs.map((song, i) => {
@@ -130,7 +130,7 @@ export default function SearchView() {
             <section>
               <div className="flex items-center gap-2 mb-3">
                 <Disc3 size={18} className="text-accent" />
-                <h2 className="text-lg font-bold">Álbuns</h2>
+                <h2 className="text-lg font-bold">Albums</h2>
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-5">
                 {results.albums.map(album => {
@@ -181,7 +181,7 @@ export default function SearchView() {
             <section>
               <div className="flex items-center gap-2 mb-3">
                 <Users size={18} className="text-accent" />
-                <h2 className="text-lg font-bold">Artistas</h2>
+                <h2 className="text-lg font-bold">Artists</h2>
               </div>
               <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-5">
                 {results.artists.map(artist => {
@@ -214,8 +214,8 @@ export default function SearchView() {
           {results.songs.length === 0 && results.albums.length === 0 && results.artists.length === 0 && (
             <div className="flex flex-col items-center justify-center py-16 text-text-tertiary">
               <Search size={40} className="mb-4 opacity-50" />
-              <h3 className="text-lg font-medium text-text-secondary">Nenhum resultado</h3>
-              <p className="text-sm mt-1">Tente buscar por outro termo</p>
+              <h3 className="text-lg font-medium text-text-secondary">No results</h3>
+              <p className="text-sm mt-1">Try searching for another term</p>
             </div>
           )}
         </div>
@@ -224,7 +224,7 @@ export default function SearchView() {
       {!results && !loading && (
         <div className="flex flex-col items-center justify-center py-24 text-text-tertiary">
           <Search size={48} className="mb-4 opacity-30" />
-          <p className="text-sm">Digite para buscar na sua biblioteca</p>
+          <p className="text-sm">Type to search your library</p>
         </div>
       )}
     </div>

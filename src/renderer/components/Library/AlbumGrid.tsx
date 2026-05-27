@@ -31,9 +31,9 @@ export default function AlbumGrid() {
     <div className="fade-in">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Álbuns</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Albums</h1>
           {totalAlbums > 0 && (
-            <p className="text-sm text-text-secondary mt-1">{totalAlbums} álbuns</p>
+            <p className="text-sm text-text-secondary mt-1">{totalAlbums} albums</p>
           )}
         </div>
       </div>

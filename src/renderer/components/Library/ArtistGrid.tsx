@@ -15,7 +15,7 @@ export default function ArtistGrid() {
   return (
     <div className="fade-in">
       <div className="mb-6">
-        <h1 className="text-3xl font-bold tracking-tight">Artistas</h1>
+        <h1 className="text-3xl font-bold tracking-tight">Artists</h1>
         {totalArtists > 0 && (
           <p className="text-sm text-text-secondary mt-1">{totalArtists} artistas</p>
         )}
@@ -60,7 +60,7 @@ function ArtistCard({ item, onClick }: { item: JellyfinItem; onClick: () => void
       <p className="text-sm font-medium truncate">{item.Name}</p>
       {(item.AlbumCount || item.SongCount) && (
         <p className="text-xs text-text-secondary">
-          {item.AlbumCount ? `${item.AlbumCount} álbuns` : ''}
+          {item.AlbumCount ? `${item.AlbumCount} albums` : ''}
         </p>
       )}
     </div>

@@ -150,8 +150,8 @@ class JellyfinService {
     })
 
     if (!res.ok) {
-      if (res.status === 401) throw new Error('Credenciais inválidas')
-      throw new Error(`Erro ao conectar: ${res.status}`)
+      if (res.status === 401) throw new Error('Invalid credentials')
+      throw new Error(`Error connecting: ${res.status}`)
     }
 
     const data = await res.json()
@@ -468,7 +468,7 @@ class JellyfinService {
    * For all-time, uses native Jellyfin PlayCount (full historical data).
    */
   async getUserTopArtists(userId: string, limit = 20, minDate?: string): Promise<(JellyfinItem & { periodPlayCount?: number })[]> {
-    // All-time: fetch top played songs and aggregate by artist
+    // All time: fetch top played songs and aggregate by artist
     if (!minDate) {
       const songsUrl = `/Users/${userId}/Items?IncludeItemTypes=Audio&Recursive=true&SortBy=PlayCount&SortOrder=Descending&Limit=200&Fields=AlbumArtist,AlbumArtists,ArtistItems&Filters=IsPlayed`
       const songsRes = await this.request<JellyfinItemsResponse>(songsUrl)
@@ -553,7 +553,7 @@ class JellyfinService {
    * For all-time, uses native Jellyfin PlayCount.
    */
   async getUserTopAlbums(userId: string, limit = 20, minDate?: string): Promise<(JellyfinItem & { periodPlayCount?: number })[]> {
-    // All-time: fetch top played songs and aggregate by album
+    // All time: fetch top played songs and aggregate by album
     if (!minDate) {
       const songsUrl = `/Users/${userId}/Items?IncludeItemTypes=Audio&Recursive=true&SortBy=PlayCount&SortOrder=Descending&Limit=200&Fields=AlbumId,AlbumArtist,Album&Filters=IsPlayed`
       const songsRes = await this.request<JellyfinItemsResponse>(songsUrl)
@@ -635,7 +635,7 @@ class JellyfinService {
    * For all-time, uses native Jellyfin PlayCount.
    */
   async getUserTopSongs(userId: string, limit = 20, minDate?: string): Promise<(JellyfinItem & { periodPlayCount?: number })[]> {
-    // All-time: use native Jellyfin API
+    // All time: use native Jellyfin API
     if (!minDate) {
       const url = `/Users/${userId}/Items?IncludeItemTypes=Audio&Recursive=true&SortBy=PlayCount&SortOrder=Descending&Limit=${limit}&Fields=RunTimeTicks,AlbumArtist,Album,AlbumId,Artists,HasLyrics&Filters=IsPlayed`
       const res = await this.request<JellyfinItemsResponse>(url)

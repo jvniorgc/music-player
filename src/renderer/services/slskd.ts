@@ -95,7 +95,7 @@ export interface SlskdTransferGroup {
 }
 
 async function authenticate(): Promise<string> {
-  if (!slskdUrl) throw new Error('slskd não configurado')
+  if (!slskdUrl) throw new Error('slskd not configured')
   const res = await fetch(`${slskdUrl}/api/v0/session`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -113,7 +113,7 @@ async function getToken(): Promise<string> {
 }
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
-  if (!slskdUrl) throw new Error('slskd não configurado')
+  if (!slskdUrl) throw new Error('slskd not configured')
   let tok = await getToken()
 
   let res = await fetch(`${slskdUrl}${path}`, {

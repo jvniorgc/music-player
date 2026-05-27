@@ -34,7 +34,7 @@ export default function NowPlayingBar() {
   if (!currentTrack) {
     return (
       <div className="h-14 bg-bg-secondary/90 backdrop-blur-xl border-b border-border-subtle flex items-center justify-center shrink-0 drag-region">
-        <p className="text-text-tertiary text-sm">Nenhuma música tocando</p>
+        <p className="text-text-tertiary text-sm">No song playing</p>
       </div>
     )
   }
@@ -89,7 +89,7 @@ export default function NowPlayingBar() {
           <div className="min-w-0">
             <p className="text-[13px] font-medium truncate">{item.Name}</p>
             <p className="text-[11px] text-text-secondary truncate">
-              {item.Artists?.join(', ') || item.AlbumArtist || 'Artista Desconhecido'}
+              {item.Artists?.join(', ') || item.AlbumArtist || 'Unknown Artist'}
             </p>
           </div>
           <ChevronUp size={14} className="text-text-tertiary shrink-0 ml-1" />
@@ -142,7 +142,7 @@ export default function NowPlayingBar() {
           <button
             onClick={() => { fetchPlaylists(); setShowPicker(true) }}
             className="p-1.5 transition-colors text-text-tertiary hover:text-text-secondary"
-            title="Adicionar à playlist"
+            title="Add to playlist"
           >
             <ListPlus size={15} />
           </button>
@@ -150,7 +150,7 @@ export default function NowPlayingBar() {
           <button
             onClick={() => !downloaded && startDownload(item)}
             className={`p-1.5 transition-colors ${downloaded ? 'text-accent' : 'text-text-tertiary hover:text-text-secondary'}`}
-            title={downloaded ? 'Baixado' : 'Baixar'}
+            title={downloaded ? 'Downloaded' : 'Download'}
           >
             {downloaded ? <Check size={15} /> : <Download size={15} />}
           </button>
@@ -192,10 +192,10 @@ export default function NowPlayingBar() {
         onSelect={async (playlistId) => {
           try {
             await jellyfin.addToPlaylist(playlistId, [item.Id])
-            toast('Adicionada à playlist', 'success')
+            toast('Added to playlist', 'success')
           } catch (err) {
             console.error('Failed to add to playlist:', err)
-            toast('Não foi possível adicionar à playlist', 'error')
+            toast('Could not add to playlist', 'error')
           }
         }}
         onCreate={() => {
@@ -206,18 +206,18 @@ export default function NowPlayingBar() {
 
       <InputModal
         open={showCreatePlaylist}
-        title="Nova Playlist"
-        placeholder="Nome da playlist"
-        confirmLabel="Criar"
+        title="New Playlist"
+        placeholder="Playlist name"
+        confirmLabel="Create"
         onClose={() => setShowCreatePlaylist(false)}
         onConfirm={async (name) => {
           try {
             await jellyfin.createPlaylist(name, [item.Id])
             fetchPlaylists()
-            toast('Playlist criada', 'success')
+            toast('Playlist created', 'success')
           } catch (err) {
             console.error('Failed to create playlist:', err)
-            toast('Erro ao criar playlist', 'error')
+            toast('Error creating playlist', 'error')
           }
         }}
       />

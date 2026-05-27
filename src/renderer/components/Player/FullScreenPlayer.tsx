@@ -157,7 +157,7 @@ export default function FullScreenPlayer() {
                   </span>
                 ))
               ) : (
-                item.AlbumArtist || 'Artista Desconhecido'
+                item.AlbumArtist || 'Unknown Artist'
               )}
             </p>
             {item.Album && (

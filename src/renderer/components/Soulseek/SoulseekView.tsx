@@ -153,7 +153,7 @@ export default function SoulseekView() {
       }, 2000)
     } catch (err) {
       console.error('Search error:', err)
-      toast('Erro ao buscar no Soulseek', 'error')
+      toast('Error searching Soulseek', 'error')
       setSearching(false)
     }
   }
@@ -161,10 +161,10 @@ export default function SoulseekView() {
   const handleDownloadFile = async (username: string, file: SlskdFile) => {
     try {
       await downloadFiles(username, [{ filename: file.filename, size: file.size }])
-      toast(`Download iniciado: ${getFileName(file.filename)}`, 'success')
+      toast(`Download started: ${getFileName(file.filename)}`, 'success')
     } catch (err) {
       console.error('Download error:', err)
-      toast('Erro ao iniciar download', 'error')
+      toast('Error starting download', 'error')
     }
   }
 
@@ -172,17 +172,17 @@ export default function SoulseekView() {
     try {
       const audioFiles = files.filter(f => isAudioFile(f.filename))
       await downloadFiles(username, audioFiles.map(f => ({ filename: f.filename, size: f.size })))
-      toast(`Download de ${audioFiles.length} arquivos iniciado`, 'success')
+      toast(`Download of ${audioFiles.length} files started`, 'success')
     } catch (err) {
       console.error('Folder download error:', err)
-      toast('Erro ao iniciar downloads', 'error')
+      toast('Error starting downloads', 'error')
     }
   }
 
   const handleRefreshLibrary = async () => {
     try {
       await jellyfin.refreshItem(jellyfin.userId!)
-      toast('Scan da biblioteca Jellyfin iniciado', 'success')
+      toast('Jellyfin library scan started', 'success')
     } catch {
       // Try alternative endpoint
       try {
@@ -190,10 +190,10 @@ export default function SoulseekView() {
           method: 'POST',
           headers: { 'X-Emby-Authorization': `MediaBrowser Token="${jellyfin.token}"` }
         })
-        if (res.ok) toast('Scan da biblioteca Jellyfin iniciado', 'success')
-        else toast('Sem permissão para scan da biblioteca', 'error')
+        if (res.ok) toast('Jellyfin library scan started', 'success')
+        else toast('No permission to scan the library', 'error')
       } catch {
-        toast('Erro ao atualizar biblioteca', 'error')
+        toast('Error updating library', 'error')
       }
     }
   }
@@ -220,7 +220,7 @@ export default function SoulseekView() {
     configure({ url: settingsUrl, username: settingsUser, password: settingsPass })
     setConnected(null)
     setShowSettings(false)
-    toast('Configurações do slskd salvas', 'success')
+    toast('slskd settings saved', 'success')
   }
 
   const handleTestConnection = async () => {
@@ -279,7 +279,7 @@ export default function SoulseekView() {
         <button
           onClick={() => setShowSettings(!showSettings)}
           className={`p-2 rounded-lg transition-colors ${showSettings ? 'bg-white/10 text-accent' : 'text-text-tertiary hover:text-text-primary hover:bg-white/5'}`}
-          title="Configurações do slskd"
+          title="slskd settings"
         >
           <Settings size={18} />
         </button>
@@ -288,10 +288,10 @@ export default function SoulseekView() {
       {/* Settings Panel */}
       {showSettings && (
         <div className="bg-bg-elevated border border-border rounded-xl p-5 mb-6">
-          <h3 className="text-sm font-semibold mb-4">Conexão slskd</h3>
+          <h3 className="text-sm font-semibold mb-4">slskd connection</h3>
           <div className="space-y-3">
             <div>
-              <label className="block text-xs font-medium text-text-secondary mb-1 ml-1">Endereço do servidor</label>
+              <label className="block text-xs font-medium text-text-secondary mb-1 ml-1">Server address</label>
               <input
                 type="text"
                 value={settingsUrl}
@@ -302,7 +302,7 @@ export default function SoulseekView() {
             </div>
             <div className="flex gap-3">
               <div className="flex-1">
-                <label className="block text-xs font-medium text-text-secondary mb-1 ml-1">Usuário</label>
+                <label className="block text-xs font-medium text-text-secondary mb-1 ml-1">User</label>
                 <input
                   type="text"
                   value={settingsUser}
@@ -312,12 +312,12 @@ export default function SoulseekView() {
                 />
               </div>
               <div className="flex-1">
-                <label className="block text-xs font-medium text-text-secondary mb-1 ml-1">Senha</label>
+                <label className="block text-xs font-medium text-text-secondary mb-1 ml-1">Password</label>
                 <input
                   type="password"
                   value={settingsPass}
                   onChange={e => setSettingsPass(e.target.value)}
-                  placeholder="senha"
+                  placeholder="password"
                   className="w-full bg-bg-primary border border-border rounded-lg px-4 py-2.5 text-sm text-text-primary placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-accent transition"
                 />
               </div>
@@ -329,7 +329,7 @@ export default function SoulseekView() {
                 className="flex items-center gap-2 bg-white/10 hover:bg-white/15 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-40"
               >
                 {testingConnection ? <Loader2 size={14} className="animate-spin" /> : <Zap size={14} />}
-                Testar conexão
+                Test connection
               </button>
               <button
                 onClick={handleSaveSettings}
@@ -337,16 +337,16 @@ export default function SoulseekView() {
                 className="flex items-center gap-2 bg-accent hover:bg-accent-hover text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-40"
               >
                 <Check size={14} />
-                Salvar
+                Save
               </button>
               {connected === true && (
                 <span className="flex items-center gap-1 text-sm text-green-400">
-                  <Check size={14} /> Conectado
+                  <Check size={14} /> Connected
                 </span>
               )}
               {connected === false && (
                 <span className="flex items-center gap-1 text-sm text-red-400">
-                  <X size={14} /> Falha na conexão
+                  <X size={14} /> Connection failed
                 </span>
               )}
             </div>
@@ -363,7 +363,7 @@ export default function SoulseekView() {
           }`}
         >
           <Search size={14} className="inline mr-2 -mt-0.5" />
-          Buscar
+          Search
         </button>
         <button
           onClick={() => setTab('transfers')}
@@ -372,7 +372,7 @@ export default function SoulseekView() {
           }`}
         >
           <Download size={14} className="inline mr-2 -mt-0.5" />
-          Transferências
+          Transfers
         </button>
       </div>
 
@@ -388,7 +388,7 @@ export default function SoulseekView() {
                 value={query}
                 onChange={e => setQuery(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && handleSearch()}
-                placeholder="Buscar músicas, álbuns, artistas..."
+                placeholder="Search songs, albums, artists..."
                 className="w-full bg-bg-elevated border border-border rounded-xl pl-11 pr-4 py-3 text-sm text-text-primary placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-accent transition"
               />
             </div>
@@ -398,7 +398,7 @@ export default function SoulseekView() {
               className="flex items-center gap-2 bg-accent hover:bg-accent-hover text-white px-6 py-3 rounded-xl font-semibold text-sm transition-colors disabled:opacity-40"
             >
               {searching ? <Loader2 size={16} className="animate-spin" /> : <Search size={16} />}
-              Buscar
+              Search
             </button>
           </div>
 
@@ -407,8 +407,8 @@ export default function SoulseekView() {
             <div className="flex items-center gap-3 mb-4 text-sm text-text-secondary">
               {searching && <Loader2 size={14} className="animate-spin text-accent" />}
               <span>
-                {searchState.responseCount} usuários · {searchState.fileCount} arquivos
-                {searchState.isComplete && ' · Completo'}
+                {searchState.responseCount} users · {searchState.fileCount} files
+                {searchState.isComplete && ' · Complete'}
               </span>
             </div>
           )}
@@ -423,7 +423,7 @@ export default function SoulseekView() {
                   activeFormats.size === 0 ? 'bg-accent text-white' : 'bg-white/5 text-text-secondary hover:bg-white/10'
                 }`}
               >
-                Todos
+                All
               </button>
               {availableFormats.map(([fmt, count]) => (
                 <button
@@ -458,7 +458,7 @@ export default function SoulseekView() {
           {!searching && filteredResponses.length === 0 && searchState && (
             <div className="text-center py-16 text-text-tertiary">
               <Search size={32} className="mx-auto mb-3 opacity-50" />
-              <p className="text-sm">Nenhum resultado com arquivos de áudio</p>
+              <p className="text-sm">No results with audio files</p>
             </div>
           )}
         </div>
@@ -469,7 +469,7 @@ export default function SoulseekView() {
         <div>
           <div className="flex items-center justify-between mb-4">
             <p className="text-sm text-text-secondary">
-              {transfers.length > 0 ? `${transfers.length} grupo(s) de download` : 'Nenhuma transferência ativa'}
+              {transfers.length > 0 ? `${transfers.length} download group(s)` : 'No active transfers'}
             </p>
             <div className="flex items-center gap-2">
               <button
@@ -480,14 +480,14 @@ export default function SoulseekView() {
                 className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm text-text-secondary hover:bg-white/5 transition-colors"
               >
                 <X size={14} />
-                Limpar concluídos
+                Clear completed
               </button>
               <button
                 onClick={handleRefreshLibrary}
                 className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm text-accent hover:bg-accent/10 transition-colors"
               >
                 <RefreshCw size={14} />
-                Atualizar Jellyfin
+                Update Jellyfin
               </button>
             </div>
           </div>
@@ -529,10 +529,10 @@ function UserResult({ response, expanded, expandedDirs, onToggle, onToggleDir, o
         <div className="flex items-center gap-3 text-xs text-text-tertiary shrink-0">
           {response.hasFreeUploadSlot && (
             <span className="flex items-center gap-1 text-green-400">
-              <Zap size={11} /> Livre
+              <Zap size={11} /> Free
             </span>
           )}
-          <span>{audioFiles.length} áudio{audioFiles.length !== 1 ? 's' : ''}</span>
+          <span>{audioFiles.length} audio{audioFiles.length !== 1 ? 's' : ''}</span>
           {response.uploadSpeed > 0 && (
             <span>{formatSpeed(response.uploadSpeed)}</span>
           )}
@@ -561,7 +561,7 @@ function UserResult({ response, expanded, expandedDirs, onToggle, onToggleDir, o
                   <button
                     onClick={() => onDownloadFolder(files)}
                     className="p-1.5 rounded-lg hover:bg-white/10 text-text-tertiary hover:text-accent transition-colors shrink-0"
-                    title="Baixar pasta"
+                    title="Download folder"
                   >
                     <FolderDown size={14} />
                   </button>
@@ -602,7 +602,7 @@ function FileRow({ file, onDownload }: { file: SlskdFile; onDownload: () => void
       <button
         onClick={onDownload}
         className="p-1.5 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-white/10 text-text-tertiary hover:text-accent transition-all shrink-0"
-        title="Baixar"
+        title="Download"
       >
         <Download size={14} />
       </button>
@@ -665,13 +665,13 @@ function TransferRow({ file, onRemove }: { file: { id: string; filename: string;
         )}
       </div>
       <span className="text-xs text-text-tertiary shrink-0">
-        {isComplete ? formatFileSize(file.size) : isQueued ? 'Na fila' : ''}
+        {isComplete ? formatFileSize(file.size) : isQueued ? 'Queued' : ''}
       </span>
       {(isComplete || isFailed) && (
         <button
           onClick={onRemove}
           className="shrink-0 p-1 rounded hover:bg-white/10 text-text-tertiary hover:text-red-400 transition-colors"
-          title="Remover"
+          title="Remove"
         >
           <X size={13} />
         </button>

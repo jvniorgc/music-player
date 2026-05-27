@@ -18,7 +18,7 @@ export default function QueueView() {
   return (
     <div className="w-80 bg-bg-secondary/80 backdrop-blur-xl border-l border-border-subtle flex flex-col h-full">
       <div className="flex items-center justify-between px-5 pt-14 pb-3">
-        <h2 className="text-lg font-bold">A Seguir</h2>
+        <h2 className="text-lg font-bold">Up Next</h2>
         <button
           onClick={() => setShowQueue(false)}
           className="p-1.5 rounded-lg hover:bg-white/10 transition-colors text-text-secondary"
@@ -30,7 +30,7 @@ export default function QueueView() {
       {/* Now Playing */}
       {currentTrack && (
         <div className="px-4 mb-4">
-          <p className="text-[11px] font-semibold text-text-tertiary uppercase tracking-wider px-2 mb-2">Tocando Agora</p>
+          <p className="text-[11px] font-semibold text-text-tertiary uppercase tracking-wider px-2 mb-2">Now Playing</p>
           <div className="flex items-center gap-3 px-2 py-2 rounded-lg bg-white/5">
             {currentTrack.item.AlbumId ? (
               <img
@@ -61,7 +61,7 @@ export default function QueueView() {
         {upNext.length > 0 && (
           <>
             <p className="text-[11px] font-semibold text-text-tertiary uppercase tracking-wider px-2 mb-2">
-              A Seguir · {upNext.length} {upNext.length === 1 ? 'música' : 'músicas'}
+              Up Next · {upNext.length} {upNext.length === 1 ? 'song' : 'songs'}
             </p>
             <div className="space-y-0.5">
               {upNext.map((track, i) => (
@@ -103,7 +103,7 @@ export default function QueueView() {
         {upNext.length === 0 && (
           <div className="flex flex-col items-center justify-center py-12 text-text-tertiary">
             <Music size={32} className="mb-3 opacity-50" />
-            <p className="text-sm">Fila vazia</p>
+            <p className="text-sm">Empty queue</p>
           </div>
         )}
       </div>

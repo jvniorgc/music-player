@@ -9,11 +9,11 @@ type TimePeriod = '7d' | '30d' | '3m' | '1y' | 'all'
 type GridSize = '4x2' | '5x3'
 
 const TIME_LABELS: Record<TimePeriod, string> = {
-  '7d': '7 dias',
-  '30d': '30 dias',
-  '3m': '3 meses',
-  '1y': '1 ano',
-  'all': 'All-time',
+  '7d': '7 days',
+  '30d': '30 days',
+  '3m': '3 months',
+  '1y': '1 year',
+  'all': 'All time',
 }
 
 const GRID_COLS: Record<GridSize, number> = { '4x2': 4, '5x3': 5 }
@@ -107,7 +107,7 @@ export default function UserProfileView() {
   if (!user) {
     return (
       <div className="fade-in text-center py-24 text-text-tertiary">
-        <p>Usuário não encontrado</p>
+        <p>User not found</p>
       </div>
     )
   }
@@ -139,7 +139,7 @@ export default function UserProfileView() {
         </div>
         <div>
           <h1 className="text-3xl font-bold tracking-tight">{user.Name}</h1>
-          <p className="text-sm text-text-secondary mt-1">Perfil do usuário</p>
+          <p className="text-sm text-text-secondary mt-1">User profile</p>
         </div>
       </div>
 
@@ -165,9 +165,9 @@ export default function UserProfileView() {
               onChange={e => setViewMode(e.target.value as ViewMode)}
               className="bg-bg-elevated border border-border rounded-lg px-3 py-1.5 text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
             >
-              <option value="artists">Artistas</option>
-              <option value="albums">Álbuns</option>
-              <option value="songs">Músicas</option>
+              <option value="artists">Artists</option>
+              <option value="albums">Albums</option>
+              <option value="songs">Songs</option>
             </select>
             <select
               value={timePeriod}
@@ -195,7 +195,7 @@ export default function UserProfileView() {
           </div>
         ) : topItems.length === 0 ? (
           <div className="py-12 text-center text-text-tertiary text-sm">
-            Nenhum dado para este período
+            No data for this period
           </div>
         ) : (
           <div
@@ -298,7 +298,7 @@ function PlaylistCard({ item, onClick }: { item: JellyfinItem; onClick: () => vo
       </div>
       <p className="text-sm font-medium truncate">{item.Name}</p>
       {item.ChildCount != null && (
-        <p className="text-xs text-text-secondary">{item.ChildCount} faixas</p>
+        <p className="text-xs text-text-secondary">{item.ChildCount} tracks</p>
       )}
     </div>
   )

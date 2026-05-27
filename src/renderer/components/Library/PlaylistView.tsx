@@ -55,10 +55,10 @@ export default function PlaylistView() {
       await jellyfin.renameItem(id, name)
       setPlaylist(prev => prev ? { ...prev, Name: name } : prev)
       fetchPlaylists()
-      toast('Playlist renomeada', 'success')
+      toast('Playlist renamed', 'success')
     } catch (err) {
       console.error('Failed to rename playlist:', err)
-      toast('Não foi possível renomear esta playlist', 'error')
+      toast('Could not rename this playlist', 'error')
     }
   }
 
@@ -67,11 +67,11 @@ export default function PlaylistView() {
     try {
       await jellyfin.deleteItem(id)
       fetchPlaylists()
-      toast('Playlist excluída', 'success')
+      toast('Playlist deleted', 'success')
       navigate('/playlists')
     } catch (err) {
       console.error('Failed to delete playlist:', err)
-      toast('Não foi possível excluir. Playlists baseadas em arquivos não podem ser excluídas.', 'error')
+      toast('Could not delete. File-based playlists cannot be deleted.', 'error')
     }
   }
 
@@ -80,15 +80,15 @@ export default function PlaylistView() {
     try {
       await jellyfin.removeFromPlaylist(id, [track.PlaylistItemId])
       setTracks(prev => prev.filter(t => t.PlaylistItemId !== track.PlaylistItemId))
-      toast('Música removida da playlist', 'success')
+      toast('Song removed from playlist', 'success')
     } catch (err) {
       console.error('Failed to remove track:', err)
-      toast('Não foi possível remover. A playlist pode ser somente leitura.', 'error')
+      toast('Could not remove. The playlist may be read-only.', 'error')
     }
   }
 
   if (loading) {
-    return <div className="flex items-center justify-center py-24 text-text-tertiary">Carregando...</div>
+    return <div className="flex items-center justify-center py-24 text-text-tertiary">Loading...</div>
   }
 
   const imageUrl = playlist?.ImageTags?.Primary
@@ -104,7 +104,7 @@ export default function PlaylistView() {
         className="flex items-center gap-1 text-accent hover:text-accent-hover text-sm mb-6 transition-colors"
       >
         <ArrowLeft size={16} />
-        Voltar
+        Back
       </button>
 
       <div className="flex gap-8 mb-8">
@@ -121,7 +121,7 @@ export default function PlaylistView() {
         <div className="flex flex-col justify-end min-w-0">
           <p className="text-xs font-medium text-text-tertiary uppercase tracking-wider mb-2">Playlist</p>
           <h1 className="text-3xl font-bold truncate">{playlist?.Name}</h1>
-          <p className="text-sm text-text-secondary mt-2">{tracks.length} músicas</p>
+          <p className="text-sm text-text-secondary mt-2">{tracks.length} songs</p>
 
           <div className="flex items-center gap-3 mt-5">
             <button
@@ -132,7 +132,7 @@ export default function PlaylistView() {
               className="flex items-center gap-2 bg-accent hover:bg-accent-hover text-white px-6 py-2.5 rounded-full font-semibold text-sm transition-colors"
             >
               {isCurrentPlaylist && isPlaying ? <Pause size={16} fill="white" /> : <Play size={16} fill="white" className="ml-0.5" />}
-              {isCurrentPlaylist && isPlaying ? 'Pausar' : 'Reproduzir'}
+              {isCurrentPlaylist && isPlaying ? 'Pause' : 'Play'}
             </button>
             <button
               onClick={() => {
@@ -142,19 +142,19 @@ export default function PlaylistView() {
               className="flex items-center gap-2 bg-white/10 hover:bg-white/15 text-white px-5 py-2.5 rounded-full text-sm transition-colors"
             >
               <Shuffle size={15} />
-              Aleatório
+              Shuffle
             </button>
             <button
               onClick={() => setShowRename(true)}
               className="p-2.5 rounded-full bg-white/10 hover:bg-white/15 text-text-secondary hover:text-text-primary transition-colors"
-              title="Renomear"
+              title="Rename"
             >
               <Pencil size={15} />
             </button>
             <button
               onClick={() => setShowDelete(true)}
               className="p-2.5 rounded-full bg-white/10 hover:bg-white/15 text-text-secondary hover:text-red-400 transition-colors"
-              title="Excluir"
+              title="Delete"
             >
               <Trash2 size={15} />
             </button>
@@ -208,7 +208,7 @@ export default function PlaylistView() {
                 <div className="min-w-0 flex-1">
                   <p className={`text-sm font-medium truncate ${isCurrent ? 'text-accent' : ''}`}>{track.Name}</p>
                   <p className="text-xs text-text-secondary truncate">
-                    {track.Artists?.join(', ') || track.AlbumArtist || 'Desconhecido'}
+                    {track.Artists?.join(', ') || track.AlbumArtist || 'Unknown'}
                     {track.Album ? ` — ${track.Album}` : ''}
                   </p>
                 </div>
@@ -239,7 +239,7 @@ export default function PlaylistView() {
                       className="flex items-center gap-3 w-full px-4 py-2 text-sm text-red-400 hover:bg-white/10 transition-colors"
                     >
                       <XIcon size={14} />
-                      Remover da Playlist
+                      Remove from Playlist
                     </button>
                   </div>
                 )}
@@ -250,25 +250,25 @@ export default function PlaylistView() {
       ) : (
         <div className="flex flex-col items-center justify-center py-16 text-text-tertiary">
           <ListMusic size={40} className="mb-3 opacity-50" />
-          <p className="text-sm">Playlist vazia</p>
+          <p className="text-sm">Empty playlist</p>
         </div>
       )}
 
       <InputModal
         open={showRename}
-        title="Renomear Playlist"
-        placeholder="Novo nome"
+        title="Rename Playlist"
+        placeholder="New name"
         initialValue={playlist?.Name || ''}
-        confirmLabel="Renomear"
+        confirmLabel="Rename"
         onClose={() => setShowRename(false)}
         onConfirm={handleRename}
       />
 
       <ConfirmModal
         open={showDelete}
-        title="Excluir Playlist"
-        message={`Tem certeza que deseja excluir "${playlist?.Name}"? Esta ação não pode ser desfeita.`}
-        confirmLabel="Excluir"
+        title="Delete Playlist"
+        message={`Are you sure you want to delete "${playlist?.Name}"? This action cannot be undone.`}
+        confirmLabel="Delete"
         destructive
         onClose={() => setShowDelete(false)}
         onConfirm={handleDelete}
