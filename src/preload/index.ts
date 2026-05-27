@@ -5,11 +5,6 @@ export type DownloadComplete = { itemId: string }
 export type DownloadError = { itemId: string; error: string }
 
 const api = {
-  // Window controls
-  windowMinimize: () => ipcRenderer.invoke('window:minimize'),
-  windowMaximize: () => ipcRenderer.invoke('window:maximize'),
-  windowClose: () => ipcRenderer.invoke('window:close'),
-
   // Auth
   getAuth: () => ipcRenderer.invoke('db:get-auth'),
   saveAuth: (data: { serverUrl: string; token: string; userId: string; username: string; serverId: string }) =>
