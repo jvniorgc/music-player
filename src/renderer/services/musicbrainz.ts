@@ -91,3 +91,106 @@ export function getCatalogNumber(release: MBRelease): string {
   const info = release['label-info']?.[0]
   return info?.['catalog-number'] || ''
 }
+
+// --- Artist search ---
+
+export interface MBArtist {
+  id: string
+  name: string
+  'sort-name'?: string
+  disambiguation?: string
+  type?: string
+  country?: string
+  'life-span'?: { begin?: string; end?: string; ended?: boolean }
+  tags?: { name: string; count: number }[]
+  relations?: MBRelation[]
+}
+
+export interface MBRelation {
+  type: string
+  url?: { resource: string }
+}
+
+export interface MBArtistSearchResult {
+  artists: MBArtist[]
+  count: number
+}
+
+export async function searchArtists(name: string, limit = 15): Promise<MBArtist[]> {
+  const query = `artist:"${name}"`
+  const data = await mbFetch<MBArtistSearchResult>(
+    `/artist?query=${encodeURIComponent(query)}&limit=${limit}&fmt=json`
+  )
+  return data.artists || []
+}
+
+export async function getArtistDetails(artistId: string): Promise<MBArtist> {
+  return mbFetch<MBArtist>(
+    `/artist/${artistId}?inc=url-rels+tags&fmt=json`
+  )
+}
+
+/**
+ * Try to get an artist image URL from TheAudioDB (free API) using MusicBrainz ID.
+ * Returns the thumbnail URL or null if not found.
+ */
+export async function getArtistImageUrl(mbid: string): Promise<string | null> {
+  try {
+    const res = await fetch(
+      `https://www.theaudiodb.com/api/v1/json/2/artist-mb.php?i=${mbid}`,
+      { headers: { 'User-Agent': USER_AGENT } }
+    )
+    if (!res.ok) return null
+    const data = await res.json()
+    const artist = data?.artists?.[0]
+    if (!artist) return null
+    return artist.strArtistThumb || artist.strArtistFanart || artist.strArtistWideThumb || null
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Fallback: extract image URL from MusicBrainz artist relations (Wikidata/Wikipedia).
+ * Tries to find an image via Wikidata.
+ */
+export async function getArtistImageFromWikidata(artist: MBArtist): Promise<string | null> {
+  if (!artist.relations) return null
+  const wikidataRel = artist.relations.find(
+    r => r.type === 'wikidata' && r.url?.resource
+  )
+  if (!wikidataRel?.url?.resource) return null
+
+  try {
+    const entityId = wikidataRel.url.resource.split('/').pop()
+    const res = await fetch(
+      `https://www.wikidata.org/wiki/Special:EntityData/${entityId}.json`
+    )
+    if (!res.ok) return null
+    const data = await res.json()
+    const entity = data.entities?.[entityId!]
+    const imageClaim = entity?.claims?.P18?.[0]?.mainsnak?.datavalue?.value
+    if (!imageClaim) return null
+    const filename = imageClaim.replace(/ /g, '_')
+    const md5 = await computeMd5ForWikimedia(filename)
+    return `https://upload.wikimedia.org/wikipedia/commons/thumb/${md5[0]}/${md5.slice(0, 2)}/${filename}/500px-${filename}`
+  } catch {
+    return null
+  }
+}
+
+/** Simple hash for Wikimedia file path */
+async function computeMd5ForWikimedia(filename: string): Promise<string> {
+  const encoder = new TextEncoder()
+  const data = encoder.encode(filename)
+  const hash = await crypto.subtle.digest('MD5', data).catch(() => null)
+  if (hash) {
+    return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('')
+  }
+  // Fallback: simple hash approximation (MD5 not always available in all contexts)
+  let h = 0
+  for (let i = 0; i < filename.length; i++) {
+    h = ((h << 5) - h + filename.charCodeAt(i)) | 0
+  }
+  return Math.abs(h).toString(16).padStart(32, '0')
+}

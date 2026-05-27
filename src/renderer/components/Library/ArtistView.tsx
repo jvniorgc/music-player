@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { jellyfin, JellyfinItem } from '../../services/jellyfin'
 import { usePlayerStore } from '../../stores/player'
-import { Play, Shuffle, ArrowLeft } from 'lucide-react'
+import { Play, Shuffle, ArrowLeft, ImagePlus } from 'lucide-react'
+import ArtistMetadataEditor from '../Metadata/ArtistMetadataEditor'
 
 export default function ArtistView() {
   const { id } = useParams<{ id: string }>()
@@ -10,17 +11,21 @@ export default function ArtistView() {
   const [artist, setArtist] = useState<JellyfinItem | null>(null)
   const [albums, setAlbums] = useState<JellyfinItem[]>([])
   const [loading, setLoading] = useState(true)
+  const [showMetadataEditor, setShowMetadataEditor] = useState(false)
 
-  useEffect(() => {
+  const loadArtist = () => {
     if (!id) return
     setLoading(true)
-
     Promise.all([
       fetch(`${jellyfin.serverUrl}/Users/${jellyfin.userId}/Items/${id}`, {
         headers: { 'X-Emby-Authorization': `MediaBrowser Token="${jellyfin.token}"` }
       }).then(r => r.json()).then(setArtist),
       jellyfin.getArtistAlbums(id).then(r => setAlbums(r.Items))
     ]).finally(() => setLoading(false))
+  }
+
+  useEffect(() => {
+    loadArtist()
   }, [id])
 
   if (loading) {
@@ -58,15 +63,33 @@ export default function ArtistView() {
           </button>
 
           <div className="flex items-end gap-6">
-            {imageUrl && (
+            {imageUrl ? (
               <img src={imageUrl} className="w-32 h-32 rounded-full object-cover shadow-2xl border-2 border-white/10" alt="" />
+            ) : (
+              <button
+                onClick={() => setShowMetadataEditor(true)}
+                className="w-32 h-32 rounded-full bg-bg-elevated border-2 border-dashed border-border flex flex-col items-center justify-center gap-1 hover:border-accent/50 hover:bg-white/5 transition-colors"
+                title="Find artist image"
+              >
+                <ImagePlus size={24} className="text-text-tertiary" />
+                <span className="text-[10px] text-text-tertiary">Find image</span>
+              </button>
             )}
             <div>
               <p className="text-xs font-medium text-text-tertiary uppercase tracking-wider mb-1">Artist</p>
               <h1 className="text-4xl font-bold">{artist?.Name}</h1>
-              {albums.length > 0 && (
-                <p className="text-sm text-text-secondary mt-1">{albums.length} albums</p>
-              )}
+              <div className="flex items-center gap-3 mt-1">
+                {albums.length > 0 && (
+                  <p className="text-sm text-text-secondary">{albums.length} albums</p>
+                )}
+                <button
+                  onClick={() => setShowMetadataEditor(true)}
+                  className="text-xs text-accent hover:text-accent-hover transition-colors flex items-center gap-1"
+                >
+                  <ImagePlus size={12} />
+                  {imageUrl ? 'Change image' : 'Find image'}
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -114,6 +137,15 @@ export default function ArtistView() {
           })}
         </div>
       </div>
+      {/* Artist Metadata Editor */}
+      {artist && (
+        <ArtistMetadataEditor
+          artist={artist}
+          open={showMetadataEditor}
+          onClose={() => setShowMetadataEditor(false)}
+          onApplied={loadArtist}
+        />
+      )}
     </div>
   )
 }
