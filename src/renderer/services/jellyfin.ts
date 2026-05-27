@@ -366,10 +366,11 @@ class JellyfinService {
   }
 
   async getUserPlaylists(userId: string): Promise<JellyfinItemsResponse> {
-    const res = await this.request<JellyfinItemsResponse>(
-      `/Users/${userId}/Items?IncludeItemTypes=Playlist&Recursive=true&SortBy=SortName&Fields=ChildCount,PrimaryImageAspectRatio`
+    const res = await this.request<{ Items: (JellyfinItem & { OwnerUserId?: string })[], TotalRecordCount: number }>(
+      `/Users/${userId}/Items?IncludeItemTypes=Playlist&Recursive=true&SortBy=SortName&Fields=ChildCount,PrimaryImageAspectRatio,OwnerUserId`
     )
-    return this.sanitizeItems(res)
+    const filtered = res.Items.filter(item => item.Name && item.Name.trim() !== '' && item.OwnerUserId === userId)
+    return { Items: filtered, TotalRecordCount: filtered.length }
   }
 
   /**
