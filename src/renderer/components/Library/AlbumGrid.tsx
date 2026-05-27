@@ -1,5 +1,5 @@
 import { useEffect, useRef, useCallback, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { usePlayerStore } from '../../stores/player'
 import { jellyfin, JellyfinItem } from '../../services/jellyfin'
 import { Play, Loader2 } from 'lucide-react'
@@ -18,7 +18,9 @@ function getSortParams(sort: SortOption): { sortBy: string; sortOrder: string } 
 
 export default function AlbumGrid() {
   const navigate = useNavigate()
-  const [sort, setSort] = useState<SortOption>('alphabetical')
+  const [searchParams] = useSearchParams()
+  const initialSort = searchParams.get('sort') === 'recent' ? 'recent' : 'alphabetical'
+  const [sort, setSort] = useState<SortOption>(initialSort)
   const [totalAlbums, setTotalAlbums] = useState(0)
   const [pages, setPages] = useState<Map<number, JellyfinItem[]>>(new Map())
   const [loadingPages, setLoadingPages] = useState<Set<number>>(new Set())

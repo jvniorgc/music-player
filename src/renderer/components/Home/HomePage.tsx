@@ -112,7 +112,7 @@ export default function HomePage() {
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-bold">Recently Added</h2>
             <button
-              onClick={() => navigate('/albums')}
+              onClick={() => navigate('/albums?sort=recent')}
               className="text-sm text-accent hover:text-accent-hover transition-colors"
             >
               See All
