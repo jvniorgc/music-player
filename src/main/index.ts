@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, shell, session, net } from 'electron'
+import { app, BrowserWindow, ipcMain, shell, session, net, Menu } from 'electron'
 import { join } from 'path'
 import { initDatabase, getDatabase } from './database'
 import { existsSync, mkdirSync, createWriteStream, unlinkSync, statSync, readdirSync } from 'fs'
@@ -43,6 +43,8 @@ function clearSessionCaches() {
 }
 
 function createWindow() {
+  Menu.setApplicationMenu(null)
+
   mainWindow = new BrowserWindow({
     width: 1280,
     height: 820,
