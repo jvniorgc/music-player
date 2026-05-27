@@ -38,7 +38,7 @@ export default function UserProfileView() {
   const navigate = useNavigate()
   const [user, setUser] = useState<JellyfinUser | null>(null)
   const [playlists, setPlaylists] = useState<JellyfinItem[]>([])
-  const [topItems, setTopItems] = useState<JellyfinItem[]>([])
+  const [topItems, setTopItems] = useState<(JellyfinItem & { periodPlayCount?: number })[]>([])
   const [viewMode, setViewMode] = useState<ViewMode>('artists')
   const [timePeriod, setTimePeriod] = useState<TimePeriod>('7d')
   const [loading, setLoading] = useState(true)
@@ -69,10 +69,10 @@ export default function UserProfileView() {
       setTopLoading(true)
       try {
         const minDate = getMinDate(timePeriod)
-        const res = viewMode === 'artists'
+        const items = viewMode === 'artists'
           ? await jellyfin.getUserTopArtists(id, 20, minDate)
           : await jellyfin.getUserTopAlbums(id, 20, minDate)
-        setTopItems(res.Items)
+        setTopItems(items)
       } catch (err) {
         console.error('Failed to load top items:', err)
         setTopItems([])
@@ -212,10 +212,11 @@ function PlaylistCard({ item, onClick }: { item: JellyfinItem; onClick: () => vo
   )
 }
 
-function TopArtistCard({ item, rank, onClick }: { item: JellyfinItem; rank: number; onClick: () => void }) {
+function TopArtistCard({ item, rank, onClick }: { item: JellyfinItem & { periodPlayCount?: number }; rank: number; onClick: () => void }) {
   const imageUrl = item.ImageTags?.Primary
     ? jellyfin.getImageUrl(item.Id, item.ImageTags.Primary)
     : null
+  const plays = item.periodPlayCount ?? item.UserData?.PlayCount
 
   return (
     <div className="group cursor-pointer text-center" onClick={onClick}>
@@ -233,18 +234,19 @@ function TopArtistCard({ item, rank, onClick }: { item: JellyfinItem; rank: numb
         </div>
       </div>
       <p className="text-sm font-medium truncate">{item.Name}</p>
-      {item.UserData?.PlayCount != null && (
-        <p className="text-xs text-text-secondary">{item.UserData.PlayCount} plays</p>
+      {plays != null && (
+        <p className="text-xs text-text-secondary">{plays} plays</p>
       )}
     </div>
   )
 }
 
-function TopAlbumCard({ item, rank, onClick }: { item: JellyfinItem; rank: number; onClick: () => void }) {
+function TopAlbumCard({ item, rank, onClick }: { item: JellyfinItem & { periodPlayCount?: number }; rank: number; onClick: () => void }) {
   const imageUrl = item.ImageTags?.Primary
     ? jellyfin.getImageUrl(item.Id, item.ImageTags.Primary)
     : null
   const { playItems } = usePlayerStore()
+  const plays = item.periodPlayCount ?? item.UserData?.PlayCount
 
   const handlePlay = async (e: React.MouseEvent) => {
     e.stopPropagation()
@@ -278,7 +280,7 @@ function TopAlbumCard({ item, rank, onClick }: { item: JellyfinItem; rank: numbe
       <p className="text-sm font-medium truncate">{item.Name}</p>
       <p className="text-xs text-text-secondary truncate">
         {item.AlbumArtist || ''}
-        {item.UserData?.PlayCount != null ? ` · ${item.UserData.PlayCount} plays` : ''}
+        {plays != null ? ` · ${plays} plays` : ''}
       </p>
     </div>
   )

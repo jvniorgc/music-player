@@ -372,18 +372,130 @@ class JellyfinService {
     return this.sanitizeItems(res)
   }
 
-  async getUserTopArtists(userId: string, limit = 20, minDate?: string): Promise<JellyfinItemsResponse> {
-    let url = `/Users/${userId}/Items?IncludeItemTypes=MusicArtist&Recursive=true&SortBy=PlayCount&SortOrder=Descending&Limit=${limit}&Fields=PrimaryImageAspectRatio,SongCount,AlbumCount&Filters=IsPlayed`
-    if (minDate) url += `&MinDateLastPlayed=${minDate}`
-    const res = await this.request<JellyfinItemsResponse>(url)
-    return this.sanitizeItems(res)
+  /**
+   * Query the Playback Reporting plugin for individual play events.
+   * Returns top played song ItemIds with their play count within the period.
+   */
+  private async queryPlaybackReport(userId: string, minDate: string, limit = 100): Promise<{ itemId: string; playCount: number }[]> {
+    const userIdNormalized = userId.replace(/-/g, '')
+    const sql = `SELECT ItemId, COUNT(*) as play_count FROM PlaybackActivity WHERE UserId='${userIdNormalized}' AND ItemType='Audio' AND DateCreated >= '${minDate}' GROUP BY ItemId ORDER BY play_count DESC LIMIT ${limit}`
+    const res = await this.request<{
+      colums: string[]
+      results: any[][]
+      message: string
+    }>('/user_usage_stats/submit_custom_query', {
+      method: 'POST',
+      body: JSON.stringify({ CustomQueryString: sql, ReplaceUserId: false })
+    })
+    if (!res.results || res.results.length === 0) return []
+    return res.results.map(row => ({
+      itemId: row[0] as string,
+      playCount: parseInt(row[1] as string, 10)
+    }))
   }
 
-  async getUserTopAlbums(userId: string, limit = 20, minDate?: string): Promise<JellyfinItemsResponse> {
-    let url = `/Users/${userId}/Items?IncludeItemTypes=MusicAlbum&Recursive=true&SortBy=PlayCount&SortOrder=Descending&Limit=${limit}&Fields=PrimaryImageAspectRatio,ProductionYear,AlbumArtist&Filters=IsPlayed`
-    if (minDate) url += `&MinDateLastPlayed=${minDate}`
-    const res = await this.request<JellyfinItemsResponse>(url)
-    return this.sanitizeItems(res)
+  /**
+   * Get top artists for a user within a time period using Playback Reporting plugin.
+   * Fetches play events, resolves items to artists, and aggregates.
+   */
+  async getUserTopArtists(userId: string, limit = 20, minDate?: string): Promise<(JellyfinItem & { periodPlayCount?: number })[]> {
+    if (!minDate) return []
+    try {
+      const plays = await this.queryPlaybackReport(userId, minDate, 200)
+      if (plays.length === 0) return []
+
+      // Fetch item details in batches to get AlbumArtist info
+      const itemIds = plays.map(p => p.itemId)
+      const res = await this.request<JellyfinItemsResponse>(
+        `/Users/${this.userId}/Items?Ids=${itemIds.join(',')}&Fields=AlbumArtist,AlbumArtists,PrimaryImageAspectRatio,AlbumId`
+      )
+
+      // Aggregate play counts by artist
+      const artistMap = new Map<string, { id: string; name: string; playCount: number }>()
+      for (const item of res.Items) {
+        const play = plays.find(p => p.itemId === item.Id)
+        if (!play) continue
+        const artistEntry = item.AlbumArtists?.[0] || item.ArtistItems?.[0]
+        if (!artistEntry) continue
+        const existing = artistMap.get(artistEntry.Id)
+        if (existing) {
+          existing.playCount += play.playCount
+        } else {
+          artistMap.set(artistEntry.Id, { id: artistEntry.Id, name: artistEntry.Name, playCount: play.playCount })
+        }
+      }
+
+      // Sort by play count and fetch artist details
+      const sorted = [...artistMap.values()].sort((a, b) => b.playCount - a.playCount).slice(0, limit)
+      if (sorted.length === 0) return []
+
+      const artistIds = sorted.map(a => a.id)
+      const artistRes = await this.request<JellyfinItemsResponse>(
+        `/Users/${this.userId}/Items?Ids=${artistIds.join(',')}&Fields=PrimaryImageAspectRatio,SongCount,AlbumCount`
+      )
+
+      // Return in play-count order with periodPlayCount attached
+      return sorted.map(s => {
+        const artist = artistRes.Items.find(a => a.Id === s.id)
+        if (!artist) return null
+        return { ...artist, periodPlayCount: s.playCount }
+      }).filter(Boolean) as (JellyfinItem & { periodPlayCount?: number })[]
+    } catch {
+      // Fallback: plugin not available, use basic PlayCount sorting
+      const url = `/Users/${userId}/Items?IncludeItemTypes=MusicArtist&Recursive=true&SortBy=PlayCount&SortOrder=Descending&Limit=${limit}&Fields=PrimaryImageAspectRatio,SongCount,AlbumCount&Filters=IsPlayed`
+      const res = await this.request<JellyfinItemsResponse>(url)
+      return this.sanitizeItems(res).Items
+    }
+  }
+
+  /**
+   * Get top albums for a user within a time period using Playback Reporting plugin.
+   */
+  async getUserTopAlbums(userId: string, limit = 20, minDate?: string): Promise<(JellyfinItem & { periodPlayCount?: number })[]> {
+    if (!minDate) return []
+    try {
+      const plays = await this.queryPlaybackReport(userId, minDate, 200)
+      if (plays.length === 0) return []
+
+      // Fetch item details to get AlbumId
+      const itemIds = plays.map(p => p.itemId)
+      const res = await this.request<JellyfinItemsResponse>(
+        `/Users/${this.userId}/Items?Ids=${itemIds.join(',')}&Fields=AlbumId,AlbumArtist,PrimaryImageAspectRatio`
+      )
+
+      // Aggregate play counts by album
+      const albumMap = new Map<string, { id: string; playCount: number }>()
+      for (const item of res.Items) {
+        const play = plays.find(p => p.itemId === item.Id)
+        if (!play || !item.AlbumId) continue
+        const existing = albumMap.get(item.AlbumId)
+        if (existing) {
+          existing.playCount += play.playCount
+        } else {
+          albumMap.set(item.AlbumId, { id: item.AlbumId, playCount: play.playCount })
+        }
+      }
+
+      // Sort by play count and fetch album details
+      const sorted = [...albumMap.values()].sort((a, b) => b.playCount - a.playCount).slice(0, limit)
+      if (sorted.length === 0) return []
+
+      const albumIds = sorted.map(a => a.id)
+      const albumRes = await this.request<JellyfinItemsResponse>(
+        `/Users/${this.userId}/Items?Ids=${albumIds.join(',')}&Fields=PrimaryImageAspectRatio,ProductionYear,AlbumArtist`
+      )
+
+      return sorted.map(s => {
+        const album = albumRes.Items.find(a => a.Id === s.id)
+        if (!album) return null
+        return { ...album, periodPlayCount: s.playCount }
+      }).filter(Boolean) as (JellyfinItem & { periodPlayCount?: number })[]
+    } catch {
+      // Fallback: plugin not available
+      const url = `/Users/${userId}/Items?IncludeItemTypes=MusicAlbum&Recursive=true&SortBy=PlayCount&SortOrder=Descending&Limit=${limit}&Fields=PrimaryImageAspectRatio,ProductionYear,AlbumArtist&Filters=IsPlayed`
+      const res = await this.request<JellyfinItemsResponse>(url)
+      return this.sanitizeItems(res).Items
+    }
   }
 
   // --- URLs ---
