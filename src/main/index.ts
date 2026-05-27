@@ -50,8 +50,7 @@ function createWindow() {
     height: 820,
     minWidth: 900,
     minHeight: 600,
-    titleBarStyle: 'hiddenInset',
-    trafficLightPosition: { x: 16, y: 18 },
+    frame: false,
     backgroundColor: '#000000',
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
@@ -76,6 +75,17 @@ function createWindow() {
 
 function setupIPC() {
   const db = getDatabase()
+
+  // --- Window controls ---
+  ipcMain.handle('window:minimize', () => mainWindow?.minimize())
+  ipcMain.handle('window:maximize', () => {
+    if (mainWindow?.isMaximized()) {
+      mainWindow.unmaximize()
+    } else {
+      mainWindow?.maximize()
+    }
+  })
+  ipcMain.handle('window:close', () => mainWindow?.close())
 
   // --- Auth persistence ---
   ipcMain.handle('db:get-auth', () => {

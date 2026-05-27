@@ -51,7 +51,7 @@ export default function Sidebar() {
   return (
     <aside className="w-60 h-full bg-bg-secondary/80 backdrop-blur-xl border-r border-border-subtle flex flex-col">
       {/* Drag area for titlebar */}
-      <div className="h-13 drag-region shrink-0" />
+      <div className="h-9 drag-region shrink-0" />
 
       {/* Main nav */}
       <nav className="px-3 space-y-0.5">
