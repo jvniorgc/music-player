@@ -20,34 +20,16 @@ class PlaybackService {
   private _repeat: RepeatMode = 'none'
   private _shuffleOrder: number[] = []
   private _volume = 1
-  private preloadAudio: HTMLAudioElement | null = null
+
+  // Gapless playback: preloaded next track ready to play instantly
+  private nextAudio: HTMLAudioElement | null = null
+  private nextTrackIndex: number | null = null
+  private nextTrackReady = false
 
   constructor() {
     this.audio = new Audio()
     this.audio.preload = 'auto'
-
-    this.audio.addEventListener('timeupdate', () => {
-      this.emit('timeupdate', {
-        currentTime: this.audio.currentTime,
-        duration: this.audio.duration || 0
-      })
-    })
-
-    this.audio.addEventListener('ended', () => {
-      this.emit('ended')
-      this.handleTrackEnded()
-    })
-
-    this.audio.addEventListener('playing', () => this.emit('playing'))
-    this.audio.addEventListener('pause', () => this.emit('pause'))
-    this.audio.addEventListener('waiting', () => this.emit('buffering', true))
-    this.audio.addEventListener('canplay', () => this.emit('buffering', false))
-
-    this.audio.addEventListener('error', () => {
-      const err = this.audio.error
-      console.error('[Playback] Audio error:', err?.code, err?.message, 'src:', this.audio.src?.substring(0, 100))
-      this.emit('error', err?.message || 'Playback error')
-    })
+    this.attachAudioListeners(this.audio)
 
     // Load persisted volume
     const savedVol = localStorage.getItem('player_volume')
@@ -55,6 +37,46 @@ class PlaybackService {
       this._volume = parseFloat(savedVol)
       this.audio.volume = this._volume
     }
+  }
+
+  private attachAudioListeners(audio: HTMLAudioElement) {
+    audio.addEventListener('timeupdate', () => {
+      if (audio !== this.audio) return
+      this.emit('timeupdate', {
+        currentTime: audio.currentTime,
+        duration: audio.duration || 0
+      })
+    })
+
+    audio.addEventListener('ended', () => {
+      if (audio !== this.audio) return
+      this.emit('ended')
+      this.handleTrackEnded()
+    })
+
+    audio.addEventListener('playing', () => {
+      if (audio !== this.audio) return
+      this.emit('playing')
+    })
+    audio.addEventListener('pause', () => {
+      if (audio !== this.audio) return
+      this.emit('pause')
+    })
+    audio.addEventListener('waiting', () => {
+      if (audio !== this.audio) return
+      this.emit('buffering', true)
+    })
+    audio.addEventListener('canplay', () => {
+      if (audio !== this.audio) return
+      this.emit('buffering', false)
+    })
+
+    audio.addEventListener('error', () => {
+      if (audio !== this.audio) return
+      const err = audio.error
+      console.error('[Playback] Audio error:', err?.code, err?.message, 'src:', audio.src?.substring(0, 100))
+      this.emit('error', err?.message || 'Playback error')
+    })
   }
 
   on(listener: PlaybackListener) {
@@ -149,7 +171,7 @@ class PlaybackService {
         this.cacheCurrentTrack(track)
       }
 
-      // Preload next track
+      // Preload next track for gapless playback
       this.preloadNext()
 
       // Preload lyrics for upcoming tracks
@@ -176,6 +198,50 @@ class PlaybackService {
     }
   }
 
+  private playPreloadedTrack(index: number) {
+    if (!this.nextAudio || !this.nextTrackReady) return false
+
+    const track = this._queue[index]
+    if (!track) return false
+
+    // Stop current audio
+    const oldAudio = this.audio
+    oldAudio.pause()
+    oldAudio.src = ''
+
+    // Swap to the preloaded audio element
+    this.audio = this.nextAudio
+    this.nextAudio = null
+    this.nextTrackIndex = null
+    this.nextTrackReady = false
+    this._currentIndex = index
+
+    // Apply current volume
+    this.audio.volume = this._volume
+
+    this.emit('trackchange', track)
+
+    // Play immediately — no async gap
+    this.audio.play().then(() => {
+      console.log('[Playback] Gapless transition to:', track.item.Name)
+
+      jellyfin.reportPlaybackStart(track.id).catch(() => {})
+
+      if (track.source === 'stream') {
+        this.cacheCurrentTrack(track)
+      }
+
+      // Preload the next-next track
+      this.preloadNext()
+      this.preloadUpcomingLyrics()
+    }).catch((err) => {
+      console.error('[Playback] Gapless play failed, falling back:', err)
+      this.playTrack(index)
+    })
+
+    return true
+  }
+
   private async cacheCurrentTrack(track: QueueTrack) {
     try {
       const streamUrl = jellyfin.getStreamUrl(track.id)
@@ -189,16 +255,58 @@ class PlaybackService {
 
   private preloadNext() {
     const nextIndex = this.getNextIndex()
-    if (nextIndex === null || !this._queue[nextIndex]) return
+    if (nextIndex === null || !this._queue[nextIndex]) {
+      this.invalidatePreload()
+      return
+    }
+
+    // Already preloading this track
+    if (this.nextTrackIndex === nextIndex && this.nextAudio) return
+
+    this.invalidatePreload()
 
     const nextTrack = this._queue[nextIndex]
-    this.preloadAudio = new Audio()
-    this.preloadAudio.preload = 'auto'
+    const audio = new Audio()
+    audio.preload = 'auto'
+    audio.volume = this._volume
+    this.attachAudioListeners(audio)
+    this.nextAudio = audio
+    this.nextTrackIndex = nextIndex
+
     this.resolveSource(nextTrack).then(url => {
-      if (this.preloadAudio) {
-        this.preloadAudio.src = url
+      // Verify this preload is still valid
+      if (this.nextAudio !== audio) return
+
+      audio.src = url
+      audio.load()
+
+      audio.addEventListener('canplay', () => {
+        if (this.nextAudio === audio) {
+          this.nextTrackReady = true
+          console.log('[Playback] Next track preloaded and ready:', nextTrack.item.Name)
+        }
+      }, { once: true })
+
+      audio.addEventListener('error', () => {
+        console.warn('[Playback] Preload failed for:', nextTrack.item.Name)
+        if (this.nextAudio === audio) {
+          this.invalidatePreload()
+        }
+      }, { once: true })
+    }).catch(() => {
+      if (this.nextAudio === audio) {
+        this.invalidatePreload()
       }
     })
+  }
+
+  private invalidatePreload() {
+    if (this.nextAudio) {
+      this.nextAudio.src = ''
+      this.nextAudio = null
+    }
+    this.nextTrackIndex = null
+    this.nextTrackReady = false
   }
 
   private getUpcomingTrackIds(count: number): string[] {
@@ -255,6 +363,8 @@ class PlaybackService {
     const insertIndex = this._currentIndex + 1
     this._queue.splice(insertIndex, 0, { id: item.Id, item })
     if (this._shuffle) this.generateShuffleOrder()
+    this.invalidatePreload()
+    this.preloadNext()
     this.emit('queuechange', this._queue)
   }
 
@@ -263,12 +373,15 @@ class PlaybackService {
     this._queue.splice(index, 1)
     if (index < this._currentIndex) this._currentIndex--
     if (this._shuffle) this.generateShuffleOrder()
+    this.invalidatePreload()
+    this.preloadNext()
     this.emit('queuechange', this._queue)
   }
 
   clearQueue() {
     this.audio.pause()
     this.audio.src = ''
+    this.invalidatePreload()
     this._queue = []
     this._currentIndex = -1
     this._shuffleOrder = []
@@ -312,6 +425,8 @@ class PlaybackService {
     if (this._shuffle) {
       this.generateShuffleOrder()
     }
+    this.invalidatePreload()
+    this.preloadNext()
     this.emit('shufflechange', this._shuffle)
   }
 
@@ -319,6 +434,8 @@ class PlaybackService {
     const modes: RepeatMode[] = ['none', 'all', 'one']
     const idx = modes.indexOf(this._repeat)
     this._repeat = modes[(idx + 1) % modes.length]
+    this.invalidatePreload()
+    this.preloadNext()
     this.emit('repeatchange', this._repeat)
   }
 
@@ -376,10 +493,16 @@ class PlaybackService {
     }
 
     const nextIndex = this.getNextIndex()
-    if (nextIndex !== null) {
-      this.playTrack(nextIndex)
-    } else {
+    if (nextIndex === null) {
       this.emit('queueend')
+      return
+    }
+
+    // Use preloaded audio for gapless transition
+    if (this.nextTrackIndex === nextIndex && this.nextTrackReady) {
+      this.playPreloadedTrack(nextIndex)
+    } else {
+      this.playTrack(nextIndex)
     }
   }
 
