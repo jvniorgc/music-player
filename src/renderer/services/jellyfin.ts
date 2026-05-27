@@ -232,7 +232,7 @@ class JellyfinService {
     return this.sanitizeItems(res)
   }
 
-  async search(query: string, limit = 20): Promise<{ albums: JellyfinItem[]; artists: JellyfinItem[]; songs: JellyfinItem[] }> {
+  async search(query: string, limit = 6): Promise<{ albums: JellyfinItem[]; artists: JellyfinItem[]; songs: JellyfinItem[] }> {
     const [albums, artists, songs] = await Promise.all([
       this.request<JellyfinItemsResponse>(`/Users/${this.userId}/Items?SearchTerm=${encodeURIComponent(query)}&IncludeItemTypes=MusicAlbum&Recursive=true&Limit=${limit}&Fields=PrimaryImageAspectRatio,ProductionYear,AlbumArtist`),
       this.request<JellyfinItemsResponse>(`/Artists?SearchTerm=${encodeURIComponent(query)}&UserId=${this.userId}&Limit=${limit}&Fields=PrimaryImageAspectRatio`),
