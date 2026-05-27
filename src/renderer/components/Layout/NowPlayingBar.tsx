@@ -34,8 +34,8 @@ export default function NowPlayingBar() {
   if (!currentTrack) {
     return (
       <div className="h-14 bg-bg-secondary/90 backdrop-blur-xl border-b border-border-subtle flex items-center justify-center shrink-0 relative">
-        <div className="absolute inset-0 drag-region" style={{ right: '140px' }} />
-        <p className="text-text-tertiary text-sm">No song playing</p>
+        <div className="absolute inset-0 drag-region z-0" style={{ right: '140px' }} />
+        <p className="text-text-tertiary text-sm relative z-10">No song playing</p>
       </div>
     )
   }
@@ -52,8 +52,8 @@ export default function NowPlayingBar() {
 
   return (
     <div className="h-14 bg-bg-secondary/90 backdrop-blur-xl border-b border-border-subtle flex flex-col relative shrink-0">
-      {/* Drag region that avoids window controls area */}
-      <div className="absolute inset-0 drag-region" style={{ right: '140px' }} />
+      {/* Drag region that avoids window controls area - behind content */}
+      <div className="absolute inset-0 drag-region z-0" style={{ right: '140px' }} />
       {/* Progress bar - thin line at bottom */}
       <div className="absolute bottom-0 left-0 right-0 h-[3px] bg-white/10 cursor-pointer group z-10 no-drag"
         onClick={(e) => {
@@ -72,7 +72,7 @@ export default function NowPlayingBar() {
         />
       </div>
 
-      <div className="flex-1 flex items-center px-4 gap-4 no-drag">
+      <div className="flex-1 flex items-center px-4 gap-4 no-drag relative z-10">
         {/* Track info */}
         <div
           className="flex items-center gap-3 w-64 min-w-0 cursor-pointer"
