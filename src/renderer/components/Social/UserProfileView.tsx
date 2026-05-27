@@ -4,17 +4,19 @@ import { jellyfin, JellyfinItem, JellyfinUser } from '../../services/jellyfin'
 import { usePlayerStore } from '../../stores/player'
 import { ArrowLeft, ListMusic, Loader2, Play } from 'lucide-react'
 
-type ViewMode = 'artists' | 'albums'
-type TimePeriod = '7d' | '30d' | '3m' | '1y'
+type ViewMode = 'artists' | 'albums' | 'songs'
+type TimePeriod = '7d' | '30d' | '3m' | '1y' | 'all'
 
 const TIME_LABELS: Record<TimePeriod, string> = {
   '7d': '7 dias',
   '30d': '30 dias',
   '3m': '3 meses',
   '1y': '1 ano',
+  'all': 'All-time',
 }
 
-function getMinDate(period: TimePeriod): string {
+function getMinDate(period: TimePeriod): string | undefined {
+  if (period === 'all') return undefined
   const now = new Date()
   switch (period) {
     case '7d':
@@ -69,9 +71,14 @@ export default function UserProfileView() {
       setTopLoading(true)
       try {
         const minDate = getMinDate(timePeriod)
-        const items = viewMode === 'artists'
-          ? await jellyfin.getUserTopArtists(id, 20, minDate)
-          : await jellyfin.getUserTopAlbums(id, 20, minDate)
+        let items: (JellyfinItem & { periodPlayCount?: number })[]
+        if (viewMode === 'artists') {
+          items = await jellyfin.getUserTopArtists(id, 20, minDate)
+        } else if (viewMode === 'albums') {
+          items = await jellyfin.getUserTopAlbums(id, 20, minDate)
+        } else {
+          items = await jellyfin.getUserTopSongs(id, 20, minDate)
+        }
         setTopItems(items)
       } catch (err) {
         console.error('Failed to load top items:', err)
@@ -152,6 +159,7 @@ export default function UserProfileView() {
             >
               <option value="artists">Artistas</option>
               <option value="albums">Álbuns</option>
+              <option value="songs">Músicas</option>
             </select>
             <select
               value={timePeriod}
@@ -178,7 +186,9 @@ export default function UserProfileView() {
             {topItems.map((item, index) => (
               viewMode === 'artists'
                 ? <TopArtistCard key={item.Id} item={item} rank={index + 1} onClick={() => navigate(`/artist/${item.Id}`)} />
-                : <TopAlbumCard key={item.Id} item={item} rank={index + 1} onClick={() => navigate(`/album/${item.Id}`)} />
+                : viewMode === 'albums'
+                  ? <TopAlbumCard key={item.Id} item={item} rank={index + 1} onClick={() => navigate(`/album/${item.Id}`)} />
+                  : <TopSongCard key={item.Id} item={item} rank={index + 1} />
             ))}
           </div>
         )}
@@ -280,6 +290,40 @@ function TopAlbumCard({ item, rank, onClick }: { item: JellyfinItem & { periodPl
       <p className="text-sm font-medium truncate">{item.Name}</p>
       <p className="text-xs text-text-secondary truncate">
         {item.AlbumArtist || ''}
+        {plays != null ? ` · ${plays} plays` : ''}
+      </p>
+    </div>
+  )
+}
+
+function TopSongCard({ item, rank }: { item: JellyfinItem & { periodPlayCount?: number }; rank: number }) {
+  const { playItems } = usePlayerStore()
+  const imageUrl = item.AlbumId ? jellyfin.getImageUrl(item.AlbumId, undefined, 80) : null
+  const plays = item.periodPlayCount ?? item.UserData?.PlayCount
+
+  return (
+    <div className="group cursor-pointer" onClick={() => playItems([item])}>
+      <div className="relative aspect-square rounded-xl overflow-hidden bg-bg-elevated mb-3 shadow-lg shadow-black/20">
+        {imageUrl ? (
+          <img src={imageUrl} className="w-full h-full object-cover" alt="" loading="lazy" />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-bg-elevated to-bg-tertiary">
+            <span className="text-4xl">🎵</span>
+          </div>
+        )}
+        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors" />
+        <div className="absolute top-2 left-2 w-6 h-6 rounded-md bg-black/70 flex items-center justify-center">
+          <span className="text-xs font-bold text-white">{rank}</span>
+        </div>
+        <button
+          className="absolute bottom-3 right-3 w-10 h-10 bg-accent rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 transform translate-y-1 group-hover:translate-y-0 shadow-lg shadow-black/30"
+        >
+          <Play size={18} className="text-white ml-0.5" fill="white" />
+        </button>
+      </div>
+      <p className="text-sm font-medium truncate">{item.Name}</p>
+      <p className="text-xs text-text-secondary truncate">
+        {item.Artists?.join(', ') || item.AlbumArtist || ''}
         {plays != null ? ` · ${plays} plays` : ''}
       </p>
     </div>
