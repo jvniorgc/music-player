@@ -32,6 +32,13 @@ html, body, #root {
   user-select: none;
 }
 
+/* Force GPU compositing on images for smoother downscaling */
+img {
+  image-rendering: auto;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
 ::-webkit-scrollbar {
   width: 8px;
 }
