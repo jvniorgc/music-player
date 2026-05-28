@@ -3,6 +3,8 @@ import { contextBridge, ipcRenderer } from 'electron'
 export type DownloadProgress = { itemId: string; progress: number }
 export type DownloadComplete = { itemId: string }
 export type DownloadError = { itemId: string; error: string }
+export type UpdateAvailable = { version: string; releaseNotes: string | undefined }
+export type UpdateProgress = { percent: number; bytesPerSecond: number; transferred: number; total: number }
 
 const api = {
   // Auth
@@ -55,6 +57,31 @@ const api = {
     const handler = (_e: Electron.IpcRendererEvent, data: DownloadError) => cb(data)
     ipcRenderer.on('download:error', handler)
     return () => ipcRenderer.removeListener('download:error', handler)
+  },
+
+  // Auto-updater
+  checkForUpdates: () => ipcRenderer.invoke('updater:check'),
+  downloadUpdate: () => ipcRenderer.invoke('updater:download'),
+  installUpdate: () => ipcRenderer.invoke('updater:install'),
+  onUpdateAvailable: (cb: (data: UpdateAvailable) => void) => {
+    const handler = (_e: Electron.IpcRendererEvent, data: UpdateAvailable) => cb(data)
+    ipcRenderer.on('updater:update-available', handler)
+    return () => ipcRenderer.removeListener('updater:update-available', handler)
+  },
+  onUpdateDownloadProgress: (cb: (data: UpdateProgress) => void) => {
+    const handler = (_e: Electron.IpcRendererEvent, data: UpdateProgress) => cb(data)
+    ipcRenderer.on('updater:download-progress', handler)
+    return () => ipcRenderer.removeListener('updater:download-progress', handler)
+  },
+  onUpdateDownloaded: (cb: () => void) => {
+    const handler = () => cb()
+    ipcRenderer.on('updater:update-downloaded', handler)
+    return () => ipcRenderer.removeListener('updater:update-downloaded', handler)
+  },
+  onUpdateError: (cb: (error: string) => void) => {
+    const handler = (_e: Electron.IpcRendererEvent, error: string) => cb(error)
+    ipcRenderer.on('updater:error', handler)
+    return () => ipcRenderer.removeListener('updater:error', handler)
   }
 }
 

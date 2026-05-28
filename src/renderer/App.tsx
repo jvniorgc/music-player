@@ -16,6 +16,7 @@ import DownloadsView from './components/Library/DownloadsView'
 import SoulseekView from './components/Soulseek/SoulseekView'
 import SocialView from './components/Social/SocialView'
 import UserProfileView from './components/Social/UserProfileView'
+import UpdateDialog from './components/UpdateDialog'
 import { Loader2, Music2 } from 'lucide-react'
 import { playback } from './services/playback'
 
@@ -66,6 +67,7 @@ export default function App() {
 
   return (
     <HashRouter>
+      <UpdateDialog />
       <Routes>
         <Route element={<AppLayout />}>
           <Route path="/" element={<HomePage />} />

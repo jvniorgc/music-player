@@ -3,6 +3,7 @@ import { join } from 'path'
 import { initDatabase, getDatabase } from './database'
 import { existsSync, mkdirSync, createWriteStream, unlinkSync, statSync, readdirSync } from 'fs'
 import { Readable } from 'stream'
+import { initAutoUpdater } from './updater'
 
 let mainWindow: BrowserWindow | null = null
 
@@ -267,6 +268,10 @@ app.whenReady().then(() => {
   })
 
   createWindow()
+
+  if (mainWindow) {
+    initAutoUpdater(mainWindow)
+  }
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()

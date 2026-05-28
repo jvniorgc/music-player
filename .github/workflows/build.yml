@@ -24,13 +24,9 @@
          run: npm ci
 
        - name: Build & Package
-         run: npx electron-vite build && npx electron-builder --mac --publish never
-
-       - name: Upload macOS artifact
-         uses: actions/upload-artifact@v4
-         with:
-           name: macos-dmg
-           path: dist/*.dmg
+         env:
+           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+         run: npx electron-vite build && npx electron-builder --mac --publish always
 
    build-windows:
      runs-on: windows-latest
@@ -46,13 +42,9 @@
          run: npm ci
 
        - name: Build & Package
-         run: npx electron-vite build && npx electron-builder --win --publish never
-
-       - name: Upload Windows artifact
-         uses: actions/upload-artifact@v4
-         with:
-           name: windows-installer
-           path: dist/*.exe
+         env:
+           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+         run: npx electron-vite build && npx electron-builder --win --publish always
 
    build-linux:
      runs-on: ubuntu-latest
@@ -68,27 +60,6 @@
          run: npm ci
 
        - name: Build & Package
-         run: npx electron-vite build && npx electron-builder --linux AppImage --publish never
-
-       - name: Upload Linux artifact
-         uses: actions/upload-artifact@v4
-         with:
-           name: linux-appimage
-           path: dist/*.AppImage
-
-   release:
-     needs: [build-macos, build-windows, build-linux]
-     runs-on: ubuntu-latest
-     if: startsWith(github.ref, 'refs/tags/v')
-     steps:
-       - name: Download all artifacts
-         uses: actions/download-artifact@v4
-
-       - name: Create Release
-         uses: softprops/action-gh-release@v2
-         with:
-           files: |
-             macos-dmg/*.dmg
-             windows-installer/*.exe
-             linux-appimage/*.AppImage
-           generate_release_notes: true
+         env:
+           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+         run: npx electron-vite build && npx electron-builder --linux AppImage --publish always
