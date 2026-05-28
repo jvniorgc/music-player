@@ -2,7 +2,10 @@ import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { jellyfin, JellyfinItem } from '../../services/jellyfin'
 import { usePlayerStore } from '../../stores/player'
+import { useLibraryStore } from '../../stores/library'
+import { useToastStore } from '../../stores/toast'
 import { Search, X, Play, Disc3, Users, Music, Loader2 } from 'lucide-react'
+import { PlaylistPicker, InputModal } from '../UI/Modal'
 import TrackMenu from '../UI/TrackMenu'
 
 function formatDuration(ticks?: number): string {
@@ -20,10 +23,17 @@ export default function SearchView() {
   const inputRef = useRef<HTMLInputElement>(null)
   const navigate = useNavigate()
   const { playItems } = usePlayerStore()
+  const { playlists, fetchPlaylists } = useLibraryStore()
+  const toast = useToastStore(s => s.show)
   const debounceRef = useRef<ReturnType<typeof setTimeout>>()
+
+  const [pickerSong, setPickerSong] = useState<JellyfinItem | null>(null)
+  const [showCreatePlaylist, setShowCreatePlaylist] = useState(false)
+  const [pendingSong, setPendingSong] = useState<JellyfinItem | null>(null)
 
   useEffect(() => {
     inputRef.current?.focus()
+    if (playlists.length === 0) fetchPlaylists()
   }, [])
 
   useEffect(() => {
@@ -119,7 +129,7 @@ export default function SearchView() {
                       <span className="text-xs text-text-tertiary tabular-nums">
                         {formatDuration(song.RunTimeTicks)}
                       </span>
-                      <TrackMenu track={song} />
+                      <TrackMenu track={song} onPlaylistAdd={(s) => setPickerSong(s)} />
                     </div>
                   )
                 })}
@@ -229,6 +239,42 @@ export default function SearchView() {
           <p className="text-sm">Type to search your library</p>
         </div>
       )}
+
+      <PlaylistPicker
+        open={!!pickerSong}
+        playlists={playlists}
+        onClose={() => setPickerSong(null)}
+        onSelect={async (playlistId) => {
+          if (!pickerSong) return
+          try {
+            await jellyfin.addToPlaylist(playlistId, [pickerSong.Id])
+            toast('Added to playlist', 'success')
+          } catch { toast('Could not add to playlist', 'error') }
+          setPickerSong(null)
+        }}
+        onCreate={() => {
+          setPendingSong(pickerSong)
+          setPickerSong(null)
+          setShowCreatePlaylist(true)
+        }}
+      />
+
+      <InputModal
+        open={showCreatePlaylist}
+        title="New Playlist"
+        placeholder="Playlist name"
+        confirmLabel="Create"
+        onClose={() => { setShowCreatePlaylist(false); setPendingSong(null) }}
+        onConfirm={async (name) => {
+          if (!pendingSong) return
+          try {
+            await jellyfin.createPlaylist(name, [pendingSong.Id])
+            fetchPlaylists()
+            toast('Playlist created', 'success')
+          } catch { toast('Error creating playlist', 'error') }
+          setPendingSong(null)
+        }}
+      />
     </div>
   )
 }
