@@ -136,18 +136,36 @@ export default function MetadataEditor({ album, tracks, open, onClose, onApplied
           if (media.tracks) mbTracks.push(...media.tracks)
         }
 
+        const albumArtist = applyArtist ? getArtistName(detailed) : undefined
+
         for (let i = 0; i < Math.min(tracks.length, mbTracks.length); i++) {
           const jellyTrack = tracks[i]
           const mbTrack = mbTracks[i]
           try {
-            await jellyfin.updateItem(jellyTrack.Id, {
+            const trackUpdates: Record<string, any> = {
               Name: mbTrack.recording.title,
               IndexNumber: mbTrack.position
-            })
+            }
+            // Propagate album artist to tracks so Jellyfin resolves the correct artist entity
+            if (albumArtist) {
+              trackUpdates.AlbumArtist = albumArtist
+              trackUpdates.Artists = [albumArtist]
+              trackUpdates.AlbumArtists = detailed['artist-credit']?.map(ac => ({
+                Name: ac.artist.name, Id: ac.artist.id
+              }))
+            }
+            await jellyfin.updateItem(jellyTrack.Id, trackUpdates)
           } catch (err) {
             console.warn(`Failed to update track ${i + 1}:`, err)
           }
         }
+      }
+
+      // 4. Refresh item so Jellyfin re-indexes artist associations
+      try {
+        await jellyfin.refreshItem(album.Id)
+      } catch {
+        // Non-critical, ignore
       }
 
       toast('Metadata updated successfully!', 'success')
