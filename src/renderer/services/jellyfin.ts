@@ -332,6 +332,10 @@ class JellyfinService {
     const res = await fetch(imageUrl, { redirect: 'follow' })
     if (!res.ok) throw new Error(`Failed to fetch cover art: ${res.status}`)
     const blob = await res.blob()
+    await this.uploadImageBlob(itemId, blob)
+  }
+
+  async uploadImageBlob(itemId: string, blob: Blob): Promise<void> {
     const buffer = await blob.arrayBuffer()
     const bytes = new Uint8Array(buffer)
 

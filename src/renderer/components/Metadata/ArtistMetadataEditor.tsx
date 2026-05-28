@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { JellyfinItem, jellyfin } from '../../services/jellyfin'
 import {
   searchArtists, getArtistDetails, getArtistImageUrl,
@@ -7,7 +7,7 @@ import {
 import { useToastStore } from '../../stores/toast'
 import { Modal } from '../UI/Modal'
 import {
-  Search, Loader2, Check, X, User, ArrowLeft, Image, MapPin, Calendar
+  Search, Loader2, Check, X, User, ArrowLeft, Image, MapPin, Calendar, Upload
 } from 'lucide-react'
 
 interface ArtistMetadataEditorProps {
@@ -32,6 +32,8 @@ export default function ArtistMetadataEditor({ artist, open, onClose, onApplied 
   const [applying, setApplying] = useState(false)
   const [imageUrl, setImageUrl] = useState<string | null>(null)
   const [loadingImage, setLoadingImage] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [uploading, setUploading] = useState(false)
 
   useEffect(() => {
     if (open) {
@@ -111,10 +113,33 @@ export default function ArtistMetadataEditor({ artist, open, onClose, onApplied 
     setApplying(false)
   }
 
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (!file.type.startsWith('image/')) {
+      toast('Please select an image file', 'error')
+      return
+    }
+
+    setUploading(true)
+    try {
+      await jellyfin.uploadImageBlob(artist.Id, file)
+      toast('Artist image updated!', 'success')
+      onApplied()
+      onClose()
+    } catch (err) {
+      console.error('File upload failed:', err)
+      toast('Could not upload image', 'error')
+    }
+    setUploading(false)
+    // Reset input so the same file can be re-selected
+    if (fileInputRef.current) fileInputRef.current.value = ''
+  }
+
   const renderSearch = () => (
     <div className="space-y-4">
       <p className="text-sm text-text-secondary">
-        Search MusicBrainz for artist image
+        Search MusicBrainz for artist image or upload a file
       </p>
       <div className="flex gap-2">
         <input
@@ -134,6 +159,35 @@ export default function ArtistMetadataEditor({ artist, open, onClose, onApplied 
           {searching ? <Loader2 size={16} className="animate-spin" /> : <Search size={16} />}
         </button>
       </div>
+
+      <div className="relative">
+        <div className="absolute inset-0 flex items-center">
+          <div className="w-full border-t border-border" />
+        </div>
+        <div className="relative flex justify-center">
+          <span className="bg-bg-secondary px-3 text-xs text-text-tertiary">or</span>
+        </div>
+      </div>
+
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        onChange={handleFileUpload}
+        className="hidden"
+      />
+      <button
+        onClick={() => fileInputRef.current?.click()}
+        disabled={uploading}
+        className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-dashed border-border hover:border-accent/50 hover:bg-white/5 text-sm text-text-secondary hover:text-text-primary transition-colors disabled:opacity-40"
+      >
+        {uploading ? (
+          <Loader2 size={16} className="animate-spin" />
+        ) : (
+          <Upload size={16} />
+        )}
+        {uploading ? 'Uploading...' : 'Upload image file'}
+      </button>
     </div>
   )
 
