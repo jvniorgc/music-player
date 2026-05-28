@@ -4,8 +4,9 @@ import { jellyfin, JellyfinItem } from '../../services/jellyfin'
 import { usePlayerStore } from '../../stores/player'
 import { useLibraryStore } from '../../stores/library'
 import { useToastStore } from '../../stores/toast'
-import { Play, Pause, Shuffle, ListMusic, ArrowLeft, Pencil, Trash2, MoreHorizontal, X as XIcon } from 'lucide-react'
+import { Play, Pause, Shuffle, ListMusic, ArrowLeft, Pencil, Trash2, X as XIcon } from 'lucide-react'
 import { InputModal, ConfirmModal } from '../UI/Modal'
+import TrackMenu from '../UI/TrackMenu'
 
 function formatDuration(ticks?: number): string {
   if (!ticks) return ''
@@ -27,7 +28,6 @@ export default function PlaylistView() {
 
   const [showRename, setShowRename] = useState(false)
   const [showDelete, setShowDelete] = useState(false)
-  const [trackMenu, setTrackMenu] = useState<{ index: number; x: number; y: number } | null>(null)
 
   const loadData = () => {
     if (!id) return
@@ -41,13 +41,6 @@ export default function PlaylistView() {
   }
 
   useEffect(() => { loadData() }, [id])
-
-  useEffect(() => {
-    if (!trackMenu) return
-    const close = () => setTrackMenu(null)
-    window.addEventListener('click', close)
-    return () => window.removeEventListener('click', close)
-  }, [trackMenu])
 
   const handleRename = async (name: string) => {
     if (!id) return
@@ -175,10 +168,6 @@ export default function PlaylistView() {
                   isCurrent ? 'bg-white/5' : ''
                 }`}
                 onClick={() => playItems(tracks, i)}
-                onContextMenu={e => {
-                  e.preventDefault()
-                  setTrackMenu({ index: i, x: e.clientX, y: e.clientY })
-                }}
               >
                 <div className="w-7 text-right">
                   {isCurrent && isPlaying ? (
@@ -217,32 +206,18 @@ export default function PlaylistView() {
                   {formatDuration(track.RunTimeTicks)}
                 </span>
 
-                <button
-                  onClick={e => {
-                    e.stopPropagation()
-                    setTrackMenu({ index: i, x: e.clientX, y: e.clientY })
-                  }}
-                  className="p-1.5 rounded-full opacity-0 group-hover:opacity-100 hover:bg-white/10 text-text-tertiary transition-all shrink-0"
-                >
-                  <MoreHorizontal size={14} />
-                </button>
-
-                {/* Track context menu */}
-                {trackMenu?.index === i && (
-                  <div
-                    className="fixed z-50 bg-bg-elevated border border-border rounded-xl shadow-2xl py-1.5 min-w-[180px]"
-                    style={{ left: trackMenu.x, top: trackMenu.y }}
-                    onClick={e => e.stopPropagation()}
-                  >
+                <TrackMenu
+                  track={track}
+                  extraItems={
                     <button
-                      onClick={() => { setTrackMenu(null); handleRemoveTrack(track) }}
+                      onClick={() => handleRemoveTrack(track)}
                       className="flex items-center gap-3 w-full px-4 py-2 text-sm text-red-400 hover:bg-white/10 transition-colors"
                     >
                       <XIcon size={14} />
                       Remove from Playlist
                     </button>
-                  </div>
-                )}
+                  }
+                />
               </div>
             )
           })}

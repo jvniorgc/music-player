@@ -5,6 +5,7 @@ import { usePlayerStore } from '../../stores/player'
 import { useDownloadStore } from '../../stores/download'
 import { Play, Pause, Shuffle, Download, Check, Clock, ArrowLeft, Pencil } from 'lucide-react'
 import MetadataEditor from '../Metadata/MetadataEditor'
+import TrackMenu from '../UI/TrackMenu'
 
 function formatDuration(ticks?: number): string {
   if (!ticks) return ''
@@ -202,6 +203,8 @@ export default function AlbumView() {
               <span className="text-xs text-text-tertiary tabular-nums shrink-0">
                 {formatDuration(track.RunTimeTicks)}
               </span>
+
+              <TrackMenu track={track} />
             </div>
           )
         })}

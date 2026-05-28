@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { jellyfin, JellyfinItem } from '../../services/jellyfin'
 import { usePlayerStore } from '../../stores/player'
 import { Search, X, Play, Disc3, Users, Music, Loader2 } from 'lucide-react'
+import TrackMenu from '../UI/TrackMenu'
 
 function formatDuration(ticks?: number): string {
   if (!ticks) return ''
@@ -118,6 +119,7 @@ export default function SearchView() {
                       <span className="text-xs text-text-tertiary tabular-nums">
                         {formatDuration(song.RunTimeTicks)}
                       </span>
+                      <TrackMenu track={song} />
                     </div>
                   )
                 })}

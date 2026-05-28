@@ -4,8 +4,9 @@ import { usePlayerStore } from '../../stores/player'
 import { useDownloadStore } from '../../stores/download'
 import { useToastStore } from '../../stores/toast'
 import { jellyfin, JellyfinItem } from '../../services/jellyfin'
-import { Play, Loader2, Download, Check, Music, MoreHorizontal, ListPlus } from 'lucide-react'
+import { Play, Loader2, Download, Check, Music } from 'lucide-react'
 import { PlaylistPicker, InputModal } from '../UI/Modal'
+import TrackMenu from '../UI/TrackMenu'
 
 function formatDuration(ticks?: number): string {
   if (!ticks) return ''
@@ -85,7 +86,7 @@ export default function SongList() {
         <span className="flex-1">Title</span>
         <span className="w-40 hidden md:block">Album</span>
         <span className="w-12 text-right">⏱</span>
-        <span className="w-16" />
+        <span className="w-20" />
       </div>
 
       <div className="bg-bg-secondary/30 rounded-xl overflow-hidden">
@@ -146,17 +147,8 @@ export default function SongList() {
                 {formatDuration(song.RunTimeTicks)}
               </span>
 
-              <div className="w-16 flex justify-end gap-1">
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    setPickerSong(song)
-                  }}
-                  className="text-text-tertiary opacity-0 group-hover:opacity-100 hover:text-text-secondary transition-all p-1"
-                  title="Add to playlist"
-                >
-                  <ListPlus size={14} />
-                </button>
+              <div className="w-20 flex justify-end gap-1 items-center">
+                <TrackMenu track={song} onPlaylistAdd={(s) => setPickerSong(s)} />
                 <button
                   onClick={(e) => {
                     e.stopPropagation()
