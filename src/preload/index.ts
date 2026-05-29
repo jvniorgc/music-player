@@ -1,10 +1,12 @@
 import { contextBridge, ipcRenderer } from 'electron'
-
-export type DownloadProgress = { itemId: string; progress: number }
-export type DownloadComplete = { itemId: string }
-export type DownloadError = { itemId: string; error: string }
-export type UpdateAvailable = { version: string; releaseNotes: string | undefined }
-export type UpdateProgress = { percent: number; bytesPerSecond: number; transferred: number; total: number }
+import type {
+  PlatformApi,
+  DownloadProgress,
+  DownloadComplete,
+  DownloadError,
+  UpdateAvailable,
+  UpdateProgress,
+} from '@music-player/core/platform'
 
 const api = {
   // Auth
@@ -87,7 +89,7 @@ const api = {
     ipcRenderer.on('updater:error', handler)
     return () => ipcRenderer.removeListener('updater:error', handler)
   }
-}
+} satisfies PlatformApi
 
 contextBridge.exposeInMainWorld('api', api)
 

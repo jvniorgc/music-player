@@ -36,7 +36,8 @@ export default defineConfig({
     },
     resolve: {
       alias: {
-        '@': resolve(__dirname, 'src/renderer')
+        '@': resolve(__dirname, 'src/renderer'),
+        '@music-player/core': resolve(__dirname, 'packages/core/src')
       }
     }
   }

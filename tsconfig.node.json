@@ -12,7 +12,12 @@
     "outDir": "./out",
     "declaration": true,
     "composite": true,
-    "types": ["node"]
+    "types": ["node"],
+    "baseUrl": ".",
+    "paths": {
+      "@music-player/core": ["packages/core/src/index.ts"],
+      "@music-player/core/*": ["packages/core/src/*"]
+    }
   },
-  "include": ["src/main/**/*", "src/preload/**/*", "electron.vite.config.ts"]
+  "include": ["src/main/**/*", "src/preload/**/*", "electron.vite.config.ts", "packages/core/src/platform.ts"]
 }

@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { HashRouter, Routes, Route } from 'react-router-dom'
+import './app.css'
 import { useAuthStore } from './stores/auth'
 import { useDownloadStore } from './stores/download'
 import LoginScreen from './components/Auth/LoginScreen'

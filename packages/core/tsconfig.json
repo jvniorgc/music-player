@@ -10,15 +10,7 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "jsx": "react-jsx",
-    "outDir": "./out",
-    "declaration": true,
-    "composite": true,
-    "baseUrl": ".",
-    "paths": {
-      "@/*": ["src/renderer/*"],
-      "@music-player/core": ["packages/core/src/index.ts"],
-      "@music-player/core/*": ["packages/core/src/*"]
-    }
+    "noEmit": true
   },
-  "include": ["src/renderer/**/*", "packages/core/src/**/*"]
+  "include": ["src/**/*"]
 }

@@ -3,6 +3,9 @@
   "version": "0.4.0",
   "description": "Apple Music-inspired desktop music player for Jellyfin",
   "main": "./out/main/index.js",
+  "workspaces": [
+    "packages/*"
+  ],
   "scripts": {
     "dev": "electron-vite dev",
     "build": "electron-vite build",
