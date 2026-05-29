@@ -111,6 +111,7 @@ export function ImageCropper({ imageUrl, onCrop, onCancel, size = 240 }: ImageCr
             style={{
               width: baseW * scale,
               height: 'auto',
+              maxWidth: 'none',
               transform: 'none',
               left: (size - baseW * scale) / 2 + offset.x,
               top: (size - baseH * scale) / 2 + offset.y
