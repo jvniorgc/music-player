@@ -30,13 +30,12 @@ export function ImageCropper({ imageUrl, onCrop, onCancel, size = 240 }: ImageCr
     img.src = imageUrl
   }, [imageUrl])
 
-  // Fit image: the smaller dimension fills the circle
+  // Fit image: the smaller dimension fills the circle at scale=1
   const baseScale = imgNaturalSize.w && imgNaturalSize.h
     ? size / Math.min(imgNaturalSize.w, imgNaturalSize.h)
     : 1
 
-  const displayW = imgNaturalSize.w * baseScale * scale
-  const displayH = imgNaturalSize.h * baseScale * scale
+  const totalScale = baseScale * scale
 
   const handlePointerDown = useCallback((e: React.PointerEvent) => {
     setDragging(true)
@@ -77,10 +76,11 @@ export function ImageCropper({ imageUrl, onCrop, onCancel, size = 240 }: ImageCr
     ctx.closePath()
     ctx.clip()
 
-    // Calculate what portion of the image to draw
+    // Mirror the CSS transform: scale from center + translate offset
     const renderScale = outputSize / size
-    const drawW = displayW * renderScale
-    const drawH = displayH * renderScale
+    const finalScale = totalScale * renderScale
+    const drawW = imgNaturalSize.w * finalScale
+    const drawH = imgNaturalSize.h * finalScale
     const drawX = (outputSize - drawW) / 2 + offset.x * renderScale
     const drawY = (outputSize - drawH) / 2 + offset.y * renderScale
 
@@ -111,10 +111,12 @@ export function ImageCropper({ imageUrl, onCrop, onCancel, size = 240 }: ImageCr
             draggable={false}
             className="absolute pointer-events-none select-none"
             style={{
-              width: displayW,
-              height: displayH,
-              left: `calc(50% - ${displayW / 2}px + ${offset.x}px)`,
-              top: `calc(50% - ${displayH / 2}px + ${offset.y}px)`
+              width: imgNaturalSize.w,
+              height: imgNaturalSize.h,
+              transformOrigin: 'center center',
+              transform: `translate(${offset.x}px, ${offset.y}px) scale(${totalScale})`,
+              left: `calc(50% - ${imgNaturalSize.w / 2}px)`,
+              top: `calc(50% - ${imgNaturalSize.h / 2}px)`
             }}
           />
         )}
