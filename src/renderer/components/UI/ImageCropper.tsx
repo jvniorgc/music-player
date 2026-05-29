@@ -110,7 +110,8 @@ export function ImageCropper({ imageUrl, onCrop, onCancel, size = 240 }: ImageCr
             className="absolute pointer-events-none select-none"
             style={{
               width: baseW * scale,
-              height: baseH * scale,
+              height: 'auto',
+              transform: 'none',
               left: (size - baseW * scale) / 2 + offset.x,
               top: (size - baseH * scale) / 2 + offset.y
             }}
