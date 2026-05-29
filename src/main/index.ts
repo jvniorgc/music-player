@@ -1,7 +1,8 @@
 import { app, BrowserWindow, ipcMain, shell, session, net, Menu } from 'electron'
-import { join } from 'path'
+import { join, resolve, sep } from 'path'
 import { initDatabase, getDatabase } from './database'
 import { existsSync, mkdirSync, createWriteStream, unlinkSync, statSync, readdirSync } from 'fs'
+import { writeFile } from 'fs/promises'
 import { Readable } from 'stream'
 import { initAutoUpdater } from './updater'
 
@@ -154,6 +155,28 @@ function setupIPC() {
   ipcMain.handle('download:get-path', (_e, itemId: string) => {
     const row = db.prepare('SELECT file_path FROM downloads WHERE item_id = ? AND status = ?').get(itemId, 'completed') as { file_path: string } | undefined
     return row?.file_path || null
+  })
+
+  // --- Collage export ---
+  // Saves a generated collage image (raw PNG bytes) to the OS Downloads folder.
+  ipcMain.handle('collage:save', async (_e, data: { bytes: Uint8Array; filename: string }) => {
+    try {
+      const downloadsDir = app.getPath('downloads')
+
+      // Sanitize the filename to prevent path traversal and ensure a .png extension.
+      let base = (data.filename || 'collage').replace(/[^a-zA-Z0-9._-]/g, '_')
+      if (!base.toLowerCase().endsWith('.png')) base += '.png'
+
+      const filePath = resolve(downloadsDir, base)
+      if (filePath !== downloadsDir && !filePath.startsWith(downloadsDir + sep)) {
+        throw new Error('Invalid filename')
+      }
+
+      await writeFile(filePath, Buffer.from(data.bytes))
+      return { success: true, path: filePath }
+    } catch (err: any) {
+      return { success: false, error: err?.message || String(err) }
+    }
   })
 
   // --- Audio Cache ---

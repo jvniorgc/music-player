@@ -21,6 +21,10 @@ const api = {
   getDownload: (itemId: string) => ipcRenderer.invoke('download:get', itemId),
   getDownloadPath: (itemId: string) => ipcRenderer.invoke('download:get-path', itemId),
 
+  // Collage export (saves a PNG to the OS Downloads folder)
+  saveCollage: (data: { bytes: Uint8Array; filename: string }) =>
+    ipcRenderer.invoke('collage:save', data),
+
   // Audio Cache
   cacheAudio: (data: { itemId: string; url: string; quality: string }) =>
     ipcRenderer.invoke('cache:audio:save', data),

@@ -2,13 +2,14 @@ import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { jellyfin, JellyfinItem, JellyfinUser } from '../../services/jellyfin'
 import { usePlayerStore } from '../../stores/player'
-import { ArrowLeft, ListMusic, Loader2 } from 'lucide-react'
+import { ArrowLeft, ListMusic, Loader2, Grid3x3 } from 'lucide-react'
+import CollageModal from './CollageModal'
 
 type ViewMode = 'artists' | 'albums' | 'songs'
-type TimePeriod = '7d' | '30d' | '3m' | '1y' | 'all'
+export type TimePeriod = '7d' | '30d' | '3m' | '1y' | 'all'
 type GridSize = '4x2' | '5x3'
 
-const TIME_LABELS: Record<TimePeriod, string> = {
+export const TIME_LABELS: Record<TimePeriod, string> = {
   '7d': '7 days',
   '30d': '30 days',
   '3m': '3 months',
@@ -19,7 +20,7 @@ const TIME_LABELS: Record<TimePeriod, string> = {
 const GRID_COLS: Record<GridSize, number> = { '4x2': 4, '5x3': 5 }
 const GRID_COUNT: Record<GridSize, number> = { '4x2': 8, '5x3': 15 }
 
-function getMinDate(period: TimePeriod): string | undefined {
+export function getMinDate(period: TimePeriod): string | undefined {
   if (period === 'all') return undefined
   const now = new Date()
   switch (period) {
@@ -50,6 +51,7 @@ export default function UserProfileView() {
   const [gridSize, setGridSize] = useState<GridSize>('4x2')
   const [loading, setLoading] = useState(true)
   const [topLoading, setTopLoading] = useState(false)
+  const [collageOpen, setCollageOpen] = useState(false)
 
   useEffect(() => {
     if (!id) return
@@ -160,6 +162,14 @@ export default function UserProfileView() {
         <div className="flex items-center justify-between mb-5 flex-wrap gap-3">
           <h2 className="text-xl font-bold">Top</h2>
           <div className="flex items-center gap-2">
+            <button
+              onClick={() => setCollageOpen(true)}
+              className="flex items-center gap-1.5 bg-bg-elevated border border-border rounded-lg px-3 py-1.5 text-sm text-text-primary hover:bg-white/10 transition-colors cursor-pointer"
+              title="Create a downloadable collage"
+            >
+              <Grid3x3 size={14} />
+              Collage
+            </button>
             <select
               value={viewMode}
               onChange={e => setViewMode(e.target.value as ViewMode)}
@@ -218,6 +228,10 @@ export default function UserProfileView() {
           </div>
         )}
       </section>
+
+      {collageOpen && id && (
+        <CollageModal userId={id} onClose={() => setCollageOpen(false)} />
+      )}
     </div>
   )
 }
