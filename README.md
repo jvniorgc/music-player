@@ -28,7 +28,8 @@
 - [x] Album sorting (A–Z / Recently Added)
 - [x] Global search with grouped results (artists, albums, songs)
 - [x] Playlists — create, rename, delete, add/remove tracks
-- [x] Social tab — user profiles with top artists/albums (last.fm-style)
+- [x] Social tab — user profiles with top artists/albums/songs by period (last.fm-style)
+- [x] Downloadable high-res chart collage (3×3–10×10, albums or songs, optional title list)
 - [x] Local audio cache with LRU eviction (2 GB)
 - [x] Download for offline playback
 - [x] Metadata editor via MusicBrainz + Cover Art Archive
