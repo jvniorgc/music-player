@@ -49,56 +49,75 @@ function drawCover(
   ctx.drawImage(img, sx, sy, w, h)
 }
 
-function drawTitle(
-  ctx: CanvasRenderingContext2D,
-  item: TopItem,
-  type: CollageType,
-  dx: number,
-  dy: number,
-  size: number
-) {
-  const grad = ctx.createLinearGradient(0, dy + size * 0.45, 0, dy + size)
-  grad.addColorStop(0, 'rgba(0,0,0,0)')
-  grad.addColorStop(1, 'rgba(0,0,0,0.85)')
-  ctx.fillStyle = grad
-  ctx.fillRect(dx, dy + size * 0.45, size, size * 0.55)
+const FONT_STACK = '-apple-system, "Segoe UI", Roboto, sans-serif'
 
-  const pad = size * 0.06
-  const titleSize = Math.max(11, Math.round(size * 0.082))
-  const subSize = Math.max(10, Math.round(size * 0.062))
-
-  const subtitle = type === 'albums'
+function subtitleFor(item: TopItem, type: CollageType): string {
+  return type === 'albums'
     ? (item.AlbumArtist || '')
     : (item.Artists?.join(', ') || item.AlbumArtist || '')
-
-  ctx.textBaseline = 'alphabetic'
-  ctx.fillStyle = '#ffffff'
-  ctx.font = `700 ${titleSize}px -apple-system, "Segoe UI", Roboto, sans-serif`
-  fillTextEllipsis(ctx, item.Name || '', dx + pad, dy + size - pad - subSize - 4, size - pad * 2)
-
-  if (subtitle) {
-    ctx.fillStyle = 'rgba(255,255,255,0.72)'
-    ctx.font = `400 ${subSize}px -apple-system, "Segoe UI", Roboto, sans-serif`
-    fillTextEllipsis(ctx, subtitle, dx + pad, dy + size - pad, size - pad * 2)
-  }
 }
 
-function fillTextEllipsis(
+function ellipsize(ctx: CanvasRenderingContext2D, text: string, maxWidth: number): string {
+  if (ctx.measureText(text).width <= maxWidth) return text
+  let t = text
+  while (t.length > 1 && ctx.measureText(t + '…').width > maxWidth) {
+    t = t.slice(0, -1)
+  }
+  return t + '…'
+}
+
+// Draws the numbered title list to the right of the grid. Each grid row's titles
+// are grouped into a vertical band aligned to that row, so a visible gap appears
+// between rows — making it easy to see which titles belong to each grid line.
+function drawTitleSidebar(
   ctx: CanvasRenderingContext2D,
-  text: string,
-  x: number,
-  y: number,
-  maxWidth: number
+  items: TopItem[],
+  type: CollageType,
+  gridPx: number,
+  grid: number,
+  cell: number
 ) {
-  if (ctx.measureText(text).width <= maxWidth) {
-    ctx.fillText(text, x, y)
-    return
+  const x = gridPx
+  const padX = Math.max(8, cell * 0.1)
+  const bandPadY = Math.max(6, cell * 0.12)
+  const innerW = ctx.canvas.width - gridPx - padX * 2
+  ctx.textBaseline = 'middle'
+
+  for (let r = 0; r < grid; r++) {
+    const bandTop = r * cell + bandPadY
+    const bandH = cell - bandPadY * 2
+    const lineH = bandH / grid
+    const fontSize = Math.max(9, Math.floor(lineH * 0.66))
+
+    for (let c = 0; c < grid; c++) {
+      const idx = r * grid + c
+      const item = items[idx]
+      if (!item) continue
+      const y = bandTop + c * lineH + lineH / 2
+      let cx = x + padX
+
+      const prefix = `${idx + 1}. `
+      ctx.font = `600 ${fontSize}px ${FONT_STACK}`
+      ctx.fillStyle = 'rgba(255,255,255,0.45)'
+      ctx.fillText(prefix, cx, y)
+      cx += ctx.measureText(prefix).width
+
+      ctx.font = `700 ${fontSize}px ${FONT_STACK}`
+      ctx.fillStyle = '#ffffff'
+      const name = ellipsize(ctx, item.Name || '', x + padX + innerW - cx)
+      ctx.fillText(name, cx, y)
+      cx += ctx.measureText(name).width
+
+      const artist = subtitleFor(item, type)
+      const remaining = x + padX + innerW - cx
+      if (artist && name === (item.Name || '') && remaining > fontSize * 2) {
+        ctx.font = `400 ${fontSize}px ${FONT_STACK}`
+        ctx.fillStyle = 'rgba(255,255,255,0.45)'
+        const art = ellipsize(ctx, '  ·  ' + artist, remaining)
+        ctx.fillText(art, cx, y)
+      }
+    }
   }
-  let truncated = text
-  while (truncated.length > 1 && ctx.measureText(truncated + '…').width > maxWidth) {
-    truncated = truncated.slice(0, -1)
-  }
-  ctx.fillText(truncated + '…', x, y)
 }
 
 export default function CollageModal({ userId, onClose }: { userId: string; onClose: () => void }) {
@@ -150,11 +169,15 @@ export default function CollageModal({ userId, onClose }: { userId: string; onCl
   }, [])
 
   const renderCollage = useCallback(async (cell: number): Promise<HTMLCanvasElement> => {
+    const gridPx = grid * cell
+    // Title list occupies a panel to the right of the grid.
+    const sidebarW = showTitles ? Math.round(gridPx * 0.55) : 0
+
     const canvas = document.createElement('canvas')
-    canvas.width = grid * cell
-    canvas.height = grid * cell
+    canvas.width = gridPx + sidebarW
+    canvas.height = gridPx
     const ctx = canvas.getContext('2d')!
-    ctx.fillStyle = '#0a0a0a'
+    ctx.fillStyle = '#000000'
     ctx.fillRect(0, 0, canvas.width, canvas.height)
 
     const cells = items.slice(0, count)
@@ -172,12 +195,13 @@ export default function CollageModal({ userId, onClose }: { userId: string; onCl
       if (img) {
         drawCover(ctx, img, x, y, cell)
       } else {
-        ctx.fillStyle = '#161616'
+        ctx.fillStyle = '#0d0d0d'
         ctx.fillRect(x, y, cell, cell)
       }
-      if (showTitles && cells[i]) {
-        drawTitle(ctx, cells[i], type, x, y, cell)
-      }
+    }
+
+    if (showTitles) {
+      drawTitleSidebar(ctx, cells, type, gridPx, grid, cell)
     }
 
     return canvas
