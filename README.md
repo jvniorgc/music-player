@@ -5,7 +5,7 @@
 
   A desktop music player for [Jellyfin](https://jellyfin.org/) servers, inspired by Apple Music.
 
-  [![Version](https://img.shields.io/badge/version-0.3.5-blue?style=flat-square)](https://github.com/jvniorgc/music-player/releases)
+  [![Version](https://img.shields.io/badge/version-0.4.0-blue?style=flat-square)](https://github.com/jvniorgc/music-player/releases)
   [![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Windows%20%7C%20Linux-lightgrey?style=flat-square)](#download)
   [![Electron](https://img.shields.io/badge/electron-33-47848F?style=flat-square&logo=electron&logoColor=white)](https://www.electronjs.org/)
   [![TypeScript](https://img.shields.io/badge/typescript-5-3178C6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
