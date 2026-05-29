@@ -364,7 +364,7 @@ class JellyfinService {
   }
 
   async refreshItem(itemId: string): Promise<void> {
-    return this.request(`/Items/${itemId}/Refresh?Recursive=true&MetadataRefreshMode=FullRefresh&ReplaceAllMetadata=false`, {
+    return this.request(`/Items/${itemId}/Refresh?Recursive=true&MetadataRefreshMode=ValidationOnly&ImageRefreshMode=None&ReplaceAllMetadata=false&ReplaceAllImages=false`, {
       method: 'POST'
     })
   }
