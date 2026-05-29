@@ -18,7 +18,6 @@ export function ImageCropper({ imageUrl, onCrop, onCancel, size = 240 }: ImageCr
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 })
   const [imgNaturalSize, setImgNaturalSize] = useState({ w: 0, h: 0 })
 
-  // Load image dimensions
   useEffect(() => {
     const img = new Image()
     img.onload = () => {
@@ -30,12 +29,12 @@ export function ImageCropper({ imageUrl, onCrop, onCancel, size = 240 }: ImageCr
     img.src = imageUrl
   }, [imageUrl])
 
-  // Fit image: the smaller dimension fills the circle at scale=1
+  // Base dimensions: fit the shorter side to the circle at scale=1
   const baseScale = imgNaturalSize.w && imgNaturalSize.h
     ? size / Math.min(imgNaturalSize.w, imgNaturalSize.h)
     : 1
-
-  const totalScale = baseScale * scale
+  const baseW = imgNaturalSize.w * baseScale
+  const baseH = imgNaturalSize.h * baseScale
 
   const handlePointerDown = useCallback((e: React.PointerEvent) => {
     setDragging(true)
@@ -76,13 +75,12 @@ export function ImageCropper({ imageUrl, onCrop, onCancel, size = 240 }: ImageCr
     ctx.closePath()
     ctx.clip()
 
-    // Mirror the CSS transform: scale from center + translate offset
-    const renderScale = outputSize / size
-    const finalScale = totalScale * renderScale
-    const drawW = imgNaturalSize.w * finalScale
-    const drawH = imgNaturalSize.h * finalScale
-    const drawX = (outputSize - drawW) / 2 + offset.x * renderScale
-    const drawY = (outputSize - drawH) / 2 + offset.y * renderScale
+    // Map viewport to output canvas
+    const ratio = outputSize / size
+    const drawW = baseW * scale * ratio
+    const drawH = baseH * scale * ratio
+    const drawX = (outputSize - drawW) / 2 + offset.x * ratio
+    const drawY = (outputSize - drawH) / 2 + offset.y * ratio
 
     ctx.drawImage(imgRef.current, drawX, drawY, drawW, drawH)
 
@@ -111,12 +109,10 @@ export function ImageCropper({ imageUrl, onCrop, onCancel, size = 240 }: ImageCr
             draggable={false}
             className="absolute pointer-events-none select-none"
             style={{
-              width: imgNaturalSize.w,
-              height: imgNaturalSize.h,
-              transformOrigin: 'center center',
-              transform: `translate(${offset.x}px, ${offset.y}px) scale(${totalScale})`,
-              left: `calc(50% - ${imgNaturalSize.w / 2}px)`,
-              top: `calc(50% - ${imgNaturalSize.h / 2}px)`
+              width: baseW * scale,
+              height: baseH * scale,
+              left: (size - baseW * scale) / 2 + offset.x,
+              top: (size - baseH * scale) / 2 + offset.y
             }}
           />
         )}
