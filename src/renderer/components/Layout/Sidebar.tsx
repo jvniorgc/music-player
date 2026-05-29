@@ -7,6 +7,8 @@ import {
   Home, Disc3, Users, Music, ListMusic, Search, LogOut, Download, RefreshCw, Share2, Globe
 } from 'lucide-react'
 import { useEffect, useState } from 'react'
+import { jellyfin } from '../../services/jellyfin'
+import { ProfileEditModal } from '../UI/ProfileEditModal'
 
 const navItems = [
   { to: '/', icon: Home, label: 'Home' },
@@ -23,12 +25,13 @@ const libraryItems = [
 ]
 
 export default function Sidebar() {
-  const { logout, auth } = useAuthStore()
+  const { logout, auth, primaryImageTag } = useAuthStore()
   const { playlists, fetchPlaylists, refreshAll, isLoading } = useLibraryStore()
   const { loadDownloads } = useDownloadStore()
   const toast = useToastStore(s => s.show)
   const navigate = useNavigate()
   const [refreshing, setRefreshing] = useState(false)
+  const [profileOpen, setProfileOpen] = useState(false)
 
   useEffect(() => {
     fetchPlaylists()
@@ -46,6 +49,10 @@ export default function Sidebar() {
     setRefreshing(false)
     toast('Library synced', 'success')
   }
+
+  const avatarUrl = auth?.userId && primaryImageTag
+    ? jellyfin.getUserImageUrl(auth.userId, primaryImageTag, 80)
+    : null
 
   return (
     <aside className="w-60 h-full bg-bg-secondary/80 backdrop-blur-xl border-r border-border-subtle flex flex-col pt-4">
@@ -132,16 +139,32 @@ export default function Sidebar() {
         </div>
       )}
 
-      {/* User / Logout */}
-      <div className="mt-auto p-3 border-t border-border-subtle">
+      {/* User section */}
+      <div className="mt-auto p-3 border-t border-border-subtle space-y-1">
+        <button
+          onClick={() => setProfileOpen(true)}
+          className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-text-secondary hover:text-text-primary hover:bg-white/5 transition-colors w-full no-drag"
+          title="Edit profile"
+        >
+          <div className="w-6 h-6 rounded-full overflow-hidden shrink-0 bg-bg-elevated flex items-center justify-center">
+            {avatarUrl ? (
+              <img src={avatarUrl} className="w-full h-full object-cover" alt="" />
+            ) : (
+              <span className="text-xs">👤</span>
+            )}
+          </div>
+          <span className="truncate">{auth?.username || 'Profile'}</span>
+        </button>
         <button
           onClick={handleLogout}
           className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-text-secondary hover:text-text-primary hover:bg-white/5 transition-colors w-full no-drag"
         >
           <LogOut size={16} />
-          <span className="truncate">{auth?.username || 'Log out'}</span>
+          <span>Log out</span>
         </button>
       </div>
+
+      <ProfileEditModal open={profileOpen} onClose={() => setProfileOpen(false)} />
     </aside>
   )
 }

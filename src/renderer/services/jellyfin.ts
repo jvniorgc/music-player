@@ -393,6 +393,41 @@ class JellyfinService {
     return this.request<JellyfinUser[]>('/Users')
   }
 
+  async getCurrentUser(): Promise<JellyfinUser> {
+    return this.request<JellyfinUser>(`/Users/${this.userId}`)
+  }
+
+  async updateUserName(name: string): Promise<void> {
+    const user = await this.getCurrentUser()
+    await this.request(`/Users/${this.userId}`, {
+      method: 'POST',
+      body: JSON.stringify({ ...user, Name: name })
+    })
+  }
+
+  async uploadUserImage(blob: Blob): Promise<void> {
+    const buffer = await blob.arrayBuffer()
+    const bytes = new Uint8Array(buffer)
+
+    let base64 = ''
+    const chunk = 8192
+    for (let i = 0; i < bytes.length; i += chunk) {
+      base64 += String.fromCharCode(...bytes.subarray(i, i + chunk))
+    }
+    base64 = btoa(base64)
+
+    const contentType = blob.type || 'image/jpeg'
+    const res = await fetch(`${this.serverUrl}/Users/${this.userId}/Images/Primary`, {
+      method: 'POST',
+      headers: {
+        'X-Emby-Authorization': this.authHeader(),
+        'Content-Type': contentType
+      },
+      body: base64
+    })
+    if (!res.ok) throw new Error(`Upload failed: ${res.status}`)
+  }
+
   getUserImageUrl(userId: string, imageTag?: string, maxSize = 200): string {
     const tag = imageTag ? `&tag=${imageTag}` : ''
     return `${this.serverUrl}/Users/${userId}/Images/Primary?maxHeight=${maxSize}&maxWidth=${maxSize}${tag}&quality=90&api_key=${this.token}`
