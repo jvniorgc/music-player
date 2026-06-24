@@ -51,6 +51,16 @@ function drawCover(
 
 const FONT_STACK = '-apple-system, "Segoe UI", Roboto, sans-serif'
 
+// Title font size is a fixed fraction of a single cover, so titles stay the
+// same compact size regardless of grid size (a 3×3 looks like a 10×10). Without
+// this, the font scaled with the per-row band height and got huge on small
+// grids, truncating titles.
+const TITLE_FONT_RATIO = 0.055
+
+// Line height as a multiple of the font size — keeps a row's titles packed
+// tightly together (normal text leading) instead of spread across the cell.
+const TITLE_LINE_SPACING = 1.35
+
 function subtitleFor(item: TopItem, type: CollageType): string {
   return type === 'albums'
     ? (item.AlbumArtist || '')
@@ -67,8 +77,9 @@ function ellipsize(ctx: CanvasRenderingContext2D, text: string, maxWidth: number
 }
 
 // Draws the numbered title list to the right of the grid. Each grid row's titles
-// are grouped into a vertical band aligned to that row, so a visible gap appears
-// between rows — making it easy to see which titles belong to each grid line.
+// are packed tightly together (no gaps between titles in the same row) and the
+// group starts at the top of its matching grid row, so it stays easy to see
+// which titles belong to each grid line.
 function drawTitleSidebar(
   ctx: CanvasRenderingContext2D,
   items: TopItem[],
@@ -79,21 +90,26 @@ function drawTitleSidebar(
 ) {
   const x = gridPx
   const padX = Math.max(8, cell * 0.1)
-  const bandPadY = Math.max(6, cell * 0.12)
+  const padY = Math.max(6, cell * 0.06)
   const innerW = ctx.canvas.width - gridPx - padX * 2
   ctx.textBaseline = 'middle'
 
+  // Fixed, compact font size (independent of grid), capped so one row's worth of
+  // tightly-packed titles still fits within that row's height.
+  const fontSize = Math.max(
+    9,
+    Math.min(Math.floor(cell * TITLE_FONT_RATIO), Math.floor(cell / (grid * TITLE_LINE_SPACING)))
+  )
+  const lineH = fontSize * TITLE_LINE_SPACING
+
   for (let r = 0; r < grid; r++) {
-    const bandTop = r * cell + bandPadY
-    const bandH = cell - bandPadY * 2
-    const lineH = bandH / grid
-    const fontSize = Math.max(9, Math.floor(lineH * 0.66))
+    const groupTop = r * cell + padY
 
     for (let c = 0; c < grid; c++) {
       const idx = r * grid + c
       const item = items[idx]
       if (!item) continue
-      const y = bandTop + c * lineH + lineH / 2
+      const y = groupTop + c * lineH + lineH / 2
       let cx = x + padX
 
       const prefix = `${idx + 1}. `
