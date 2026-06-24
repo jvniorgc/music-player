@@ -4,6 +4,7 @@ import { initDatabase, getDatabase } from './database'
 import { existsSync, mkdirSync, createWriteStream, unlinkSync, statSync, readdirSync } from 'fs'
 import { writeFile } from 'fs/promises'
 import { Readable } from 'stream'
+import { pipeline } from 'stream/promises'
 import { initAutoUpdater } from './updater'
 
 let mainWindow: BrowserWindow | null = null
@@ -168,6 +169,7 @@ function setupIPC() {
       if (!base.toLowerCase().endsWith('.png')) base += '.png'
 
       const filePath = resolve(downloadsDir, base)
+      /* v8 ignore next 3 -- defensive: `base` is sanitized above so it can never escape downloadsDir */
       if (filePath !== downloadsDir && !filePath.startsWith(downloadsDir + sep)) {
         throw new Error('Invalid filename')
       }
