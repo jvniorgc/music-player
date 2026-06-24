@@ -201,7 +201,7 @@ describe('users & images', () => {
 
   it('uploadImage downloads the source then uploads the blob', async () => {
     const fetchMock = mockFetchRouter([
-      ['http://img/cover.jpg', () => new Response(new Blob(['xyz']))],
+      ['http://img/cover.jpg', () => textRes('xyz')],
       ['/Items/i1/Images/Primary', () => emptyRes(200)],
     ])
     await jellyfin.uploadImage('i1', 'http://img/cover.jpg')
