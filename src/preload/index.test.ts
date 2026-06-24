@@ -109,6 +109,33 @@ describe('preload bridge', () => {
     expect(h.invoke).toHaveBeenCalledWith('updater:install')
   })
 
+  it('maps the Last.fm methods to their channels', () => {
+    api.lastfmGetStatus()
+    expect(h.invoke).toHaveBeenCalledWith('lastfm:get-status')
+
+    api.lastfmSetCredentials('key', 'secret')
+    expect(h.invoke).toHaveBeenCalledWith('lastfm:set-credentials', 'key', 'secret')
+
+    api.lastfmSetEnabled(true)
+    expect(h.invoke).toHaveBeenCalledWith('lastfm:set-enabled', true)
+
+    api.lastfmStartAuth()
+    expect(h.invoke).toHaveBeenCalledWith('lastfm:start-auth')
+
+    api.lastfmFinishAuth('tok')
+    expect(h.invoke).toHaveBeenCalledWith('lastfm:finish-auth', 'tok')
+
+    api.lastfmDisconnect()
+    expect(h.invoke).toHaveBeenCalledWith('lastfm:disconnect')
+
+    const track = { artist: 'A', track: 'B' }
+    api.lastfmNowPlaying(track)
+    expect(h.invoke).toHaveBeenCalledWith('lastfm:now-playing', track)
+
+    api.lastfmScrobble({ ...track, timestamp: 1 })
+    expect(h.invoke).toHaveBeenCalledWith('lastfm:scrobble', { ...track, timestamp: 1 })
+  })
+
   it('wires download:progress listeners and returns an unsubscribe', () => {
     const cb = vi.fn()
     const unsub = api.onDownloadProgress(cb)

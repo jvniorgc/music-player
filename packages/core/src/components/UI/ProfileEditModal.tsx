@@ -2,6 +2,7 @@ import { useRef, useState } from 'react'
 import { Camera, Loader2 } from 'lucide-react'
 import { Modal } from './Modal'
 import { ImageCropper } from './ImageCropper'
+import { LastfmSettings } from '../Settings/LastfmSettings'
 import { useAuthStore } from '../../stores/auth'
 import { jellyfin } from '../../services/jellyfin'
 import { useToastStore } from '../../stores/toast'
@@ -133,6 +134,9 @@ export function ProfileEditModal({ open, onClose }: ProfileEditModalProps) {
               placeholder="Your name"
             />
           </div>
+
+          {/* Last.fm scrobbling */}
+          <LastfmSettings />
 
           {/* Actions */}
           <div className="flex justify-end gap-3 w-full">

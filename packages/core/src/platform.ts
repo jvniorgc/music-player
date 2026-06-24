@@ -7,6 +7,28 @@ export type DownloadError = { itemId: string; error: string }
 export type UpdateAvailable = { version: string; releaseNotes: string | undefined }
 export type UpdateProgress = { percent: number; bytesPerSecond: number; transferred: number; total: number }
 
+export type LastfmStatus = {
+  /** Both API key and shared secret are stored. */
+  configured: boolean
+  /** A user session key is stored (account linked). */
+  connected: boolean
+  /** Scrobbling toggle is enabled. */
+  enabled: boolean
+  /** The linked Last.fm username, when connected. */
+  username: string | null
+}
+
+export type LastfmTrack = {
+  artist: string
+  track: string
+  album?: string
+  albumArtist?: string
+  /** Track length in seconds. */
+  duration?: number
+  /** Unix epoch seconds of when playback started (required for scrobble). */
+  timestamp?: number
+}
+
 export type AuthData = {
   serverUrl: string
   token: string
@@ -60,6 +82,18 @@ export interface PlatformApi {
   // Settings
   getSetting: (key: string) => Promise<string | null>
   setSetting: (key: string, value: string) => Promise<void>
+
+  // Last.fm scrobbling
+  lastfmGetStatus: () => Promise<LastfmStatus>
+  lastfmSetCredentials: (apiKey: string, apiSecret: string) => Promise<void>
+  lastfmSetEnabled: (enabled: boolean) => Promise<void>
+  /** Begin desktop auth: requests a token and opens the authorize page in the browser. */
+  lastfmStartAuth: () => Promise<{ token: string }>
+  /** Exchange an authorized token for a permanent session key; returns the username. */
+  lastfmFinishAuth: (token: string) => Promise<{ username: string }>
+  lastfmDisconnect: () => Promise<void>
+  lastfmNowPlaying: (track: LastfmTrack) => Promise<void>
+  lastfmScrobble: (track: LastfmTrack) => Promise<void>
 
   // Lyrics cache (session)
   getCachedLyrics: (itemId: string) => Promise<string | null>

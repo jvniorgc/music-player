@@ -6,6 +6,7 @@ import type {
   DownloadError,
   UpdateAvailable,
   UpdateProgress,
+  LastfmTrack,
 } from '@music-player/core/platform'
 
 const api = {
@@ -36,6 +37,16 @@ const api = {
   // Settings
   getSetting: (key: string) => ipcRenderer.invoke('settings:get', key),
   setSetting: (key: string, value: string) => ipcRenderer.invoke('settings:set', key, value),
+
+  // Last.fm scrobbling
+  lastfmGetStatus: () => ipcRenderer.invoke('lastfm:get-status'),
+  lastfmSetCredentials: (apiKey: string, apiSecret: string) => ipcRenderer.invoke('lastfm:set-credentials', apiKey, apiSecret),
+  lastfmSetEnabled: (enabled: boolean) => ipcRenderer.invoke('lastfm:set-enabled', enabled),
+  lastfmStartAuth: () => ipcRenderer.invoke('lastfm:start-auth'),
+  lastfmFinishAuth: (token: string) => ipcRenderer.invoke('lastfm:finish-auth', token),
+  lastfmDisconnect: () => ipcRenderer.invoke('lastfm:disconnect'),
+  lastfmNowPlaying: (track: LastfmTrack) => ipcRenderer.invoke('lastfm:now-playing', track),
+  lastfmScrobble: (track: LastfmTrack) => ipcRenderer.invoke('lastfm:scrobble', track),
 
   // Lyrics Cache
   getCachedLyrics: (itemId: string) => ipcRenderer.invoke('lyrics:get', itemId),

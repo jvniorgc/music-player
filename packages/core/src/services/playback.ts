@@ -1,4 +1,5 @@
 import { JellyfinItem, jellyfin } from './jellyfin'
+import * as lastfm from './lastfm'
 
 export type RepeatMode = 'none' | 'all' | 'one'
 
@@ -20,6 +21,11 @@ class PlaybackService {
   private _repeat: RepeatMode = 'none'
   private _shuffleOrder: number[] = []
   private _volume = 1
+
+  // Last.fm scrobble tracking for the currently playing track.
+  private scrobbleItem: JellyfinItem | null = null
+  private scrobbleStartedAt = 0
+  private scrobbleDone = false
 
   // Gapless playback: preloaded next track ready to play instantly
   private nextAudio: HTMLAudioElement | null = null
@@ -132,6 +138,7 @@ class PlaybackService {
 
   async playTrack(index: number) {
     if (index < 0 || index >= this._queue.length) return
+    this.finalizeScrobble()
     this._currentIndex = index
     const track = this._queue[index]
 
@@ -166,6 +173,9 @@ class PlaybackService {
       // Report to Jellyfin
       jellyfin.reportPlaybackStart(track.id).catch(() => {})
 
+      // Report "now playing" to Last.fm and begin scrobble tracking
+      this.startScrobbleTracking(track)
+
       // Cache audio in background if streaming
       if (track.source === 'stream') {
         this.cacheCurrentTrack(track)
@@ -188,6 +198,7 @@ class PlaybackService {
           this.audio.load()
           await this.audio.play()
           console.log('[Playback] Fallback succeeded')
+          this.startScrobbleTracking(track)
           return
         } catch (fallbackErr: any) {
           console.error('[Playback] Fallback also failed:', fallbackErr)
@@ -203,6 +214,8 @@ class PlaybackService {
 
     const track = this._queue[index]
     if (!track) return false
+
+    this.finalizeScrobble()
 
     // Stop current audio
     const oldAudio = this.audio
@@ -226,6 +239,8 @@ class PlaybackService {
       console.log('[Playback] Gapless transition to:', track.item.Name)
 
       jellyfin.reportPlaybackStart(track.id).catch(() => {})
+
+      this.startScrobbleTracking(track)
 
       if (track.source === 'stream') {
         this.cacheCurrentTrack(track)
@@ -379,6 +394,8 @@ class PlaybackService {
   }
 
   clearQueue() {
+    this.finalizeScrobble()
+    this.scrobbleItem = null
     this.audio.pause()
     this.audio.src = ''
     this.invalidatePreload()
@@ -487,6 +504,8 @@ class PlaybackService {
   }
 
   private handleTrackEnded() {
+    this.finalizeScrobble()
+
     if (this.currentTrack) {
       const ticks = Math.floor(this.duration * 10_000_000)
       jellyfin.reportPlaybackStopped(this.currentTrack.id, ticks).catch(() => {})
@@ -503,6 +522,24 @@ class PlaybackService {
       this.playPreloadedTrack(nextIndex)
     } else {
       this.playTrack(nextIndex)
+    }
+  }
+
+  private startScrobbleTracking(track: QueueTrack) {
+    this.scrobbleItem = track.item
+    this.scrobbleStartedAt = Math.floor(Date.now() / 1000)
+    this.scrobbleDone = false
+    lastfm.nowPlaying(track.item).catch(() => {})
+  }
+
+  private finalizeScrobble() {
+    const item = this.scrobbleItem
+    if (!item || this.scrobbleDone) return
+    const played = this.audio.currentTime
+    const duration = item.RunTimeTicks ? item.RunTimeTicks / 10_000_000 : this.audio.duration
+    if (lastfm.shouldScrobble(played, duration)) {
+      this.scrobbleDone = true
+      lastfm.scrobble(item, this.scrobbleStartedAt).catch(() => {})
     }
   }
 

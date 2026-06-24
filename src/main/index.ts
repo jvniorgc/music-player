@@ -6,6 +6,8 @@ import { writeFile } from 'fs/promises'
 import { Readable } from 'stream'
 import { pipeline } from 'stream/promises'
 import { initAutoUpdater } from './updater'
+import * as lastfm from './lastfm'
+import type { LastfmTrack } from '@music-player/core/platform'
 
 let mainWindow: BrowserWindow | null = null
 
@@ -228,6 +230,16 @@ function setupIPC() {
   ipcMain.handle('settings:set', (_e, key: string, value: string) => {
     db.prepare('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)').run(key, value)
   })
+
+  // --- Last.fm scrobbling ---
+  ipcMain.handle('lastfm:get-status', () => lastfm.getStatus())
+  ipcMain.handle('lastfm:set-credentials', (_e, apiKey: string, apiSecret: string) => lastfm.setCredentials(apiKey, apiSecret))
+  ipcMain.handle('lastfm:set-enabled', (_e, enabled: boolean) => lastfm.setEnabled(enabled))
+  ipcMain.handle('lastfm:start-auth', () => lastfm.startAuth())
+  ipcMain.handle('lastfm:finish-auth', (_e, token: string) => lastfm.finishAuth(token))
+  ipcMain.handle('lastfm:disconnect', () => lastfm.disconnect())
+  ipcMain.handle('lastfm:now-playing', (_e, track: LastfmTrack) => lastfm.updateNowPlaying(track))
+  ipcMain.handle('lastfm:scrobble', (_e, track: LastfmTrack) => lastfm.scrobble(track))
 
   // --- Lyrics Cache ---
   ipcMain.handle('lyrics:get', (_e, itemId: string) => {

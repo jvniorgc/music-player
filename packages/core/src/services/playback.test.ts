@@ -17,6 +17,15 @@ vi.mock('./jellyfin', () => ({
   },
 }))
 
+// Mock the Last.fm service so scrobble side-effects are observable. Fresh vi.fns
+// are produced each test because beforeEach() resetModules() re-runs this factory.
+vi.mock('./lastfm', () => ({
+  nowPlaying: vi.fn(() => Promise.resolve()),
+  scrobble: vi.fn(() => Promise.resolve()),
+  shouldScrobble: vi.fn((played: number, duration: number) =>
+    duration >= 30 && (played >= 240 || played >= duration / 2)),
+}))
+
 // Lets individual tests force load/play failures to exercise error paths.
 const audioConfig = { failLoad: false, failPlay: false }
 
@@ -459,5 +468,61 @@ describe('track ended without a ready preload', () => {
     await flush()
     await flush()
     expect(playback.currentIndex).toBe(1)
+  })
+})
+
+describe('last.fm scrobbling', () => {
+  const lastfm = () => import('./lastfm')
+
+  it('reports now playing when a track starts', async () => {
+    playback.setQueue(makeItems(1), 0)
+    await flush()
+    const lf = await lastfm()
+    expect(lf.nowPlaying).toHaveBeenCalledWith(expect.objectContaining({ Id: 't0' }))
+  })
+
+  it('scrobbles a track that ends after enough play', async () => {
+    playback.setQueue(makeItems(2), 0)
+    await flush()
+    const audio = (playback as any).audio as FakeAudio
+    audio.currentTime = 100 // full play of the 100s fake track
+    audio.dispatch('ended')
+    await flush()
+    const lf = await lastfm()
+    expect(lf.scrobble).toHaveBeenCalledWith(expect.objectContaining({ Id: 't0' }), expect.any(Number))
+  })
+
+  it('does not scrobble a track skipped too early', async () => {
+    playback.setQueue(makeItems(2), 0)
+    await flush()
+    const audio = (playback as any).audio as FakeAudio
+    audio.currentTime = 5 // only 5% of a 100s track
+    audio.dispatch('ended')
+    await flush()
+    const lf = await lastfm()
+    expect(lf.scrobble).not.toHaveBeenCalled()
+  })
+
+  it('scrobbles the outgoing track on a manual skip past the threshold', async () => {
+    playback.setQueue(makeItems(3), 0)
+    await flush()
+    ;(playback as any).audio.currentTime = 60
+    playback.next()
+    await flush()
+    const lf = await lastfm()
+    expect(lf.scrobble).toHaveBeenCalledWith(expect.objectContaining({ Id: 't0' }), expect.any(Number))
+  })
+
+  it('uses the item runtime as the scrobble duration when available', async () => {
+    const items = makeItems(2).map(i => ({ ...i, RunTimeTicks: 300 * 10_000_000 }))
+    playback.setQueue(items, 0)
+    await flush()
+    const audio = (playback as any).audio as FakeAudio
+    audio.currentTime = 160
+    audio.dispatch('ended')
+    await flush()
+    const lf = await lastfm()
+    expect(lf.shouldScrobble).toHaveBeenCalledWith(160, 300)
+    expect(lf.scrobble).toHaveBeenCalledWith(expect.objectContaining({ Id: 't0' }), expect.any(Number))
   })
 })

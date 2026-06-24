@@ -26,6 +26,15 @@ export function makeApiStub(): PlatformApi {
     // Settings
     getSetting: vi.fn().mockResolvedValue(null),
     setSetting: vi.fn().mockResolvedValue(undefined),
+    // Last.fm
+    lastfmGetStatus: vi.fn().mockResolvedValue({ configured: false, connected: false, enabled: false, username: null }),
+    lastfmSetCredentials: vi.fn().mockResolvedValue(undefined),
+    lastfmSetEnabled: vi.fn().mockResolvedValue(undefined),
+    lastfmStartAuth: vi.fn().mockResolvedValue({ token: 'tok' }),
+    lastfmFinishAuth: vi.fn().mockResolvedValue({ username: 'me' }),
+    lastfmDisconnect: vi.fn().mockResolvedValue(undefined),
+    lastfmNowPlaying: vi.fn().mockResolvedValue(undefined),
+    lastfmScrobble: vi.fn().mockResolvedValue(undefined),
     // Lyrics
     getCachedLyrics: vi.fn().mockResolvedValue(null),
     saveLyrics: vi.fn().mockResolvedValue(undefined),

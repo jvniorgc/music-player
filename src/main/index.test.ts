@@ -109,6 +109,8 @@ describe('main process: IPC registration', () => {
       'collage:save',
       'cache:audio:save', 'cache:audio:get', 'cache:clear',
       'settings:get', 'settings:set',
+      'lastfm:get-status', 'lastfm:set-credentials', 'lastfm:set-enabled', 'lastfm:start-auth',
+      'lastfm:finish-auth', 'lastfm:disconnect', 'lastfm:now-playing', 'lastfm:scrobble',
       'lyrics:get', 'lyrics:save', 'lyrics:get-downloaded', 'lyrics:save-downloaded',
       'file:get-url'
     ]
