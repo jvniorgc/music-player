@@ -33,20 +33,28 @@ function loadImage(url: string): Promise<HTMLImageElement | null> {
   })
 }
 
-function drawCover(
+export function drawCover(
   ctx: CanvasRenderingContext2D,
   img: HTMLImageElement,
   dx: number,
   dy: number,
   size: number
 ) {
-  // object-fit: cover
+  // object-fit: cover, clipped to the cell. Covers that aren't square (e.g. a
+  // 16:9 YouTube thumbnail) are scaled to fill the square and the overflow is
+  // clipped to the cell, so they crop cleanly instead of bleeding over the
+  // neighbouring covers in the grid.
   const ratio = Math.max(size / img.width, size / img.height)
   const w = img.width * ratio
   const h = img.height * ratio
   const sx = dx + (size - w) / 2
   const sy = dy + (size - h) / 2
+  ctx.save()
+  ctx.beginPath()
+  ctx.rect(dx, dy, size, size)
+  ctx.clip()
   ctx.drawImage(img, sx, sy, w, h)
+  ctx.restore()
 }
 
 const FONT_STACK = '-apple-system, "Segoe UI", Roboto, sans-serif'
