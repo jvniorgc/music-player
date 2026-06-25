@@ -12,14 +12,42 @@ export interface QueueTrack {
 
 type PlaybackListener = (event: string, data?: any) => void
 
+/**
+ * Spotify-style playback engine.
+ *
+ * The "what plays next" logic is modelled as two overlapping lists, exactly like
+ * Spotify:
+ *
+ *  - Context: the album/playlist/etc. the user told us to play. Held in
+ *    `_context` with a play `_order` (identity, or shuffled when shuffle is on)
+ *    and an `_orderPos` cursor. Shuffle only ever reorders the context.
+ *  - User queue (`_userQueue`): tracks added manually via "Add to queue" /
+ *    "Play next". Strict FIFO, always played in insertion order regardless of
+ *    shuffle, and CONSUMED (removed) once they finish.
+ *
+ * Resolution order for the next track: repeat-one → user queue → context.
+ * A `_history` stack records played tracks so "previous" can step back through
+ * the session without resurrecting already-consumed queue items.
+ */
 class PlaybackService {
   private audio: HTMLAudioElement
   private listeners: Set<PlaybackListener> = new Set()
-  private _queue: QueueTrack[] = []
-  private _currentIndex = -1
+
+  // Context (album/playlist) the current session was started from.
+  private _context: QueueTrack[] = []
+  private _order: number[] = []
+  private _orderPos = -1
+  private _contextName = ''
+
+  // Manually-queued tracks (FIFO) and the playback history (for "previous").
+  private _userQueue: QueueTrack[] = []
+  private _history: QueueTrack[] = []
+
+  // The track currently loaded into the audio element.
+  private _current: QueueTrack | null = null
+
   private _shuffle = false
   private _repeat: RepeatMode = 'none'
-  private _shuffleOrder: number[] = []
   private _volume = 1
 
   // Last.fm scrobble tracking for the currently playing track.
@@ -27,10 +55,10 @@ class PlaybackService {
   private scrobbleStartedAt = 0
   private scrobbleDone = false
 
-  // Gapless playback: preloaded next track ready to play instantly
-  private nextAudio: HTMLAudioElement | null = null
-  private nextTrackIndex: number | null = null
-  private nextTrackReady = false
+  // Gapless playback: preloaded next track ready to play instantly.
+  private _preloadAudio: HTMLAudioElement | null = null
+  private _preloadTrack: QueueTrack | null = null
+  private _preloadReady = false
 
   constructor() {
     this.audio = new Audio()
@@ -94,11 +122,18 @@ class PlaybackService {
     this.listeners.forEach(l => l(event, data))
   }
 
-  get queue() { return this._queue }
-  get currentIndex() { return this._currentIndex }
-  get currentTrack(): QueueTrack | null {
-    return this._queue[this._currentIndex] || null
+  get currentTrack(): QueueTrack | null { return this._current }
+  /** Manually-queued tracks waiting to play ("Next in queue"). */
+  get userQueue(): QueueTrack[] { return [...this._userQueue] }
+  /** Remaining context tracks after the current one ("Next from <context>"). */
+  get contextUpNext(): QueueTrack[] {
+    const out: QueueTrack[] = []
+    for (let p = this._orderPos + 1; p < this._order.length; p++) {
+      out.push(this._context[this._order[p]])
+    }
+    return out
   }
+  get contextName() { return this._contextName }
   get isPlaying() { return !this.audio.paused }
   get currentTime() { return this.audio.currentTime }
   get duration() { return this.audio.duration || 0 }
@@ -136,11 +171,11 @@ class PlaybackService {
     return jellyfin.getStreamUrl(track.id)
   }
 
-  async playTrack(index: number) {
-    if (index < 0 || index >= this._queue.length) return
+  /** Resolves and plays whatever is in `_current`. */
+  private async loadAndPlayCurrent() {
+    const track = this._current
+    if (!track) return
     this.finalizeScrobble()
-    this._currentIndex = index
-    const track = this._queue[index]
 
     // Emit trackchange immediately so UI updates
     this.emit('trackchange', track)
@@ -170,26 +205,19 @@ class PlaybackService {
       await this.audio.play()
       console.log('[Playback] Playing successfully')
 
-      // Report to Jellyfin
       jellyfin.reportPlaybackStart(track.id).catch(() => {})
-
-      // Report "now playing" to Last.fm and begin scrobble tracking
       this.startScrobbleTracking(track)
 
-      // Cache audio in background if streaming
       if (track.source === 'stream') {
         this.cacheCurrentTrack(track)
       }
 
-      // Preload next track for gapless playback
       this.preloadNext()
-
-      // Preload lyrics for upcoming tracks
       this.preloadUpcomingLyrics()
     } catch (err: any) {
       console.error('[Playback] Play error:', err)
 
-      // If direct stream failed, try universal endpoint as fallback
+      // If direct stream failed, try the universal endpoint as a fallback.
       if (track.source === 'stream') {
         try {
           console.log('[Playback] Retrying with universal endpoint...')
@@ -209,12 +237,11 @@ class PlaybackService {
     }
   }
 
-  private playPreloadedTrack(index: number) {
-    if (!this.nextAudio || !this.nextTrackReady) return false
+  /** Instantly swaps to the preloaded element for a gapless transition. */
+  private playPreloaded(): boolean {
+    if (!this._preloadAudio || !this._preloadReady || !this._current) return false
 
-    const track = this._queue[index]
-    if (!track) return false
-
+    const track = this._current
     this.finalizeScrobble()
 
     // Stop current audio
@@ -223,35 +250,26 @@ class PlaybackService {
     oldAudio.src = ''
 
     // Swap to the preloaded audio element
-    this.audio = this.nextAudio
-    this.nextAudio = null
-    this.nextTrackIndex = null
-    this.nextTrackReady = false
-    this._currentIndex = index
-
-    // Apply current volume
+    this.audio = this._preloadAudio
+    this._preloadAudio = null
+    this._preloadTrack = null
+    this._preloadReady = false
     this.audio.volume = this._volume
 
     this.emit('trackchange', track)
 
-    // Play immediately — no async gap
     this.audio.play().then(() => {
       console.log('[Playback] Gapless transition to:', track.item.Name)
-
       jellyfin.reportPlaybackStart(track.id).catch(() => {})
-
       this.startScrobbleTracking(track)
-
       if (track.source === 'stream') {
         this.cacheCurrentTrack(track)
       }
-
-      // Preload the next-next track
       this.preloadNext()
       this.preloadUpcomingLyrics()
     }).catch((err) => {
       console.error('[Playback] Gapless play failed, falling back:', err)
-      this.playTrack(index)
+      this.loadAndPlayCurrent()
     })
 
     return true
@@ -268,89 +286,123 @@ class PlaybackService {
     } catch {}
   }
 
+  /** The next track that would play, without mutating any list. */
+  private peekNext(): QueueTrack | null {
+    if (this._repeat === 'one') return this._current
+    if (this._userQueue.length > 0) return this._userQueue[0]
+    if (this._orderPos + 1 < this._order.length) {
+      return this._context[this._order[this._orderPos + 1]]
+    }
+    if (this._repeat === 'all' && this._order.length > 0) {
+      return this._context[this._order[0]]
+    }
+    return null
+  }
+
+  /**
+   * Advances to the next track, mutating the queue state (consuming the user
+   * queue, moving the context cursor, recording history). Returns the new
+   * current track, or null when playback has reached the end.
+   */
+  private advance(): QueueTrack | null {
+    if (this._repeat === 'one') return this._current
+
+    let next: QueueTrack | null = null
+    let fromUser = false
+    let newPos = this._orderPos
+
+    if (this._userQueue.length > 0) {
+      next = this._userQueue[0]
+      fromUser = true
+    } else if (this._orderPos + 1 < this._order.length) {
+      newPos = this._orderPos + 1
+      next = this._context[this._order[newPos]]
+    } else if (this._repeat === 'all' && this._order.length > 0) {
+      newPos = 0
+      next = this._context[this._order[0]]
+    }
+
+    if (!next) return null
+
+    if (this._current) this._history.push(this._current)
+    if (fromUser) {
+      this._userQueue.shift()
+    } else {
+      this._orderPos = newPos
+    }
+    this._current = next
+    return next
+  }
+
   private preloadNext() {
-    const nextIndex = this.getNextIndex()
-    if (nextIndex === null || !this._queue[nextIndex]) {
+    const next = this.peekNext()
+    if (!next) {
       this.invalidatePreload()
       return
     }
 
     // Already preloading this track
-    if (this.nextTrackIndex === nextIndex && this.nextAudio) return
+    if (this._preloadTrack && this._preloadTrack.id === next.id && this._preloadAudio) return
 
     this.invalidatePreload()
 
-    const nextTrack = this._queue[nextIndex]
     const audio = new Audio()
     audio.preload = 'auto'
     audio.volume = this._volume
     this.attachAudioListeners(audio)
-    this.nextAudio = audio
-    this.nextTrackIndex = nextIndex
+    this._preloadAudio = audio
+    this._preloadTrack = next
 
-    this.resolveSource(nextTrack).then(url => {
-      // Verify this preload is still valid
-      if (this.nextAudio !== audio) return
+    this.resolveSource(next).then(url => {
+      if (this._preloadAudio !== audio) return
 
       audio.src = url
       audio.load()
 
       audio.addEventListener('canplay', () => {
-        if (this.nextAudio === audio) {
-          this.nextTrackReady = true
-          console.log('[Playback] Next track preloaded and ready:', nextTrack.item.Name)
+        if (this._preloadAudio === audio) {
+          this._preloadReady = true
+          console.log('[Playback] Next track preloaded and ready:', next.item.Name)
         }
       }, { once: true })
 
       audio.addEventListener('error', () => {
-        console.warn('[Playback] Preload failed for:', nextTrack.item.Name)
-        if (this.nextAudio === audio) {
+        console.warn('[Playback] Preload failed for:', next.item.Name)
+        if (this._preloadAudio === audio) {
           this.invalidatePreload()
         }
       }, { once: true })
     }).catch(() => {
-      if (this.nextAudio === audio) {
+      if (this._preloadAudio === audio) {
         this.invalidatePreload()
       }
     })
   }
 
   private invalidatePreload() {
-    if (this.nextAudio) {
-      this.nextAudio.src = ''
-      this.nextAudio = null
+    if (this._preloadAudio) {
+      this._preloadAudio.src = ''
+      this._preloadAudio = null
     }
-    this.nextTrackIndex = null
-    this.nextTrackReady = false
+    this._preloadTrack = null
+    this._preloadReady = false
   }
 
   private getUpcomingTrackIds(count: number): string[] {
     const ids: string[] = []
-    const visited = new Set<number>()
-    let idx = this._currentIndex
+    let uqIdx = 0
+    let pos = this._orderPos
 
     for (let i = 0; i < count; i++) {
-      if (this._shuffle) {
-        const shufflePos = this._shuffleOrder.indexOf(idx)
-        const nextPos = shufflePos + 1
-        if (nextPos < this._shuffleOrder.length) {
-          idx = this._shuffleOrder[nextPos]
-        } else if (this._repeat === 'all') {
-          idx = this._shuffleOrder[0]
-        } else {
-          break
-        }
+      if (uqIdx < this._userQueue.length) {
+        ids.push(this._userQueue[uqIdx].id)
+        uqIdx++
+      } else if (pos + 1 < this._order.length) {
+        pos++
+        ids.push(this._context[this._order[pos]].id)
       } else {
-        idx = idx + 1
-        if (idx >= this._queue.length) {
-          if (this._repeat === 'all') idx = 0
-          else break
-        }
+        break
       }
-
-      if (visited.has(idx)) break
-      visited.add(idx)
-      if (this._queue[idx]) ids.push(this._queue[idx].id)
     }
     return ids
   }
@@ -362,35 +414,93 @@ class PlaybackService {
     }
   }
 
-  setQueue(items: JellyfinItem[], startIndex = 0) {
-    this._queue = items.map(item => ({ id: item.Id, item }))
-    if (this._shuffle) this.generateShuffleOrder()
-    this.playTrack(this._shuffle ? this._shuffleOrder[startIndex] : startIndex)
+  /** Builds the context play order, anchoring `anchorContextIndex` as current. */
+  private buildOrder(anchorContextIndex: number) {
+    const n = this._context.length
+    this._order = Array.from({ length: n }, (_, i) => i)
+    if (this._shuffle) {
+      for (let i = this._order.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [this._order[i], this._order[j]] = [this._order[j], this._order[i]]
+      }
+      const pos = this._order.indexOf(anchorContextIndex)
+      if (pos > 0) {
+        [this._order[0], this._order[pos]] = [this._order[pos], this._order[0]]
+      }
+      this._orderPos = n > 0 ? 0 : -1
+    } else {
+      this._orderPos = n > 0 ? anchorContextIndex : -1
+    }
   }
 
+  /** Starts playing a new context (album/playlist). The user queue is preserved. */
+  setQueue(items: JellyfinItem[], startIndex = 0, contextName = '') {
+    this._context = items.map(item => ({ id: item.Id, item }))
+    this._contextName = contextName
+    this._history = []
+    const start = Math.max(0, Math.min(startIndex, items.length - 1))
+    this.buildOrder(start)
+    this._current = this._orderPos >= 0 ? this._context[this._order[this._orderPos]] : null
+    this.invalidatePreload()
+    this.emit('queuechange')
+    this.loadAndPlayCurrent()
+  }
+
+  /** Appends to the end of the user queue ("Add to queue"). */
   addToQueue(item: JellyfinItem) {
-    this._queue.push({ id: item.Id, item })
-    if (this._shuffle) this.generateShuffleOrder()
-    this.emit('queuechange', this._queue)
+    this._userQueue.push({ id: item.Id, item })
+    this.invalidatePreload()
+    this.preloadNext()
+    this.emit('queuechange')
   }
 
+  /** Inserts at the front of the user queue ("Play next"). */
   addNext(item: JellyfinItem) {
-    const insertIndex = this._currentIndex + 1
-    this._queue.splice(insertIndex, 0, { id: item.Id, item })
-    if (this._shuffle) this.generateShuffleOrder()
+    this._userQueue.unshift({ id: item.Id, item })
     this.invalidatePreload()
     this.preloadNext()
-    this.emit('queuechange', this._queue)
+    this.emit('queuechange')
   }
 
-  removeFromQueue(index: number) {
-    if (index === this._currentIndex) return
-    this._queue.splice(index, 1)
-    if (index < this._currentIndex) this._currentIndex--
-    if (this._shuffle) this.generateShuffleOrder()
+  removeFromUserQueue(index: number) {
+    if (index < 0 || index >= this._userQueue.length) return
+    this._userQueue.splice(index, 1)
     this.invalidatePreload()
     this.preloadNext()
-    this.emit('queuechange', this._queue)
+    this.emit('queuechange')
+  }
+
+  /** Removes a track from the context up-next list (index relative to it). */
+  removeFromContext(index: number) {
+    const pos = this._orderPos + 1 + index
+    if (pos <= this._orderPos || pos >= this._order.length) return
+    this._order.splice(pos, 1)
+    this.invalidatePreload()
+    this.preloadNext()
+    this.emit('queuechange')
+  }
+
+  /** Jumps to a track in the user queue, consuming the ones above it. */
+  playUserQueueAt(index: number) {
+    if (index < 0 || index >= this._userQueue.length) return
+    if (this._current) this._history.push(this._current)
+    const removed = this._userQueue.splice(0, index + 1)
+    this._current = removed[removed.length - 1]
+    this.invalidatePreload()
+    this.emit('queuechange')
+    this.loadAndPlayCurrent()
+  }
+
+  /** Jumps to a track in the context up-next list (index relative to it). */
+  playContextAt(index: number) {
+    const pos = this._orderPos + 1 + index
+    if (pos <= this._orderPos || pos >= this._order.length) return
+    if (this._current) this._history.push(this._current)
+    this._orderPos = pos
+    this._current = this._context[this._order[pos]]
+    this.invalidatePreload()
+    this.emit('queuechange')
+    this.loadAndPlayCurrent()
   }
 
   clearQueue() {
@@ -399,11 +509,15 @@ class PlaybackService {
     this.audio.pause()
     this.audio.src = ''
     this.invalidatePreload()
-    this._queue = []
-    this._currentIndex = -1
-    this._shuffleOrder = []
+    this._context = []
+    this._order = []
+    this._orderPos = -1
+    this._contextName = ''
+    this._userQueue = []
+    this._history = []
+    this._current = null
     this.emit('trackchange', null)
-    this.emit('queuechange', [])
+    this.emit('queuechange')
   }
 
   async play() {
@@ -439,12 +553,12 @@ class PlaybackService {
 
   toggleShuffle() {
     this._shuffle = !this._shuffle
-    if (this._shuffle) {
-      this.generateShuffleOrder()
-    }
+    const anchor = this._orderPos >= 0 ? this._order[this._orderPos] : 0
+    this.buildOrder(anchor)
     this.invalidatePreload()
     this.preloadNext()
     this.emit('shufflechange', this._shuffle)
+    this.emit('queuechange')
   }
 
   toggleRepeat() {
@@ -456,72 +570,27 @@ class PlaybackService {
     this.emit('repeatchange', this._repeat)
   }
 
-  private generateShuffleOrder() {
-    this._shuffleOrder = Array.from({ length: this._queue.length }, (_, i) => i)
-    for (let i = this._shuffleOrder.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [this._shuffleOrder[i], this._shuffleOrder[j]] = [this._shuffleOrder[j], this._shuffleOrder[i]]
-    }
-    // Ensure current track is first in shuffle
-    if (this._currentIndex >= 0) {
-      const pos = this._shuffleOrder.indexOf(this._currentIndex)
-      if (pos > 0) {
-        [this._shuffleOrder[0], this._shuffleOrder[pos]] = [this._shuffleOrder[pos], this._shuffleOrder[0]]
-      }
-    }
-  }
-
-  private getNextIndex(): number | null {
-    if (this._queue.length === 0) return null
-
-    if (this._repeat === 'one') return this._currentIndex
-
-    if (this._shuffle) {
-      const currentShufflePos = this._shuffleOrder.indexOf(this._currentIndex)
-      const nextShufflePos = currentShufflePos + 1
-      if (nextShufflePos < this._shuffleOrder.length) {
-        return this._shuffleOrder[nextShufflePos]
-      }
-      return this._repeat === 'all' ? this._shuffleOrder[0] : null
-    }
-
-    const next = this._currentIndex + 1
-    if (next < this._queue.length) return next
-    return this._repeat === 'all' ? 0 : null
-  }
-
-  private getPrevIndex(): number | null {
-    if (this._queue.length === 0) return null
-
-    if (this._shuffle) {
-      const currentShufflePos = this._shuffleOrder.indexOf(this._currentIndex)
-      if (currentShufflePos > 0) return this._shuffleOrder[currentShufflePos - 1]
-      return this._repeat === 'all' ? this._shuffleOrder[this._shuffleOrder.length - 1] : null
-    }
-
-    if (this._currentIndex > 0) return this._currentIndex - 1
-    return this._repeat === 'all' ? this._queue.length - 1 : null
-  }
-
   private handleTrackEnded() {
     this.finalizeScrobble()
 
-    if (this.currentTrack) {
+    const ended = this._current
+    if (ended) {
       const ticks = Math.floor(this.duration * 10_000_000)
-      jellyfin.reportPlaybackStopped(this.currentTrack.id, ticks).catch(() => {})
+      jellyfin.reportPlaybackStopped(ended.id, ticks).catch(() => {})
     }
 
-    const nextIndex = this.getNextIndex()
-    if (nextIndex === null) {
+    const next = this.advance()
+    if (!next) {
       this.emit('queueend')
       return
     }
+    this.emit('queuechange')
 
-    // Use preloaded audio for gapless transition
-    if (this.nextTrackIndex === nextIndex && this.nextTrackReady) {
-      this.playPreloadedTrack(nextIndex)
+    // Use the preloaded element for a gapless transition when possible.
+    if (this._preloadReady && this._preloadTrack && this._preloadTrack.id === next.id) {
+      this.playPreloaded()
     } else {
-      this.playTrack(nextIndex)
+      this.loadAndPlayCurrent()
     }
   }
 
@@ -544,8 +613,14 @@ class PlaybackService {
   }
 
   next() {
-    const nextIndex = this.getNextIndex()
-    if (nextIndex !== null) this.playTrack(nextIndex)
+    const next = this.advance()
+    if (!next) return
+    this.emit('queuechange')
+    if (this._preloadReady && this._preloadTrack && this._preloadTrack.id === next.id) {
+      this.playPreloaded()
+    } else {
+      this.loadAndPlayCurrent()
+    }
   }
 
   previous() {
@@ -553,8 +628,18 @@ class PlaybackService {
       this.seek(0)
       return
     }
-    const prevIndex = this.getPrevIndex()
-    if (prevIndex !== null) this.playTrack(prevIndex)
+    if (this._history.length === 0) {
+      this.seek(0)
+      return
+    }
+    const prev = this._history.pop()!
+    // Send the current track to the front of the user queue so a later `next`
+    // returns to it, instead of resurrecting a consumed queue item.
+    if (this._current) this._userQueue.unshift(this._current)
+    this._current = prev
+    this.invalidatePreload()
+    this.emit('queuechange')
+    this.loadAndPlayCurrent()
   }
 }
 

@@ -4,7 +4,11 @@ import { JellyfinItem, jellyfin } from '../services/jellyfin'
 
 interface PlayerState {
   currentTrack: QueueTrack | null
-  queue: QueueTrack[]
+  /** Manually-queued tracks ("Next in queue"). */
+  userQueue: QueueTrack[]
+  /** Remaining context tracks ("Next from <context>"). */
+  contextUpNext: QueueTrack[]
+  contextName: string
   isPlaying: boolean
   isBuffering: boolean
   currentTime: number
@@ -16,10 +20,13 @@ interface PlayerState {
   showQueue: boolean
 
   // Actions
-  playItems: (items: JellyfinItem[], startIndex?: number) => void
+  playItems: (items: JellyfinItem[], startIndex?: number, contextName?: string) => void
   addToQueue: (item: JellyfinItem) => void
   addNext: (item: JellyfinItem) => void
-  removeFromQueue: (index: number) => void
+  removeFromUserQueue: (index: number) => void
+  removeFromContext: (index: number) => void
+  playUserQueueAt: (index: number) => void
+  playContextAt: (index: number) => void
   clearQueue: () => void
   togglePlay: () => void
   next: () => void
@@ -33,9 +40,11 @@ interface PlayerState {
   initListeners: () => () => void
 }
 
-export const usePlayerStore = create<PlayerState>((set, get) => ({
+export const usePlayerStore = create<PlayerState>((set) => ({
   currentTrack: null,
-  queue: [],
+  userQueue: [],
+  contextUpNext: [],
+  contextName: '',
   isPlaying: false,
   isBuffering: false,
   currentTime: 0,
@@ -46,13 +55,16 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
   showFullScreen: false,
   showQueue: false,
 
-  playItems: (items, startIndex = 0) => {
-    playback.setQueue(items, startIndex)
+  playItems: (items, startIndex = 0, contextName = '') => {
+    playback.setQueue(items, startIndex, contextName)
   },
 
   addToQueue: (item) => playback.addToQueue(item),
   addNext: (item) => playback.addNext(item),
-  removeFromQueue: (index) => playback.removeFromQueue(index),
+  removeFromUserQueue: (index) => playback.removeFromUserQueue(index),
+  removeFromContext: (index) => playback.removeFromContext(index),
+  playUserQueueAt: (index) => playback.playUserQueueAt(index),
+  playContextAt: (index) => playback.playContextAt(index),
   clearQueue: () => playback.clearQueue(),
 
   togglePlay: () => playback.togglePlay(),
@@ -72,6 +84,13 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
   setShowQueue: (show) => set({ showQueue: show }),
 
   initListeners: () => {
+    // Mirror the engine's two queue lists into store state.
+    const syncQueue = () => set({
+      userQueue: [...playback.userQueue],
+      contextUpNext: [...playback.contextUpNext],
+      contextName: playback.contextName
+    })
+
     // Set up Media Session action handlers for OS media controls
     if ('mediaSession' in navigator) {
       navigator.mediaSession.setActionHandler('play', () => playback.togglePlay())
@@ -86,12 +105,8 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
     return playback.on((event, data) => {
       switch (event) {
         case 'trackchange':
-          set({
-            currentTrack: data,
-            queue: [...playback.queue],
-            currentTime: 0,
-            duration: 0
-          })
+          set({ currentTrack: data, currentTime: 0, duration: 0 })
+          syncQueue()
           if (data && 'mediaSession' in navigator) {
             const item = data.item
             const artworkId = item.AlbumId || item.Id
@@ -134,7 +149,7 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
           set({ repeat: data })
           break
         case 'queuechange':
-          set({ queue: [...data] })
+          syncQueue()
           break
         case 'volumechange':
           set({ volume: data })

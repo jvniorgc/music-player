@@ -3,11 +3,16 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 vi.mock('../services/playback', () => ({
   playback: {
     volume: 1,
-    queue: [],
+    userQueue: [] as unknown[],
+    contextUpNext: [] as unknown[],
+    contextName: '',
     setQueue: vi.fn(),
     addToQueue: vi.fn(),
     addNext: vi.fn(),
-    removeFromQueue: vi.fn(),
+    removeFromUserQueue: vi.fn(),
+    removeFromContext: vi.fn(),
+    playUserQueueAt: vi.fn(),
+    playContextAt: vi.fn(),
     clearQueue: vi.fn(),
     togglePlay: vi.fn(),
     next: vi.fn(),
@@ -28,20 +33,23 @@ import { usePlayerStore } from './player'
 import { playback } from '../services/playback'
 
 const INITIAL = {
-  currentTrack: null, queue: [], isPlaying: false, isBuffering: false,
-  currentTime: 0, duration: 0, volume: 1, shuffle: false, repeat: 'none' as const,
-  showFullScreen: false, showQueue: false,
+  currentTrack: null, userQueue: [], contextUpNext: [], contextName: '',
+  isPlaying: false, isBuffering: false, currentTime: 0, duration: 0, volume: 1,
+  shuffle: false, repeat: 'none' as const, showFullScreen: false, showQueue: false,
 }
 
 beforeEach(() => {
   usePlayerStore.setState(INITIAL)
+  ;(playback as { userQueue: unknown[] }).userQueue = []
+  ;(playback as { contextUpNext: unknown[] }).contextUpNext = []
+  ;(playback as { contextName: string }).contextName = ''
 })
 
 describe('delegation to the playback engine', () => {
   it('forwards queue and transport actions', () => {
     const items = [{ Id: 't0', Name: 'T0', Type: 'Audio' }]
-    usePlayerStore.getState().playItems(items, 0)
-    expect(playback.setQueue).toHaveBeenCalledWith(items, 0)
+    usePlayerStore.getState().playItems(items, 0, 'Album')
+    expect(playback.setQueue).toHaveBeenCalledWith(items, 0, 'Album')
 
     usePlayerStore.getState().addToQueue(items[0])
     expect(playback.addToQueue).toHaveBeenCalledWith(items[0])
@@ -49,8 +57,17 @@ describe('delegation to the playback engine', () => {
     usePlayerStore.getState().addNext(items[0])
     expect(playback.addNext).toHaveBeenCalledWith(items[0])
 
-    usePlayerStore.getState().removeFromQueue(2)
-    expect(playback.removeFromQueue).toHaveBeenCalledWith(2)
+    usePlayerStore.getState().removeFromUserQueue(2)
+    expect(playback.removeFromUserQueue).toHaveBeenCalledWith(2)
+
+    usePlayerStore.getState().removeFromContext(1)
+    expect(playback.removeFromContext).toHaveBeenCalledWith(1)
+
+    usePlayerStore.getState().playUserQueueAt(0)
+    expect(playback.playUserQueueAt).toHaveBeenCalledWith(0)
+
+    usePlayerStore.getState().playContextAt(3)
+    expect(playback.playContextAt).toHaveBeenCalledWith(3)
 
     usePlayerStore.getState().clearQueue()
     expect(playback.clearQueue).toHaveBeenCalled()
@@ -123,7 +140,22 @@ describe('initListeners event mapping', () => {
     expect(typeof unsub).toBe('function')
   })
 
-  it('registers media-session controls and maps queue/metadata/position updates', () => {
+  it('syncs both queue lists from the engine on queuechange and trackchange', () => {
+    ;(playback as { userQueue: unknown[] }).userQueue = [{ id: 'a', item: { Id: 'a', Name: 'A', Type: 'Audio' } }]
+    ;(playback as { contextUpNext: unknown[] }).contextUpNext = [{ id: 'c', item: { Id: 'c', Name: 'C', Type: 'Audio' } }]
+    ;(playback as { contextName: string }).contextName = 'Disc'
+
+    usePlayerStore.getState().initListeners()
+    const listener = vi.mocked(playback.on).mock.calls.at(-1)![0]
+
+    listener('queuechange')
+    const s = usePlayerStore.getState()
+    expect(s.userQueue).toEqual([{ id: 'a', item: { Id: 'a', Name: 'A', Type: 'Audio' } }])
+    expect(s.contextUpNext).toEqual([{ id: 'c', item: { Id: 'c', Name: 'C', Type: 'Audio' } }])
+    expect(s.contextName).toBe('Disc')
+  })
+
+  it('registers media-session controls and maps metadata/position updates', () => {
     const mediaSession = {
       setActionHandler: vi.fn(),
       setPositionState: vi.fn(),
@@ -174,9 +206,6 @@ describe('initListeners event mapping', () => {
 
     listener('timeupdate', { currentTime: 5, duration: 10 })
     expect(mediaSession.setPositionState).toHaveBeenCalledWith({ duration: 10, position: 5, playbackRate: 1 })
-
-    listener('queuechange', [{ id: 'q0', item: { Id: 'q0', Name: 'Q', Type: 'Audio' } }])
-    expect(usePlayerStore.getState().queue).toEqual([{ id: 'q0', item: { Id: 'q0', Name: 'Q', Type: 'Audio' } }])
 
     delete (navigator as { mediaSession?: unknown }).mediaSession
     vi.unstubAllGlobals()
