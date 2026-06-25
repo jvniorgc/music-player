@@ -1,6 +1,6 @@
 {
   "name": "jellyfin-music-player",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "description": "Apple Music-inspired desktop music player for Jellyfin",
   "main": "./out/main/index.js",
   "workspaces": [
