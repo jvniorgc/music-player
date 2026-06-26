@@ -5,7 +5,7 @@ import { playback } from '../../services/playback'
 import { jellyfin } from '../../services/jellyfin'
 import {
   Play, Pause, SkipBack, SkipForward, Shuffle, Repeat, Repeat1,
-  ChevronDown, Volume2, VolumeX, ListMusic
+  ChevronDown, Volume2, VolumeX, ListMusic, Captions, CaptionsOff
 } from 'lucide-react'
 import AnimatedBackground from './AnimatedBackground'
 
@@ -31,6 +31,7 @@ export default function FullScreenPlayer() {
 
   const [lyrics, setLyrics] = useState<LyricLine[]>([])
   const [hasLyrics, setHasLyrics] = useState(false)
+  const [showLyrics, setShowLyrics] = useState(true)
   const [activeLyricIndex, setActiveLyricIndex] = useState(-1)
   const lyricsContainerRef = useRef<HTMLDivElement>(null)
   const activeLyricRef = useRef<HTMLParagraphElement>(null)
@@ -95,10 +96,10 @@ export default function FullScreenPlayer() {
 
   // Auto-scroll when active lyric changes
   useEffect(() => {
-    if (hasLyrics && activeLyricRef.current && lyricsContainerRef.current) {
+    if (showLyrics && hasLyrics && activeLyricRef.current && lyricsContainerRef.current) {
       activeLyricRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' })
     }
-  }, [activeLyricIndex, hasLyrics])
+  }, [activeLyricIndex, hasLyrics, showLyrics])
 
   if (!currentTrack) return null
   const item = currentTrack.item
@@ -111,6 +112,7 @@ export default function FullScreenPlayer() {
 
   const progress = duration > 0 ? (currentTime / duration) * 100 : 0
   const isTimed = lyrics.length > 0 && lyrics[0].Start !== undefined
+  const lyricsVisible = hasLyrics && showLyrics
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center fade-in">
@@ -125,10 +127,24 @@ export default function FullScreenPlayer() {
         <ChevronDown size={20} />
       </button>
 
+      {/* Lyrics visibility toggle (only when the track has lyrics) */}
+      {hasLyrics && (
+        <button
+          onClick={() => setShowLyrics(v => !v)}
+          aria-label="Toggle lyrics"
+          title={showLyrics ? 'Hide lyrics' : 'Show lyrics'}
+          className={`absolute top-6 right-6 p-2 rounded-full transition-colors z-10 no-drag ${
+            showLyrics ? 'bg-white/20 text-white' : 'bg-white/10 text-text-tertiary hover:bg-white/20'
+          }`}
+        >
+          {showLyrics ? <Captions size={20} /> : <CaptionsOff size={20} />}
+        </button>
+      )}
+
       {/* Main content: side by side when lyrics, centered when not */}
-      <div className={`relative z-10 flex items-center gap-12 w-full px-12 h-[80vh] ${hasLyrics ? 'max-w-5xl' : 'max-w-lg justify-center'}`}>
+      <div className={`relative z-10 flex items-center gap-12 w-full px-12 h-[80vh] ${lyricsVisible ? 'max-w-5xl' : 'max-w-lg justify-center'}`}>
         {/* Left side: Art + Info + Controls */}
-        <div className={`flex flex-col items-center shrink-0 ${hasLyrics ? 'w-96' : 'w-full'}`}>
+        <div className={`flex flex-col items-center shrink-0 ${lyricsVisible ? 'w-96' : 'w-full'}`}>
           {/* Album Art */}
           <div className="w-72 h-72 rounded-2xl overflow-hidden shadow-2xl shadow-black/50 mb-8">
             {imageUrl ? (
@@ -246,7 +262,7 @@ export default function FullScreenPlayer() {
         </div>
 
         {/* Right side: Lyrics */}
-        {hasLyrics && (
+        {lyricsVisible && (
           <div
             ref={lyricsContainerRef}
             className="flex-1 h-full overflow-y-auto lyrics-scroll py-16 mask-fade"
