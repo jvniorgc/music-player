@@ -11,11 +11,13 @@ const h = vi.hoisted(() => ({
   paths: { userData: '', downloads: '' },
   windowOpenHandler: null as null | ((d: { url: string }) => unknown),
   protocolHandler: null as null | ((req: { url: string }) => unknown),
-  netFetch: null as null | ReturnType<typeof vi.fn>
+  netFetch: null as null | ReturnType<typeof vi.fn>,
+  windowOpts: null as Record<string, any> | null
 }))
 
 vi.mock('electron', () => {
   class BrowserWindow {
+    constructor(opts?: Record<string, any>) { h.windowOpts = opts ?? null }
     webContents = {
       setWindowOpenHandler: (cb: (d: { url: string }) => unknown) => { h.windowOpenHandler = cb },
       send: (channel: string, data: unknown) => h.sent.push({ channel, data })
@@ -347,6 +349,30 @@ describe('main process: window & lifecycle wiring', () => {
     handler!()
     if (process.platform !== 'darwin') {
       expect(app.quit).toHaveBeenCalled()
+    }
+  })
+
+  it('uses the macOS hidden-inset titlebar when running on darwin', () => {
+    const activate = h.appHandlers.get('activate')
+    expect(activate).toBeTypeOf('function')
+    const original = process.platform
+
+    // darwin: integrated hidden-inset titlebar with repositioned traffic lights.
+    Object.defineProperty(process, 'platform', { value: 'darwin', configurable: true })
+    try {
+      h.windowOpts = null
+      activate!()
+      expect(h.windowOpts?.titleBarStyle).toBe('hiddenInset')
+      expect(h.windowOpts?.trafficLightPosition).toEqual({ x: 16, y: 20 })
+
+      // non-darwin: keep the OS default frame (no titlebar overrides).
+      Object.defineProperty(process, 'platform', { value: 'linux', configurable: true })
+      h.windowOpts = null
+      activate!()
+      expect(h.windowOpts?.titleBarStyle).toBeUndefined()
+      expect(h.windowOpts?.trafficLightPosition).toBeUndefined()
+    } finally {
+      Object.defineProperty(process, 'platform', { value: original, configurable: true })
     }
   })
 })
