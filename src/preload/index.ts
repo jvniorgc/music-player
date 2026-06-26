@@ -10,6 +10,9 @@ import type {
 } from '@music-player/core/platform'
 
 const api = {
+  // Platform (ex.: 'darwin', 'win32', 'linux')
+  platform: process.platform,
+
   // Auth
   getAuth: () => ipcRenderer.invoke('db:get-auth'),
   saveAuth: (data: { serverUrl: string; token: string; userId: string; username: string; serverId: string }) =>

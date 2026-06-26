@@ -25,6 +25,7 @@ const libraryItems = [
 ]
 
 export default function Sidebar() {
+  const isMac = window.api.platform === 'darwin'
   const { logout, auth, primaryImageTag } = useAuthStore()
   const { playlists, fetchPlaylists, refreshAll, isLoading } = useLibraryStore()
   const { loadDownloads } = useDownloadStore()
@@ -55,7 +56,11 @@ export default function Sidebar() {
     : null
 
   return (
-    <aside className="w-60 h-full bg-bg-secondary/80 backdrop-blur-xl border-r border-border-subtle flex flex-col pt-4">
+    <aside className="w-60 h-full bg-bg-secondary/80 backdrop-blur-xl border-r border-border-subtle flex flex-col">
+      {/* Área de arraste do titlebar — no macOS alinha com a altura da playback bar
+          para os botões da janela ficarem integrados na mesma faixa do topo */}
+      <div className={`${isMac ? 'h-14' : 'h-13'} drag-region shrink-0`} />
+
       {/* Main nav */}
       <nav className="px-3 space-y-0.5">
         {navItems.map(item => (

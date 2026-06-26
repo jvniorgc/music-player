@@ -56,6 +56,11 @@ function createWindow() {
     minWidth: 900,
     minHeight: 600,
     backgroundColor: '#000000',
+    // macOS: titlebar oculto com os botões da janela sobrepostos (integrados ao app).
+    // Windows/Linux mantêm o frame padrão do SO.
+    ...(process.platform === 'darwin'
+      ? { titleBarStyle: 'hiddenInset' as const, trafficLightPosition: { x: 16, y: 20 } }
+      : {}),
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       contextIsolation: true,
