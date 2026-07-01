@@ -221,6 +221,87 @@ describe('scrobble / updateNowPlaying when linked and enabled', () => {
   })
 })
 
+describe('getSimilarTracks', () => {
+  it('returns [] when the API key is not configured', async () => {
+    const out = await lastfm.getSimilarTracks('Radiohead', 'Reckoner')
+    expect(out).toEqual([])
+    expect(h.fetchMock).not.toHaveBeenCalled()
+  })
+
+  it('returns [] when the seed artist or track is empty', async () => {
+    lastfm.setCredentials('my-key', 'my-secret')
+    expect(await lastfm.getSimilarTracks('', 'Reckoner')).toEqual([])
+    expect(await lastfm.getSimilarTracks('Radiohead', '')).toEqual([])
+    expect(h.fetchMock).not.toHaveBeenCalled()
+  })
+
+  it('requests track.getSimilar with the API key and normalizes the list', async () => {
+    lastfm.setCredentials('my-key', 'my-secret')
+    h.fetchMock!.mockResolvedValueOnce(jsonRes({
+      similartracks: {
+        track: [
+          { name: 'Weird Fishes', match: '0.98', artist: { name: 'Radiohead' } },
+          { name: 'Nude', match: '0.5', artist: { name: 'Radiohead' } },
+        ],
+      },
+    }))
+
+    const out = await lastfm.getSimilarTracks('Radiohead', 'Reckoner', 10)
+
+    const params = sentParams(h.fetchMock!.mock.calls[0])
+    expect(params.get('method')).toBe('track.getSimilar')
+    expect(params.get('artist')).toBe('Radiohead')
+    expect(params.get('track')).toBe('Reckoner')
+    expect(params.get('api_key')).toBe('my-key')
+    expect(params.get('limit')).toBe('10')
+    expect(params.get('autocorrect')).toBe('1')
+    // Read call: unsigned (no session/secret involved).
+    expect(params.has('api_sig')).toBe(false)
+    expect(out).toEqual([
+      { artist: 'Radiohead', track: 'Weird Fishes', match: 0.98 },
+      { artist: 'Radiohead', track: 'Nude', match: 0.5 },
+    ])
+  })
+
+  it('normalizes a single-object result into an array', async () => {
+    lastfm.setCredentials('my-key', 'my-secret')
+    h.fetchMock!.mockResolvedValueOnce(jsonRes({
+      similartracks: { track: { name: 'Nude', match: '0.7', artist: { name: 'Radiohead' } } },
+    }))
+
+    const out = await lastfm.getSimilarTracks('Radiohead', 'Reckoner')
+    expect(out).toEqual([{ artist: 'Radiohead', track: 'Nude', match: 0.7 }])
+  })
+
+  it('returns [] and skips malformed entries', async () => {
+    lastfm.setCredentials('my-key', 'my-secret')
+    h.fetchMock!.mockResolvedValueOnce(jsonRes({
+      similartracks: {
+        track: [
+          { match: '0.9', artist: { name: 'X' } },   // missing name
+          { name: 'Y', match: '0.9' },                // missing artist
+          { name: 'Z', match: 'nan', artist: { name: 'W' } }, // unparseable match -> 0
+        ],
+      },
+    }))
+
+    const out = await lastfm.getSimilarTracks('A', 'B')
+    expect(out).toEqual([{ artist: 'W', track: 'Z', match: 0 }])
+  })
+
+  it('returns [] when Last.fm reports no similar tracks', async () => {
+    lastfm.setCredentials('my-key', 'my-secret')
+    h.fetchMock!.mockResolvedValueOnce(jsonRes({ similartracks: { '@attr': { artist: 'A' } } }))
+    expect(await lastfm.getSimilarTracks('A', 'B')).toEqual([])
+  })
+
+  it('throws on a Last.fm error response', async () => {
+    lastfm.setCredentials('my-key', 'my-secret')
+    h.fetchMock!.mockResolvedValueOnce(jsonRes({ error: 6, message: 'Track not found' }))
+    await expect(lastfm.getSimilarTracks('A', 'B')).rejects.toThrow(/Track not found/)
+  })
+})
+
 // Mirror of the implementation's signing rule, used to verify the request signature.
 function computeSig(params: URLSearchParams, secret: string): string {
   const keys = [...params.keys()].filter(k => k !== 'format' && k !== 'api_sig').sort()

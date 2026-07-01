@@ -29,6 +29,13 @@ export type LastfmTrack = {
   timestamp?: number
 }
 
+export type LastfmSimilarTrack = {
+  artist: string
+  track: string
+  /** Similarity score in the 0..1 range as reported by Last.fm. */
+  match: number
+}
+
 export type AuthData = {
   serverUrl: string
   token: string
@@ -94,6 +101,8 @@ export interface PlatformApi {
   lastfmDisconnect: () => Promise<void>
   lastfmNowPlaying: (track: LastfmTrack) => Promise<void>
   lastfmScrobble: (track: LastfmTrack) => Promise<void>
+  /** Similar-track recommendations for a seed (Last.fm track.getSimilar; needs only the API key). */
+  lastfmGetSimilarTracks: (track: { artist: string; track: string }, limit?: number) => Promise<LastfmSimilarTrack[]>
 
   // Lyrics cache (session)
   getCachedLyrics: (itemId: string) => Promise<string | null>

@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { playback, QueueTrack, RepeatMode } from '../services/playback'
 import { JellyfinItem, jellyfin } from '../services/jellyfin'
+import { getRecommendations } from '../services/recommendations'
 
 interface PlayerState {
   currentTrack: QueueTrack | null
@@ -22,6 +23,8 @@ interface PlayerState {
   // Actions
   playItems: (items: JellyfinItem[], startIndex?: number, contextName?: string) => void
   shuffleAllSongs: () => Promise<void>
+  /** Generate a "Discover Radio" queue from recent listening; returns how many tracks were queued. */
+  startRadio: () => Promise<number>
   addToQueue: (item: JellyfinItem) => void
   addNext: (item: JellyfinItem) => void
   removeFromUserQueue: (index: number) => void
@@ -65,6 +68,14 @@ export const usePlayerStore = create<PlayerState>((set) => ({
     if (res.Items.length > 0) {
       playback.setQueue(res.Items, 0, 'Shuffle All')
     }
+  },
+
+  startRadio: async () => {
+    const items = await getRecommendations()
+    if (items.length > 0) {
+      playback.setQueue(items, 0, 'Discover Radio')
+    }
+    return items.length
   },
 
   addToQueue: (item) => playback.addToQueue(item),

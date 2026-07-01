@@ -207,6 +207,27 @@ class JellyfinService {
     return this.sanitizeItems(res)
   }
 
+  /**
+   * Server-generated "instant mix" of songs similar to a seed item (song, album,
+   * or artist), using Jellyfin's own metadata-based radio. Powers the offline
+   * fallback for Discover Radio when Last.fm is unavailable.
+   */
+  async getInstantMix(itemId: string, limit = 50): Promise<JellyfinItemsResponse> {
+    const res = await this.request<JellyfinItemsResponse>(`/Items/${itemId}/InstantMix?UserId=${this.userId}&Limit=${limit}&Fields=MediaSources,RunTimeTicks,AlbumArtist,Album,AlbumId,Artists,HasLyrics`)
+    return this.sanitizeItems(res)
+  }
+
+  /**
+   * Songs in the user's library credited to a given artist name, randomly
+   * sampled. Powers artist-level recommendation expansion for Discover Radio.
+   */
+  async getSongsByArtist(artistName: string, limit = 5): Promise<JellyfinItem[]> {
+    const res = await this.request<JellyfinItemsResponse>(
+      `/Users/${this.userId}/Items?IncludeItemTypes=Audio&Recursive=true&Artists=${encodeURIComponent(artistName)}&SortBy=Random&Limit=${limit}&Fields=MediaSources,RunTimeTicks,AlbumArtist,Album,AlbumId,Artists,HasLyrics`,
+    )
+    return this.sanitizeItems(res).Items
+  }
+
   async getPlaylists(): Promise<JellyfinItemsResponse> {
     const res = await this.request<JellyfinItemsResponse>(
       `/Users/${this.userId}/Items?IncludeItemTypes=Playlist&Recursive=true&SortBy=SortName&Fields=ChildCount,PrimaryImageAspectRatio,Path`

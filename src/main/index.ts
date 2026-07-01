@@ -245,6 +245,7 @@ function setupIPC() {
   ipcMain.handle('lastfm:disconnect', () => lastfm.disconnect())
   ipcMain.handle('lastfm:now-playing', (_e, track: LastfmTrack) => lastfm.updateNowPlaying(track))
   ipcMain.handle('lastfm:scrobble', (_e, track: LastfmTrack) => lastfm.scrobble(track))
+  ipcMain.handle('lastfm:get-similar-tracks', (_e, track: { artist: string; track: string }, limit?: number) => lastfm.getSimilarTracks(track.artist, track.track, limit))
 
   // --- Lyrics Cache ---
   ipcMain.handle('lyrics:get', (_e, itemId: string) => {

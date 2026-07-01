@@ -1,9 +1,10 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useLibraryStore } from '../../stores/library'
 import { usePlayerStore } from '../../stores/player'
+import { useToastStore } from '../../stores/toast'
 import { jellyfin, JellyfinItem } from '../../services/jellyfin'
-import { Play, Clock } from 'lucide-react'
+import { Play, Clock, Radio, Loader2 } from 'lucide-react'
 
 function formatDuration(ticks?: number): string {
   if (!ticks) return ''
@@ -94,16 +95,43 @@ function TrackRow({ item, index, items }: { item: JellyfinItem; index: number; i
 
 export default function HomePage() {
   const { recentlyAdded, recentlyPlayed, isLoading, fetchHome } = useLibraryStore()
+  const startRadio = usePlayerStore(s => s.startRadio)
+  const showToast = useToastStore(s => s.show)
+  const [radioLoading, setRadioLoading] = useState(false)
   const navigate = useNavigate()
 
   useEffect(() => {
     fetchHome()
   }, [])
 
+  const handleRadio = async () => {
+    if (radioLoading) return
+    setRadioLoading(true)
+    try {
+      const count = await startRadio()
+      if (count === 0) {
+        showToast('Não foi possível gerar recomendações. Ouça mais músicas e tente de novo.', 'error')
+      }
+    } catch {
+      showToast('Falha ao iniciar o rádio de recomendações.', 'error')
+    } finally {
+      setRadioLoading(false)
+    }
+  }
+
   return (
     <div className="space-y-10 fade-in">
-      <div>
+      <div className="flex items-center justify-between gap-4">
         <h1 className="text-3xl font-bold tracking-tight">Listen Now</h1>
+        <button
+          onClick={handleRadio}
+          disabled={radioLoading}
+          className="flex items-center gap-2 px-4 py-2.5 rounded-full bg-accent hover:bg-accent-hover text-white text-sm font-semibold transition-colors disabled:opacity-60 disabled:cursor-not-allowed shadow-lg shadow-black/20"
+          title="Toca músicas recomendadas com base no que você andou ouvindo"
+        >
+          {radioLoading ? <Loader2 size={16} className="animate-spin" /> : <Radio size={16} />}
+          {radioLoading ? 'Gerando…' : 'Discover Radio'}
+        </button>
       </div>
 
       {/* Recently Added Albums */}

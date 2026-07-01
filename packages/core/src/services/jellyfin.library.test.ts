@@ -56,6 +56,32 @@ describe('library getters', () => {
     expect(url).toContain('Limit=42')
   })
 
+  it('getInstantMix hits the InstantMix endpoint and sanitizes results', async () => {
+    const fetchMock = mockFetchRouter([['/Items/seed1/InstantMix', jsonRes({
+      Items: [{ Id: 'm0', Name: 'Mix', Type: 'Audio' }, { Id: 'm1', Name: '  ' }],
+      TotalRecordCount: 2,
+    })]])
+    const res = await jellyfin.getInstantMix('seed1', 25)
+    expect(res.Items).toEqual([{ Id: 'm0', Name: 'Mix', Type: 'Audio' }])
+    const url = fetchMock.mock.calls[0][0] as string
+    expect(url).toContain('/Items/seed1/InstantMix')
+    expect(url).toContain('UserId=u1')
+    expect(url).toContain('Limit=25')
+  })
+
+  it('getSongsByArtist filters by artist name and sanitizes results', async () => {
+    const fetchMock = mockFetchRouter([['IncludeItemTypes=Audio', jsonRes({
+      Items: [{ Id: 's0', Name: 'Song', Type: 'Audio' }, { Id: 's1', Name: '   ' }],
+      TotalRecordCount: 2,
+    })]])
+    const res = await jellyfin.getSongsByArtist('Sigur Rós', 3)
+    expect(res).toEqual([{ Id: 's0', Name: 'Song', Type: 'Audio' }])
+    const url = fetchMock.mock.calls[0][0] as string
+    expect(url).toContain(`Artists=${encodeURIComponent('Sigur Rós')}`)
+    expect(url).toContain('SortBy=Random')
+    expect(url).toContain('Limit=3')
+  })
+
   it('getPlaylists drops file-based m3u playlists', async () => {
     mockFetchRouter([['IncludeItemTypes=Playlist', jsonRes({
       Items: [

@@ -134,6 +134,9 @@ describe('preload bridge', () => {
 
     api.lastfmScrobble({ ...track, timestamp: 1 })
     expect(h.invoke).toHaveBeenCalledWith('lastfm:scrobble', { ...track, timestamp: 1 })
+
+    api.lastfmGetSimilarTracks({ artist: 'A', track: 'B' }, 5)
+    expect(h.invoke).toHaveBeenCalledWith('lastfm:get-similar-tracks', { artist: 'A', track: 'B' }, 5)
   })
 
   it('wires download:progress listeners and returns an unsubscribe', () => {

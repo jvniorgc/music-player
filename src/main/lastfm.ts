@@ -1,7 +1,7 @@
 import { net, shell } from 'electron'
 import { createHash } from 'node:crypto'
 import { getDatabase } from './database'
-import type { LastfmStatus, LastfmTrack } from '@music-player/core/platform'
+import type { LastfmStatus, LastfmTrack, LastfmSimilarTrack } from '@music-player/core/platform'
 
 const API_ROOT = 'https://ws.audioscrobbler.com/2.0/'
 const AUTH_URL = 'https://www.last.fm/api/auth/'
@@ -133,4 +133,42 @@ export async function scrobble(track: LastfmTrack): Promise<void> {
     ctx.secret,
     'POST',
   )
+}
+
+/**
+ * Fetch similar-track recommendations for a seed via Last.fm `track.getSimilar`.
+ * This is an unauthenticated read (only the API key is required), so it works
+ * even when scrobbling is disabled or no account is linked. Returns [] when the
+ * API key is missing or the seed is incomplete.
+ */
+export async function getSimilarTracks(artist: string, track: string, limit = 50): Promise<LastfmSimilarTrack[]> {
+  const apiKey = getSetting(KEY_API_KEY)
+  if (!apiKey || !artist || !track) return []
+
+  const params = new URLSearchParams({
+    method: 'track.getSimilar',
+    artist,
+    track,
+    api_key: apiKey,
+    autocorrect: '1',
+    limit: String(limit),
+    format: 'json',
+  })
+  const res = await net.fetch(`${API_ROOT}?${params.toString()}`)
+  const json = await res.json()
+  if (json && json.error) throw new Error(`Last.fm error ${json.error}: ${json.message}`)
+
+  // Last.fm returns an array normally, a bare object for a single result, and
+  // omits `track` entirely when there are no matches.
+  const raw = json?.similartracks?.track
+  const list: any[] = Array.isArray(raw) ? raw : raw ? [raw] : []
+  return list
+    .map((t): LastfmSimilarTrack | null => {
+      const name = typeof t?.name === 'string' ? t.name : ''
+      const artistName = typeof t?.artist?.name === 'string' ? t.artist.name : ''
+      if (!name || !artistName) return null
+      const match = Number.parseFloat(t?.match ?? '0')
+      return { artist: artistName, track: name, match: Number.isFinite(match) ? match : 0 }
+    })
+    .filter((t): t is LastfmSimilarTrack => t !== null)
 }

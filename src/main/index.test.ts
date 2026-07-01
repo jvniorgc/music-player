@@ -113,10 +113,29 @@ describe('main process: IPC registration', () => {
       'settings:get', 'settings:set',
       'lastfm:get-status', 'lastfm:set-credentials', 'lastfm:set-enabled', 'lastfm:start-auth',
       'lastfm:finish-auth', 'lastfm:disconnect', 'lastfm:now-playing', 'lastfm:scrobble',
+      'lastfm:get-similar-tracks',
       'lyrics:get', 'lyrics:save', 'lyrics:get-downloaded', 'lyrics:save-downloaded',
       'file:get-url'
     ]
     for (const ch of expected) expect(h.handlers.has(ch)).toBe(true)
+  })
+})
+
+describe('main process: Last.fm similar tracks handler', () => {
+  it('forwards the seed and limit to the Last.fm client', async () => {
+    // With no API key stored, getSimilarTracks short-circuits to [] without any fetch.
+    const out = await invoke('lastfm:get-similar-tracks', { artist: 'Radiohead', track: 'Reckoner' }, 5)
+    expect(out).toEqual([])
+  })
+
+  it('returns normalized recommendations once the API key is configured', async () => {
+    getDatabase().prepare('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)').run('lastfm_api_key', 'k')
+    h.netFetch!.mockResolvedValueOnce(new Response(JSON.stringify({
+      similartracks: { track: [{ name: 'Nude', match: '0.9', artist: { name: 'Radiohead' } }] },
+    }), { status: 200, headers: { 'Content-Type': 'application/json' } }))
+
+    const out = await invoke('lastfm:get-similar-tracks', { artist: 'Radiohead', track: 'Reckoner' })
+    expect(out).toEqual([{ artist: 'Radiohead', track: 'Nude', match: 0.9 }])
   })
 })
 

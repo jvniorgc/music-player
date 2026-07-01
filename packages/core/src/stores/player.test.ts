@@ -29,9 +29,14 @@ vi.mock('../services/jellyfin', () => ({
   jellyfin: { getImageUrl: (id: string) => `img://${id}`, getRandomSongs: vi.fn() },
 }))
 
+vi.mock('../services/recommendations', () => ({
+  getRecommendations: vi.fn(),
+}))
+
 import { usePlayerStore } from './player'
 import { playback } from '../services/playback'
 import { jellyfin } from '../services/jellyfin'
+import { getRecommendations } from '../services/recommendations'
 
 const INITIAL = {
   currentTrack: null, userQueue: [], contextUpNext: [], contextName: '',
@@ -102,6 +107,25 @@ describe('delegation to the playback engine', () => {
     vi.mocked(jellyfin.getRandomSongs).mockResolvedValue({ Items: [], TotalRecordCount: 0 })
     await usePlayerStore.getState().shuffleAllSongs()
     expect(playback.setQueue).not.toHaveBeenCalled()
+  })
+
+  it('startRadio queues recommendations as "Discover Radio" and returns the count', async () => {
+    const items = [
+      { Id: 'r0', Name: 'R0', Type: 'Audio' },
+      { Id: 'r1', Name: 'R1', Type: 'Audio' },
+    ]
+    vi.mocked(getRecommendations).mockResolvedValue(items)
+    const count = await usePlayerStore.getState().startRadio()
+    expect(getRecommendations).toHaveBeenCalled()
+    expect(playback.setQueue).toHaveBeenCalledWith(items, 0, 'Discover Radio')
+    expect(count).toBe(2)
+  })
+
+  it('startRadio returns 0 and queues nothing when there are no recommendations', async () => {
+    vi.mocked(getRecommendations).mockResolvedValue([])
+    const count = await usePlayerStore.getState().startRadio()
+    expect(playback.setQueue).not.toHaveBeenCalled()
+    expect(count).toBe(0)
   })
 
   it('setVolume delegates and mirrors the value into store state', () => {

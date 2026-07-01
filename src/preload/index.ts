@@ -50,6 +50,7 @@ const api = {
   lastfmDisconnect: () => ipcRenderer.invoke('lastfm:disconnect'),
   lastfmNowPlaying: (track: LastfmTrack) => ipcRenderer.invoke('lastfm:now-playing', track),
   lastfmScrobble: (track: LastfmTrack) => ipcRenderer.invoke('lastfm:scrobble', track),
+  lastfmGetSimilarTracks: (track: { artist: string; track: string }, limit?: number) => ipcRenderer.invoke('lastfm:get-similar-tracks', track, limit),
 
   // Lyrics Cache
   getCachedLyrics: (itemId: string) => ipcRenderer.invoke('lyrics:get', itemId),
