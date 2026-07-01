@@ -21,6 +21,7 @@ interface PlayerState {
 
   // Actions
   playItems: (items: JellyfinItem[], startIndex?: number, contextName?: string) => void
+  shuffleAllSongs: () => Promise<void>
   addToQueue: (item: JellyfinItem) => void
   addNext: (item: JellyfinItem) => void
   removeFromUserQueue: (index: number) => void
@@ -57,6 +58,13 @@ export const usePlayerStore = create<PlayerState>((set) => ({
 
   playItems: (items, startIndex = 0, contextName = '') => {
     playback.setQueue(items, startIndex, contextName)
+  },
+
+  shuffleAllSongs: async () => {
+    const res = await jellyfin.getRandomSongs()
+    if (res.Items.length > 0) {
+      playback.setQueue(res.Items, 0, 'Shuffle All')
+    }
   },
 
   addToQueue: (item) => playback.addToQueue(item),

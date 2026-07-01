@@ -46,6 +46,16 @@ describe('library getters', () => {
     expect((await jellyfin.getSongs()).Items).toHaveLength(1)
   })
 
+  it('getRandomSongs requests a random-sorted audio sample', async () => {
+    const fetchMock = mockFetchRouter([['SortBy=Random', jsonRes(items('Rnd'))]])
+    const res = await jellyfin.getRandomSongs(42)
+    expect(res.Items).toHaveLength(1)
+    const url = fetchMock.mock.calls[0][0] as string
+    expect(url).toContain('IncludeItemTypes=Audio')
+    expect(url).toContain('SortBy=Random')
+    expect(url).toContain('Limit=42')
+  })
+
   it('getPlaylists drops file-based m3u playlists', async () => {
     mockFetchRouter([['IncludeItemTypes=Playlist', jsonRes({
       Items: [

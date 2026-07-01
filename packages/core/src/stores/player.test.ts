@@ -26,11 +26,12 @@ vi.mock('../services/playback', () => ({
 }))
 
 vi.mock('../services/jellyfin', () => ({
-  jellyfin: { getImageUrl: (id: string) => `img://${id}` },
+  jellyfin: { getImageUrl: (id: string) => `img://${id}`, getRandomSongs: vi.fn() },
 }))
 
 import { usePlayerStore } from './player'
 import { playback } from '../services/playback'
+import { jellyfin } from '../services/jellyfin'
 
 const INITIAL = {
   currentTrack: null, userQueue: [], contextUpNext: [], contextName: '',
@@ -87,6 +88,20 @@ describe('delegation to the playback engine', () => {
     usePlayerStore.getState().toggleRepeat()
     expect(playback.toggleShuffle).toHaveBeenCalled()
     expect(playback.toggleRepeat).toHaveBeenCalled()
+  })
+
+  it('shuffleAllSongs fetches a random sample and plays it as "Shuffle All"', async () => {
+    const items = [{ Id: 's0', Name: 'S0', Type: 'Audio' }]
+    vi.mocked(jellyfin.getRandomSongs).mockResolvedValue({ Items: items, TotalRecordCount: 1 })
+    await usePlayerStore.getState().shuffleAllSongs()
+    expect(jellyfin.getRandomSongs).toHaveBeenCalled()
+    expect(playback.setQueue).toHaveBeenCalledWith(items, 0, 'Shuffle All')
+  })
+
+  it('shuffleAllSongs does nothing when the server returns no songs', async () => {
+    vi.mocked(jellyfin.getRandomSongs).mockResolvedValue({ Items: [], TotalRecordCount: 0 })
+    await usePlayerStore.getState().shuffleAllSongs()
+    expect(playback.setQueue).not.toHaveBeenCalled()
   })
 
   it('setVolume delegates and mirrors the value into store state', () => {

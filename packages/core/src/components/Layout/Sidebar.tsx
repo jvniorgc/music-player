@@ -4,10 +4,11 @@ import { useLibraryStore } from '../../stores/library'
 import { useDownloadStore } from '../../stores/download'
 import { useToastStore } from '../../stores/toast'
 import {
-  Home, Disc3, Users, Music, ListMusic, Search, LogOut, Download, RefreshCw, Share2, Globe
+  Home, Disc3, Users, Music, ListMusic, Search, LogOut, Download, RefreshCw, Share2, Globe, Shuffle
 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { jellyfin } from '../../services/jellyfin'
+import { usePlayerStore } from '../../stores/player'
 import { ProfileEditModal } from '../UI/ProfileEditModal'
 
 const navItems = [
@@ -29,6 +30,7 @@ export default function Sidebar() {
   const { logout, auth, primaryImageTag } = useAuthStore()
   const { playlists, fetchPlaylists, refreshAll, isLoading } = useLibraryStore()
   const { loadDownloads } = useDownloadStore()
+  const shuffleAllSongs = usePlayerStore(s => s.shuffleAllSongs)
   const toast = useToastStore(s => s.show)
   const navigate = useNavigate()
   const [refreshing, setRefreshing] = useState(false)
@@ -49,6 +51,14 @@ export default function Sidebar() {
     await loadDownloads()
     setRefreshing(false)
     toast('Library synced', 'success')
+  }
+
+  const handleShuffleAll = async () => {
+    try {
+      await shuffleAllSongs()
+    } catch {
+      toast('Could not start shuffle', 'error')
+    }
   }
 
   const avatarUrl = auth?.userId && primaryImageTag
@@ -81,6 +91,18 @@ export default function Sidebar() {
           </NavLink>
         ))}
       </nav>
+
+      {/* Shuffle everything on the server */}
+      <div className="px-3 mt-1">
+        <button
+          onClick={handleShuffleAll}
+          className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-text-secondary hover:text-text-primary hover:bg-white/5 transition-colors w-full no-drag"
+          title="Play a shuffle of your whole library"
+        >
+          <Shuffle size={18} />
+          Shuffle All
+        </button>
+      </div>
 
       {/* Library section */}
       <div className="mt-6 px-3">

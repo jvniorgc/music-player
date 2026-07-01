@@ -201,6 +201,12 @@ class JellyfinService {
     return this.sanitizeItems(res)
   }
 
+  /** Returns a server-randomized sample of songs from the whole library ("Shuffle All"). */
+  async getRandomSongs(limit = 300): Promise<JellyfinItemsResponse> {
+    const res = await this.request<JellyfinItemsResponse>(`/Users/${this.userId}/Items?IncludeItemTypes=Audio&Recursive=true&SortBy=Random&Limit=${limit}&Fields=MediaSources,RunTimeTicks,AlbumArtist,Album,AlbumId,HasLyrics`)
+    return this.sanitizeItems(res)
+  }
+
   async getPlaylists(): Promise<JellyfinItemsResponse> {
     const res = await this.request<JellyfinItemsResponse>(
       `/Users/${this.userId}/Items?IncludeItemTypes=Playlist&Recursive=true&SortBy=SortName&Fields=ChildCount,PrimaryImageAspectRatio,Path`
