@@ -7,6 +7,24 @@ const AUTH = { serverUrl: 'http://jf.local', token: 'TKN', userId: 'u1', usernam
 const song = (Id: string, Name: string, artist: string): JellyfinItem =>
   ({ Id, Name, Type: 'Audio', Artists: [artist] })
 
+const isoDaysAgo = (days: number) => new Date(Date.now() - days * 86_400_000).toISOString().slice(0, 10)
+
+/**
+ * Mock `getUserTopSongs` keyed by the `minDate` window: the 30-day window feeds
+ * the seeds, the 7-day window feeds trending injection, and no `minDate` is the
+ * all-time seed fallback.
+ */
+function mockTopSongs(seeds: JellyfinItem[], opts: { trending?: JellyfinItem[]; allTime?: JellyfinItem[] } = {}) {
+  return vi.spyOn(jellyfin, 'getUserTopSongs').mockImplementation(async (_uid, _limit, minDate) => {
+    if (minDate === isoDaysAgo(TRENDING_DAYS)) return opts.trending ?? []
+    if (minDate === isoDaysAgo(MONTH_DAYS)) return seeds
+    return opts.allTime ?? []
+  })
+}
+
+const MONTH_DAYS = 30
+const TRENDING_DAYS = 7
+
 beforeEach(() => {
   jellyfin.setAuth({ ...AUTH })
 })
@@ -18,7 +36,7 @@ function configured() {
 describe('getRecommendations — variant A (Last.fm)', () => {
   it('seeds from the last month, expands to similar artists, and pulls owned songs', async () => {
     configured()
-    vi.spyOn(jellyfin, 'getUserTopSongs').mockResolvedValue([
+    mockTopSongs([
       song('seed1', 'Reckoner', 'Radiohead'),
       { Id: 'seed2', Name: '', Type: 'Audio' }, // no artist/name -> skipped seed
     ])
@@ -44,7 +62,7 @@ describe('getRecommendations — variant A (Last.fm)', () => {
 
   it('aggregates similar-artist scores across seeds and honours the limit', async () => {
     configured()
-    vi.spyOn(jellyfin, 'getUserTopSongs').mockResolvedValue([
+    mockTopSongs([
       song('seed1', 'Reckoner', 'Radiohead'),
       song('seed2', 'Idioteque', 'Thom Yorke'),
     ])
@@ -65,7 +83,7 @@ describe('getRecommendations — variant A (Last.fm)', () => {
 
   it('deduplicates a song returned for more than one candidate artist', async () => {
     configured()
-    vi.spyOn(jellyfin, 'getUserTopSongs').mockResolvedValue([song('seed1', 'Reckoner', 'Radiohead')])
+    mockTopSongs([song('seed1', 'Reckoner', 'Radiohead')])
     vi.mocked(window.api.lastfmGetSimilarTracks).mockResolvedValue([
       { artist: 'Björk', track: 'Jóga', match: 0.9 },
       { artist: 'PJ Harvey', track: 'Down by the Water', match: 0.8 },
@@ -80,7 +98,7 @@ describe('getRecommendations — variant A (Last.fm)', () => {
 
   it('falls back to InstantMix when no candidate artist has owned songs', async () => {
     configured()
-    vi.spyOn(jellyfin, 'getUserTopSongs').mockResolvedValue([song('seed1', 'Reckoner', 'Radiohead')])
+    mockTopSongs([song('seed1', 'Reckoner', 'Radiohead')])
     vi.mocked(window.api.lastfmGetSimilarTracks).mockResolvedValue([{ artist: 'X', track: 'Y', match: 0.5 }])
     vi.spyOn(jellyfin, 'getSongsByArtist').mockResolvedValue([]) // user owns nothing by similar artists
     const instantMix = vi.spyOn(jellyfin, 'getInstantMix').mockResolvedValue({
@@ -95,7 +113,7 @@ describe('getRecommendations — variant A (Last.fm)', () => {
 
   it('treats a Last.fm getSimilar failure as no candidates', async () => {
     configured()
-    vi.spyOn(jellyfin, 'getUserTopSongs').mockResolvedValue([song('seed1', 'Reckoner', 'Radiohead')])
+    mockTopSongs([song('seed1', 'Reckoner', 'Radiohead')])
     vi.mocked(window.api.lastfmGetSimilarTracks).mockRejectedValue(new Error('boom'))
     const instantMix = vi.spyOn(jellyfin, 'getInstantMix').mockResolvedValue({
       Items: [song('M1', 'Mix', 'Someone')], TotalRecordCount: 1,
@@ -109,7 +127,7 @@ describe('getRecommendations — variant A (Last.fm)', () => {
 
   it('spreads artists to the front and caps same-artist runs before backfilling', async () => {
     configured()
-    vi.spyOn(jellyfin, 'getUserTopSongs').mockResolvedValue([song('seed1', 'Reckoner', 'Radiohead')])
+    mockTopSongs([song('seed1', 'Reckoner', 'Radiohead')])
     vi.mocked(window.api.lastfmGetSimilarTracks).mockResolvedValue([
       { artist: 'Alpha', track: 't', match: 0.99 },
       { artist: 'Beta', track: 't', match: 0.50 },
@@ -133,7 +151,7 @@ describe('getRecommendations — variant A (Last.fm)', () => {
 
   it('diversifies seeds so a dominant artist does not consume every seed', async () => {
     configured()
-    vi.spyOn(jellyfin, 'getUserTopSongs').mockResolvedValue([
+    mockTopSongs([
       song('s1', 'T1', 'Radiohead'),
       song('s2', 'T2', 'Radiohead'),
       song('s3', 'T3', 'Radiohead'), // dropped: 3rd Radiohead seed exceeds the per-artist cap
@@ -150,9 +168,66 @@ describe('getRecommendations — variant A (Last.fm)', () => {
   })
 })
 
+describe('getRecommendations — trending injection', () => {
+  it('sprinkles last-days favourites into the middle of the queue, never first', async () => {
+    configured()
+    mockTopSongs([song('seed1', 'Reckoner', 'Radiohead')], {
+      trending: [song('t1', 'Hot1', 'Fresh'), song('t2', 'Hot2', 'New')],
+    })
+    vi.mocked(window.api.lastfmGetSimilarTracks).mockResolvedValue([
+      { artist: 'Alpha', track: 'x', match: 0.9 },
+      { artist: 'Beta', track: 'y', match: 0.8 },
+      { artist: 'Gamma', track: 'z', match: 0.7 },
+    ])
+    vi.spyOn(jellyfin, 'getSongsByArtist').mockImplementation(async (name: string) => {
+      if (name === 'Alpha') return [song('a1', 'A1', 'Alpha')]
+      if (name === 'Beta') return [song('b1', 'B1', 'Beta')]
+      if (name === 'Gamma') return [song('g1', 'G1', 'Gamma')]
+      return []
+    })
+    vi.spyOn(Math, 'random').mockReturnValue(0) // deterministic: always position 1
+
+    const out = await getRecommendations()
+
+    // base = [a1, b1, g1]; insert t1 @1 -> [a1, t1, b1, g1]; insert t2 @1 -> [a1, t2, t1, b1, g1]
+    expect(out.map(i => i.Id)).toEqual(['a1', 't2', 't1', 'b1', 'g1'])
+    expect(out[0].Id).toBe('a1') // trending never takes the first slot
+  })
+
+  it('does not inject a trending track already present in the queue', async () => {
+    configured()
+    mockTopSongs([song('seed1', 'Reckoner', 'Radiohead')], {
+      trending: [song('a1', 'A1', 'Alpha'), song('t1', 'Hot', 'Fresh')], // a1 already recommended
+    })
+    vi.mocked(window.api.lastfmGetSimilarTracks).mockResolvedValue([{ artist: 'Alpha', track: 'x', match: 0.9 }])
+    vi.spyOn(jellyfin, 'getSongsByArtist').mockResolvedValue([song('a1', 'A1', 'Alpha')])
+    vi.spyOn(Math, 'random').mockReturnValue(0)
+
+    const out = await getRecommendations()
+
+    expect(out.map(i => i.Id)).toEqual(['a1', 't1'])
+  })
+
+  it('injects at most TRENDING_COUNT (6) trending tracks', async () => {
+    configured()
+    const trending = Array.from({ length: 10 }, (_, i) => song(`t${i}`, `Hot${i}`, `Fresh${i}`))
+    mockTopSongs([song('seed1', 'Reckoner', 'Radiohead')], { trending })
+    vi.mocked(window.api.lastfmGetSimilarTracks).mockResolvedValue([{ artist: 'Alpha', track: 'x', match: 0.9 }])
+    vi.spyOn(jellyfin, 'getSongsByArtist').mockResolvedValue([song('a1', 'A1', 'Alpha')])
+    vi.spyOn(Math, 'random').mockReturnValue(0)
+
+    const out = await getRecommendations()
+
+    // base has 1 track + at most 6 injected trending tracks
+    expect(out).toHaveLength(7)
+    const injected = out.filter(i => i.Id.startsWith('t'))
+    expect(injected).toHaveLength(6)
+  })
+})
+
 describe('getRecommendations — variant B (fallback)', () => {
   it('uses InstantMix directly when Last.fm is not configured', async () => {
-    vi.spyOn(jellyfin, 'getUserTopSongs').mockResolvedValue([song('seed1', 'Reckoner', 'Radiohead')])
+    mockTopSongs([song('seed1', 'Reckoner', 'Radiohead')])
     const similar = vi.mocked(window.api.lastfmGetSimilarTracks)
     const instantMix = vi.spyOn(jellyfin, 'getInstantMix').mockResolvedValue({
       Items: [song('M1', 'Mix', 'Someone')], TotalRecordCount: 1,
@@ -167,7 +242,7 @@ describe('getRecommendations — variant B (fallback)', () => {
 
   it('treats a Last.fm status failure as not configured', async () => {
     vi.mocked(window.api.lastfmGetStatus).mockRejectedValue(new Error('offline'))
-    vi.spyOn(jellyfin, 'getUserTopSongs').mockResolvedValue([song('seed1', 'Reckoner', 'Radiohead')])
+    mockTopSongs([song('seed1', 'Reckoner', 'Radiohead')])
     const instantMix = vi.spyOn(jellyfin, 'getInstantMix').mockResolvedValue({
       Items: [song('M1', 'Mix', 'Someone')], TotalRecordCount: 1,
     })
@@ -180,7 +255,7 @@ describe('getRecommendations — variant B (fallback)', () => {
   it('blends InstantMix across several seeds, dedupes, and caps repeat artists', async () => {
     // Not configured -> variant B. Seed s1's mix is dominated by one artist while
     // s2 contributes a different artist; the blend must surface variety.
-    vi.spyOn(jellyfin, 'getUserTopSongs').mockResolvedValue([
+    mockTopSongs([
       song('s1', 'One', 'Alpha'),
       song('s2', 'Two', 'Beta'),
     ])
@@ -193,13 +268,13 @@ describe('getRecommendations — variant B (fallback)', () => {
     const out = await getRecommendations()
 
     // Round-robin across seeds pulls Beta up to 2nd place, the duplicate a1 is
-    // dropped, and the per-artist cap (2) pushes the 3rd Alpha track to the tail.
+    // dropped, and the per-artist cap (3) keeps all three Alpha tracks.
     expect(out.map(i => i.Id)).toEqual(['a1', 'b1', 'a2', 'a3'])
     expect(new Set(out.slice(0, 2).map(i => i.Artists![0])).size).toBe(2)
   })
 
   it('skips ineligible seeds and blends from the eligible ones', async () => {
-    vi.spyOn(jellyfin, 'getUserTopSongs').mockResolvedValue([
+    mockTopSongs([
       song('seedA', 'A', 'AA'),
       song('seedB', 'B', 'BB'),
     ])
@@ -214,7 +289,7 @@ describe('getRecommendations — variant B (fallback)', () => {
   })
 
   it('falls back to a random sample when no seed produces a mix', async () => {
-    vi.spyOn(jellyfin, 'getUserTopSongs').mockResolvedValue([song('seedA', 'A', 'AA')])
+    mockTopSongs([song('seedA', 'A', 'AA')])
     vi.spyOn(jellyfin, 'getInstantMix').mockResolvedValue({ Items: [], TotalRecordCount: 0 })
     const random = vi.spyOn(jellyfin, 'getRandomSongs').mockResolvedValue({
       Items: [song('R1', 'Rnd', 'Someone')], TotalRecordCount: 1,
@@ -227,9 +302,7 @@ describe('getRecommendations — variant B (fallback)', () => {
   })
 
   it('falls back to all-time seeds when the last month is empty', async () => {
-    const top = vi.spyOn(jellyfin, 'getUserTopSongs')
-      .mockResolvedValueOnce([])                                   // last-month query: empty
-      .mockResolvedValueOnce([song('seedAll', 'Old', 'Legend')])  // all-time query
+    const top = mockTopSongs([], { allTime: [song('seedAll', 'Old', 'Legend')] })
     const instantMix = vi.spyOn(jellyfin, 'getInstantMix').mockResolvedValue({
       Items: [song('M1', 'Mix', 'Someone')], TotalRecordCount: 1,
     })
@@ -237,10 +310,22 @@ describe('getRecommendations — variant B (fallback)', () => {
     const out = await getRecommendations()
 
     expect(out.map(i => i.Id)).toEqual(['M1'])
-    expect(top).toHaveBeenCalledTimes(2)
-    expect(top.mock.calls[0][2]).toMatch(/^\d{4}-\d{2}-\d{2}$/) // minDate on the first call
-    expect(top.mock.calls[1][2]).toBeUndefined()                // no minDate on the fallback
+    expect(top.mock.calls[0][2]).toBe(isoDaysAgo(MONTH_DAYS)) // last-month seed query
+    expect(top.mock.calls[1][2]).toBeUndefined()              // all-time seed fallback
+    expect(top.mock.calls[2][2]).toBe(isoDaysAgo(TRENDING_DAYS)) // trending query
     expect(instantMix).toHaveBeenCalledWith('seedAll', 50)
+  })
+
+  it('returns an empty queue without injecting trending when nothing is playable', async () => {
+    jellyfin.clearAuth() // no seeds
+    const top = vi.spyOn(jellyfin, 'getUserTopSongs')
+    vi.spyOn(jellyfin, 'getInstantMix').mockResolvedValue({ Items: [], TotalRecordCount: 0 })
+    vi.spyOn(jellyfin, 'getRandomSongs').mockResolvedValue({ Items: [], TotalRecordCount: 0 })
+
+    const out = await getRecommendations()
+
+    expect(out).toEqual([])
+    expect(top).not.toHaveBeenCalled() // trending query is skipped for an empty base
   })
 
   it('uses a random sample when there is no user session', async () => {

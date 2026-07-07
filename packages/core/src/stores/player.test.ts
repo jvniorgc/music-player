@@ -109,7 +109,7 @@ describe('delegation to the playback engine', () => {
     expect(playback.setQueue).not.toHaveBeenCalled()
   })
 
-  it('startRadio queues recommendations as "Discover Radio" and returns the count', async () => {
+  it('startRadio queues recommendations as "Tocar Mix" and returns the count', async () => {
     const items = [
       { Id: 'r0', Name: 'R0', Type: 'Audio' },
       { Id: 'r1', Name: 'R1', Type: 'Audio' },
@@ -117,7 +117,7 @@ describe('delegation to the playback engine', () => {
     vi.mocked(getRecommendations).mockResolvedValue(items)
     const count = await usePlayerStore.getState().startRadio()
     expect(getRecommendations).toHaveBeenCalled()
-    expect(playback.setQueue).toHaveBeenCalledWith(items, 0, 'Discover Radio')
+    expect(playback.setQueue).toHaveBeenCalledWith(items, 0, 'Tocar Mix')
     expect(count).toBe(2)
   })
 

@@ -23,7 +23,7 @@ interface PlayerState {
   // Actions
   playItems: (items: JellyfinItem[], startIndex?: number, contextName?: string) => void
   shuffleAllSongs: () => Promise<void>
-  /** Generate a "Discover Radio" queue from recent listening; returns how many tracks were queued. */
+  /** Generate a "Tocar Mix" queue from recent listening; returns how many tracks were queued. */
   startRadio: () => Promise<number>
   addToQueue: (item: JellyfinItem) => void
   addNext: (item: JellyfinItem) => void
@@ -73,7 +73,7 @@ export const usePlayerStore = create<PlayerState>((set) => ({
   startRadio: async () => {
     const items = await getRecommendations()
     if (items.length > 0) {
-      playback.setQueue(items, 0, 'Discover Radio')
+      playback.setQueue(items, 0, 'Tocar Mix')
     }
     return items.length
   },

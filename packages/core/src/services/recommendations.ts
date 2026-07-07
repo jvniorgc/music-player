@@ -1,6 +1,6 @@
 import { jellyfin, JellyfinItem } from './jellyfin'
 
-// Tuning constants for the "Discover Radio" generator.
+// Tuning constants for the "Tocar Mix" generator.
 const SEED_LIMIT = 40
 const MAX_SEEDS = 12
 const MAX_SEED_PER_ARTIST = 2
@@ -14,6 +14,10 @@ const MAX_TRACKS_PER_ARTIST = 3
 const MIX_SEEDS = 5
 const RADIO_LIMIT = 50
 const MONTH_DAYS = 30
+/** Recency window (days) for the "trending" tracks sprinkled into the queue. */
+const TRENDING_DAYS = 7
+/** How many trending tracks to inject into the middle of the queue. */
+const TRENDING_COUNT = 6
 
 /** Normalize a title/artist for fuzzy matching: lowercase, drop bracketed suffixes and punctuation. */
 function norm(s: string): string {
@@ -183,7 +187,43 @@ async function recommendViaInstantMix(seeds: JellyfinItem[], limit: number): Pro
 }
 
 /**
- * Build a "Discover Radio" queue from the user's recent listening.
+ * The user's most-played songs of the last few days, excluding anything already
+ * in the queue. These are sprinkled into the queue so a "mix" always mixes in
+ * some of the tracks currently in heavy rotation.
+ */
+async function getTrending(exclude: Set<string>): Promise<JellyfinItem[]> {
+  const userId = jellyfin.userId
+  if (!userId) return []
+  const recent = await jellyfin
+    .getUserTopSongs(userId, TRENDING_COUNT * 3, daysAgoIso(TRENDING_DAYS))
+    .catch(() => [] as JellyfinItem[])
+  const fresh: JellyfinItem[] = []
+  const seen = new Set(exclude)
+  for (const item of recent) {
+    if (seen.has(item.Id)) continue
+    seen.add(item.Id)
+    fresh.push(item)
+    if (fresh.length >= TRENDING_COUNT) break
+  }
+  return fresh
+}
+
+/**
+ * Splice trending tracks into random mid-queue positions — never at index 0 (so
+ * playback still starts on a recommendation) and never appended at the very end.
+ */
+function injectTrending(base: JellyfinItem[], trending: JellyfinItem[], rng: () => number = Math.random): JellyfinItem[] {
+  const out = [...base]
+  for (const track of trending) {
+    const span = Math.max(out.length - 1, 1)
+    const pos = 1 + Math.floor(rng() * span)
+    out.splice(pos, 0, track)
+  }
+  return out
+}
+
+/**
+ * Build a "Tocar Mix" queue from the user's recent listening.
  *
  * Variant A (preferred): seed with the last month's most-played songs, expand
  * via Last.fm `track.getSimilar`, and resolve each recommendation against the
@@ -192,15 +232,23 @@ async function recommendViaInstantMix(seeds: JellyfinItem[], limit: number): Pro
  * Variant B (fallback): when Last.fm has no API key configured or produces
  * nothing playable, use Jellyfin's InstantMix radio — or a random sample when
  * there is no listening history yet.
+ *
+ * Finally, a handful of the user's last-few-days favourites are sprinkled into
+ * the middle of the queue.
  */
 export async function getRecommendations(limit = RADIO_LIMIT): Promise<JellyfinItem[]> {
   const seeds = await getSeeds()
 
   const status = await window.api.lastfmGetStatus().catch(() => null)
+  let base: JellyfinItem[] = []
   if (status?.configured && seeds.length > 0) {
-    const viaLastfm = await recommendViaLastfm(seeds, limit)
-    if (viaLastfm.length > 0) return viaLastfm
+    base = await recommendViaLastfm(seeds, limit)
   }
+  if (base.length === 0) {
+    base = await recommendViaInstantMix(seeds, limit)
+  }
+  if (base.length === 0) return base
 
-  return recommendViaInstantMix(seeds, limit)
+  const trending = await getTrending(new Set(base.map(i => i.Id)))
+  return injectTrending(base, trending)
 }

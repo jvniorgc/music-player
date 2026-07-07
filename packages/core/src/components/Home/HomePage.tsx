@@ -113,7 +113,7 @@ export default function HomePage() {
         showToast('Não foi possível gerar recomendações. Ouça mais músicas e tente de novo.', 'error')
       }
     } catch {
-      showToast('Falha ao iniciar o rádio de recomendações.', 'error')
+      showToast('Falha ao iniciar o mix.', 'error')
     } finally {
       setRadioLoading(false)
     }
@@ -127,10 +127,10 @@ export default function HomePage() {
           onClick={handleRadio}
           disabled={radioLoading}
           className="flex items-center gap-2 px-4 py-2.5 rounded-full bg-accent hover:bg-accent-hover text-white text-sm font-semibold transition-colors disabled:opacity-60 disabled:cursor-not-allowed shadow-lg shadow-black/20"
-          title="Toca músicas recomendadas com base no que você andou ouvindo"
+          title="Toca um mix com base no que você andou ouvindo, com faixas em alta misturadas"
         >
           {radioLoading ? <Loader2 size={16} className="animate-spin" /> : <Radio size={16} />}
-          {radioLoading ? 'Gerando…' : 'Discover Radio'}
+          {radioLoading ? 'Gerando…' : 'Tocar Mix'}
         </button>
       </div>
 
