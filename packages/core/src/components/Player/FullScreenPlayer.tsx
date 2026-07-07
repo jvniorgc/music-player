@@ -61,6 +61,8 @@ export default function FullScreenPlayer() {
 
     // Always try to fetch lyrics (cache-first, then Jellyfin embedded + LRCLIB fallback)
     jellyfin.getLyricsWithCache(item.Id).then(lines => {
+      // Discard stale responses that resolve after the track has changed
+      if (lastTrackIdRef.current !== item.Id) return
       const filtered = lines.filter(l => l.Text.trim())
       setLyrics(filtered)
       lyricsRef.current = filtered
@@ -142,11 +144,11 @@ export default function FullScreenPlayer() {
       )}
 
       {/* Main content: side by side when lyrics, centered when not */}
-      <div className={`relative z-10 flex items-center gap-12 w-full px-12 h-[80vh] ${lyricsVisible ? 'max-w-5xl' : 'max-w-lg justify-center'}`}>
+      <div className={`relative z-10 flex items-center gap-6 md:gap-12 w-full px-6 md:px-12 h-[80vh] ${lyricsVisible ? 'max-w-5xl' : 'max-w-lg justify-center'}`}>
         {/* Left side: Art + Info + Controls */}
-        <div className={`flex flex-col items-center shrink-0 ${lyricsVisible ? 'w-96' : 'w-full'}`}>
+        <div className={`flex flex-col items-center min-w-0 mx-auto w-full ${lyricsVisible ? 'md:mx-0 md:shrink-0 md:w-96' : ''}`}>
           {/* Album Art */}
-          <div className="w-72 h-72 rounded-2xl overflow-hidden shadow-2xl shadow-black/50 mb-8">
+          <div data-testid="album-art" className="w-[min(18rem,35vh)] max-w-full aspect-square rounded-2xl overflow-hidden shadow-2xl shadow-black/50 mb-4 md:mb-8">
             {imageUrl ? (
               <img src={imageUrl} className="w-full h-full object-cover" alt="" />
             ) : (
@@ -157,7 +159,7 @@ export default function FullScreenPlayer() {
           </div>
 
           {/* Track info */}
-          <div className="text-center mb-6 w-full">
+          <div className="text-center mb-3 md:mb-6 w-full">
             <h2 className="text-xl font-bold truncate">{item.Name}</h2>
             <p className="text-base text-accent mt-1 truncate">
               {item.ArtistItems?.length ? (
@@ -187,7 +189,7 @@ export default function FullScreenPlayer() {
           </div>
 
           {/* Progress */}
-          <div className="w-full mb-5">
+          <div className="w-full mb-3 md:mb-5">
             <input
               type="range"
               min={0}
@@ -207,7 +209,7 @@ export default function FullScreenPlayer() {
           </div>
 
           {/* Controls */}
-          <div className="flex items-center justify-center gap-6 mb-6">
+          <div className="flex items-center justify-center gap-6 mb-3 md:mb-6">
             <button
               onClick={toggleShuffle}
               className={`p-2 transition-colors ${shuffle ? 'text-accent' : 'text-text-tertiary hover:text-text-secondary'}`}
@@ -239,7 +241,7 @@ export default function FullScreenPlayer() {
           </div>
 
           {/* Volume */}
-          <div className="flex items-center gap-3 w-56">
+          <div className="flex items-center gap-3 w-56 max-w-full">
             <button
               onClick={() => setVolume(volume > 0 ? 0 : 1)}
               className="text-text-tertiary hover:text-text-secondary"
@@ -261,11 +263,12 @@ export default function FullScreenPlayer() {
           </div>
         </div>
 
-        {/* Right side: Lyrics */}
+        {/* Right side: Lyrics (hidden on narrow windows so controls keep their space) */}
         {lyricsVisible && (
           <div
+            data-testid="lyrics-panel"
             ref={lyricsContainerRef}
-            className="flex-1 h-full overflow-y-auto lyrics-scroll py-16 mask-fade"
+            className="hidden md:block flex-1 h-full overflow-y-auto lyrics-scroll py-16 mask-fade"
           >
             <div className="flex flex-col gap-5 px-4">
               {lyrics.map((line, i) => {

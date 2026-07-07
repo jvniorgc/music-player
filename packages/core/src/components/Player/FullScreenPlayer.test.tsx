@@ -6,10 +6,10 @@ import { usePlayerStore } from '../../stores/player'
 import { jellyfin } from '../../services/jellyfin'
 import type { QueueTrack } from '../../services/playback'
 
-function makeTrack(): QueueTrack {
+function makeTrack(id = 's1', name = 'Song'): QueueTrack {
   return {
-    id: 's1',
-    item: { Id: 's1', Name: 'Song', Type: 'Audio', AlbumId: 'a1', ImageTags: { Primary: 'p' } },
+    id,
+    item: { Id: id, Name: name, Type: 'Audio', AlbumId: 'a1', ImageTags: { Primary: 'p' } },
   }
 }
 
@@ -58,5 +58,49 @@ describe('FullScreenPlayer lyrics visibility', () => {
     renderPlayer()
     await waitFor(() => expect(jellyfin.getLyricsWithCache).toHaveBeenCalled())
     expect(screen.queryByLabelText('Toggle lyrics')).not.toBeInTheDocument()
+  })
+
+  it('ignores lyrics from a previous track that resolve after skipping to the next one', async () => {
+    const resolvers = new Map<string, (lines: { Text: string }[]) => void>()
+    vi.spyOn(jellyfin, 'getLyricsWithCache').mockImplementation(
+      (id: string) => new Promise(resolve => resolvers.set(id, resolve))
+    )
+    renderPlayer()
+    await waitFor(() => expect(resolvers.has('s1')).toBe(true))
+
+    // Skip to the next track before the first track's lyrics arrive.
+    usePlayerStore.setState({ currentTrack: makeTrack('s2', 'Next Song') })
+    await waitFor(() => expect(resolvers.has('s2')).toBe(true))
+
+    // The new track's lyrics arrive first, then the stale response for s1
+    // resolves late — it must be discarded.
+    resolvers.get('s2')!([{ Text: 'fresh lyrics from s2' }])
+    await screen.findByText('fresh lyrics from s2')
+    resolvers.get('s1')!([{ Text: 'stale lyrics from s1' }])
+
+    await waitFor(() =>
+      expect(screen.queryByText('stale lyrics from s1')).not.toBeInTheDocument()
+    )
+    expect(screen.getByText('fresh lyrics from s2')).toBeInTheDocument()
+  })
+})
+
+describe('FullScreenPlayer responsive layout', () => {
+  it('scales the album art with the viewport height so controls stay visible on small windows', async () => {
+    vi.spyOn(jellyfin, 'getLyricsWithCache').mockResolvedValue([])
+    renderPlayer()
+    const art = await screen.findByTestId('album-art')
+    // Fluid size capped at 18rem: shrinks with the window instead of overflowing
+    expect(art.className).toContain('w-[min(18rem,35vh)]')
+    expect(art.className).toContain('aspect-square')
+  })
+
+  it('hides the lyrics panel on narrow windows so the player controls keep their space', async () => {
+    vi.spyOn(jellyfin, 'getLyricsWithCache').mockResolvedValue([{ Text: 'first line' }])
+    renderPlayer()
+    await screen.findByText('first line')
+    const panel = screen.getByTestId('lyrics-panel')
+    expect(panel.className).toContain('hidden')
+    expect(panel.className).toContain('md:block')
   })
 })
