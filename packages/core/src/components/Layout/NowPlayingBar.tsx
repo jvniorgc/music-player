@@ -72,7 +72,7 @@ export default function NowPlayingBar() {
       <div className="flex-1 flex items-center px-4 gap-4">
         {/* Track info */}
         <div
-          className="flex items-center gap-3 w-64 min-w-0 cursor-pointer"
+          className="flex items-center gap-3 flex-1 min-w-0 overflow-hidden cursor-pointer"
           onClick={() => setShowFullScreen(true)}
         >
           {imageUrl ? (
@@ -96,7 +96,7 @@ export default function NowPlayingBar() {
         </div>
 
         {/* Playback controls */}
-        <div className="flex-1 flex items-center justify-center gap-5">
+        <div className="flex items-center justify-center gap-5 shrink-0">
           <button
             onClick={toggleShuffle}
             className={`p-1 transition-colors ${shuffle ? 'text-accent' : 'text-text-tertiary hover:text-text-secondary'}`}
@@ -134,7 +134,7 @@ export default function NowPlayingBar() {
         </div>
 
         {/* Right side: time, volume, queue, download */}
-        <div className="w-64 flex items-center justify-end gap-3">
+        <div className="flex-1 flex items-center justify-end gap-3 min-w-0 overflow-hidden">
           <span className="text-[11px] text-text-tertiary tabular-nums whitespace-nowrap shrink-0">
             {formatTime(currentTime)} / {formatTime(duration)}
           </span>
