@@ -6,6 +6,7 @@ import {
   groupFilesByDirectory, configure, getConfig, deriveDefaultUrl, isConfigured
 } from '../../services/slskd'
 import { jellyfin } from '../../services/jellyfin'
+import { timeoutSignal } from '../../services/http'
 import { useToastStore } from '../../stores/toast'
 import {
   Search, Loader2, Download, FolderDown, ChevronDown, ChevronRight,
@@ -228,10 +229,12 @@ export default function SoulseekView() {
     setConnected(null)
     try {
       configure({ url: settingsUrl, username: settingsUser, password: settingsPass })
+      await window.api?.allowOrigin?.(settingsUrl)
       const res = await fetch(`${settingsUrl.replace(/\/+$/, '')}/api/v0/session`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: settingsUser, password: settingsPass })
+        body: JSON.stringify({ username: settingsUser, password: settingsPass }),
+        signal: timeoutSignal(undefined, 10_000)
       })
       setConnected(res.ok)
     } catch {

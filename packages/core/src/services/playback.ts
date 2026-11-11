@@ -60,6 +60,14 @@ class PlaybackService {
   private _preloadTrack: QueueTrack | null = null
   private _preloadReady = false
 
+  // Failure handling: skip unplayable tracks, but stop after a few in a row
+  // (e.g. server down) instead of burning through the whole queue.
+  private _loading = false
+  private _loadSeq = 0
+  private _consecutiveFailures = 0
+  private _resumeOnOnline: { trackId: string; position: number } | null = null
+  static readonly MAX_CONSECUTIVE_FAILURES = 3
+
   constructor() {
     this.audio = new Audio()
     this.audio.preload = 'auto'
@@ -71,6 +79,45 @@ class PlaybackService {
       this._volume = parseFloat(savedVol)
       this.audio.volume = this._volume
     }
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('online', () => this.handleOnline())
+    }
+  }
+
+  private isOffline(): boolean {
+    return typeof navigator !== 'undefined' && navigator.onLine === false
+  }
+
+  /** Network came back: resume a stream that died while offline. */
+  private handleOnline() {
+    const pending = this._resumeOnOnline
+    this._resumeOnOnline = null
+    if (!pending || this._current?.id !== pending.trackId) return
+    console.warn('[Playback] Network restored, resuming', pending.trackId)
+    this.loadAndPlayCurrent(pending.position)
+  }
+
+  /**
+   * A track could not be played. Surface it, then skip ahead unless we're
+   * offline (wait for the network) or too many tracks failed in a row.
+   */
+  private handlePlaybackFailure(track: QueueTrack, message: string, position = 0) {
+    if (this._current !== track) return // user already moved on
+    const name = track.item.Name || 'track'
+    if (this.isOffline() && track.source === 'stream') {
+      this._resumeOnOnline = { trackId: track.id, position }
+      this.emit('error', `Connection lost. "${name}" will resume when you're back online.`)
+      return
+    }
+    this._consecutiveFailures++
+    if (this._consecutiveFailures >= PlaybackService.MAX_CONSECUTIVE_FAILURES) {
+      this._consecutiveFailures = 0
+      this.emit('error', `Playback stopped: several tracks failed to play (${message})`)
+      return
+    }
+    this.emit('error', `Couldn't play "${name}". Skipping.`)
+    if (this.peekNext() && this.peekNext() !== track) this.next()
   }
 
   private attachAudioListeners(audio: HTMLAudioElement) {
@@ -106,10 +153,12 @@ class PlaybackService {
     })
 
     audio.addEventListener('error', () => {
-      if (audio !== this.audio) return
+      if (audio !== this.audio || !audio.src) return
       const err = audio.error
       console.error('[Playback] Audio error:', err?.code, err?.message, 'src:', audio.src?.substring(0, 100))
-      this.emit('error', err?.message || 'Playback error')
+      // Errors during the initial load are handled by loadAndPlayCurrent.
+      if (this._loading || !this._current) return
+      this.handlePlaybackFailure(this._current, err?.message || 'Playback error', audio.currentTime)
     })
   }
 
@@ -172,14 +221,17 @@ class PlaybackService {
   }
 
   /** Resolves and plays whatever is in `_current`. */
-  private async loadAndPlayCurrent() {
+  private async loadAndPlayCurrent(startAt = 0) {
     const track = this._current
     if (!track) return
     this.finalizeScrobble()
+    this._resumeOnOnline = null
 
     // Emit trackchange immediately so UI updates
     this.emit('trackchange', track)
 
+    const loadId = ++this._loadSeq
+    this._loading = true
     try {
       const url = await this.resolveSource(track)
       console.log('[Playback] Playing:', track.item.Name, '| Source:', track.source, '| URL:', url.substring(0, 120))
@@ -202,10 +254,14 @@ class PlaybackService {
         this.audio.addEventListener('error', onError, { once: true })
       })
 
+      if (this._current !== track) return // superseded by a newer load
+      if (startAt > 0) this.audio.currentTime = startAt
       await this.audio.play()
+      this._loading = false
+      this._consecutiveFailures = 0
       console.log('[Playback] Playing successfully')
 
-      jellyfin.reportPlaybackStart(track.id).catch(() => {})
+      jellyfin.reportPlaybackStart(track.id).catch(err => console.warn('[Playback] reportPlaybackStart failed:', err))
       this.startScrobbleTracking(track)
 
       if (track.source === 'stream') {
@@ -214,11 +270,12 @@ class PlaybackService {
 
       this.preloadNext()
       this.preloadUpcomingLyrics()
-    } catch (err: any) {
+    } catch (err) {
       console.error('[Playback] Play error:', err)
+      if (this._current !== track) return // superseded; not this track's problem
 
       // If direct stream failed, try the universal endpoint as a fallback.
-      if (track.source === 'stream') {
+      if (track.source === 'stream' && !this.isOffline()) {
         try {
           console.log('[Playback] Retrying with universal endpoint...')
           const fallbackUrl = `${jellyfin.serverUrl}/Audio/${track.id}/universal?UserId=${jellyfin.userId}&ApiKey=${jellyfin.token}&MaxStreamingBitrate=320000&AudioCodec=aac&TranscodingContainer=ts&TranscodingProtocol=http`
@@ -226,14 +283,17 @@ class PlaybackService {
           this.audio.load()
           await this.audio.play()
           console.log('[Playback] Fallback succeeded')
+          this._consecutiveFailures = 0
           this.startScrobbleTracking(track)
           return
-        } catch (fallbackErr: any) {
+        } catch (fallbackErr) {
           console.error('[Playback] Fallback also failed:', fallbackErr)
         }
       }
 
-      this.emit('error', err.message)
+      this.handlePlaybackFailure(track, err instanceof Error ? err.message : String(err), startAt)
+    } finally {
+      if (loadId === this._loadSeq) this._loading = false
     }
   }
 
@@ -243,6 +303,8 @@ class PlaybackService {
 
     const track = this._current
     this.finalizeScrobble()
+    this._loadSeq++
+    this._loading = false
 
     // Stop current audio
     const oldAudio = this.audio
@@ -260,7 +322,7 @@ class PlaybackService {
 
     this.audio.play().then(() => {
       console.log('[Playback] Gapless transition to:', track.item.Name)
-      jellyfin.reportPlaybackStart(track.id).catch(() => {})
+      jellyfin.reportPlaybackStart(track.id).catch(err => console.warn('[Playback] reportPlaybackStart failed:', err))
       this.startScrobbleTracking(track)
       if (track.source === 'stream') {
         this.cacheCurrentTrack(track)
@@ -283,7 +345,9 @@ class PlaybackService {
         url: streamUrl,
         quality: 'default'
       })
-    } catch {}
+    } catch (err) {
+      console.warn('[Playback] Caching track failed:', track.id, err)
+    }
   }
 
   /** The next track that would play, without mutating any list. */
@@ -372,7 +436,8 @@ class PlaybackService {
           this.invalidatePreload()
         }
       }, { once: true })
-    }).catch(() => {
+    }).catch((err) => {
+      console.warn('[Playback] Preload source resolution failed:', next.id, err)
       if (this._preloadAudio === audio) {
         this.invalidatePreload()
       }
@@ -410,7 +475,7 @@ class PlaybackService {
   private preloadUpcomingLyrics() {
     const ids = this.getUpcomingTrackIds(3)
     for (const id of ids) {
-      jellyfin.getLyricsWithCache(id).catch(() => {})
+      jellyfin.getLyricsWithCache(id).catch(err => console.warn('[Playback] Lyrics prefetch failed:', id, err))
     }
   }
 
@@ -576,7 +641,7 @@ class PlaybackService {
     const ended = this._current
     if (ended) {
       const ticks = Math.floor(this.duration * 10_000_000)
-      jellyfin.reportPlaybackStopped(ended.id, ticks).catch(() => {})
+      jellyfin.reportPlaybackStopped(ended.id, ticks).catch(err => console.warn('[Playback] reportPlaybackStopped failed:', err))
     }
 
     const next = this.advance()
@@ -598,7 +663,7 @@ class PlaybackService {
     this.scrobbleItem = track.item
     this.scrobbleStartedAt = Math.floor(Date.now() / 1000)
     this.scrobbleDone = false
-    lastfm.nowPlaying(track.item).catch(() => {})
+    lastfm.nowPlaying(track.item).catch(err => console.warn('[Playback] Last.fm now-playing failed:', err))
   }
 
   private finalizeScrobble() {
@@ -608,7 +673,7 @@ class PlaybackService {
     const duration = item.RunTimeTicks ? item.RunTimeTicks / 10_000_000 : this.audio.duration
     if (lastfm.shouldScrobble(played, duration)) {
       this.scrobbleDone = true
-      lastfm.scrobble(item, this.scrobbleStartedAt).catch(() => {})
+      lastfm.scrobble(item, this.scrobbleStartedAt).catch(err => console.warn('[Playback] Last.fm scrobble failed:', err))
     }
   }
 

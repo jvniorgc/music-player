@@ -231,3 +231,35 @@ describe('renameItem', () => {
     expect(JSON.parse(post[1]?.body as string).Name).toBe('New')
   })
 })
+
+describe('session expiry and cancellation', () => {
+  it('clears auth and notifies subscribers once on a 401', async () => {
+    mockFetchRouter([['/Users/u1/Items', emptyRes(401)]])
+    const cb = vi.fn()
+    const off = jellyfin.onUnauthorized(cb)
+    try {
+      await expect(jellyfin.getItem('a1')).rejects.toThrow('Session expired')
+      expect(cb).toHaveBeenCalledTimes(1)
+      expect(jellyfin.isAuthenticated).toBe(false)
+    } finally {
+      off()
+    }
+  })
+
+  it('getItem fetches a single item with the auth header and a signal', async () => {
+    const fetchMock = mockFetchRouter([['/Users/u1/Items/a1', jsonRes({ Id: 'a1', Name: 'Album', Type: 'MusicAlbum' })]])
+    const item = await jellyfin.getItem('a1')
+    expect(item.Name).toBe('Album')
+    const init = fetchMock.mock.calls[0][1] as RequestInit
+    expect((init.headers as Record<string, string>).Authorization).toMatch(/Token="TKN"/)
+    expect(init.signal).toBeDefined()
+  })
+
+  it('propagates caller cancellation to the request signal', async () => {
+    const fetchMock = mockFetchRouter([['', () => jsonRes({ Items: [], TotalRecordCount: 0 })]])
+    const controller = new AbortController()
+    await jellyfin.search('x', 6, controller.signal)
+    controller.abort()
+    for (const call of fetchMock.mock.calls) expect((call[1] as RequestInit).signal?.aborted).toBe(true)
+  })
+})

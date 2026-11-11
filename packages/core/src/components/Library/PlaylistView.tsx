@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { jellyfin, JellyfinItem } from '../../services/jellyfin'
+import { isAbortError } from '../../services/http'
 import { usePlayerStore } from '../../stores/player'
 import { useLibraryStore } from '../../stores/library'
 import { useToastStore } from '../../stores/toast'
@@ -32,18 +33,29 @@ export default function PlaylistView() {
   const [showCreatePlaylist, setShowCreatePlaylist] = useState(false)
   const [pendingSong, setPendingSong] = useState<JellyfinItem | null>(null)
 
-  const loadData = () => {
+  const loadData = (signal?: AbortSignal) => {
     if (!id) return
     setLoading(true)
     Promise.all([
-      jellyfin.getPlaylistItems(id).then(r => setTracks(r.Items)),
-      fetch(`${jellyfin.serverUrl}/Users/${jellyfin.userId}/Items/${id}`, {
-        headers: { Authorization: jellyfin.authHeader() }
-      }).then(r => r.json()).then(setPlaylist)
-    ]).finally(() => setLoading(false))
+      jellyfin.getPlaylistItems(id, signal),
+      jellyfin.getItem(id, signal)
+    ])
+      .then(([res, item]) => {
+        if (signal?.aborted) return
+        setTracks(res.Items)
+        setPlaylist(item)
+      })
+      .catch(err => {
+        if (!isAbortError(err) && !signal?.aborted) console.warn('[PlaylistView] failed to load', id, err)
+      })
+      .finally(() => { if (!signal?.aborted) setLoading(false) })
   }
 
-  useEffect(() => { loadData() }, [id])
+  useEffect(() => {
+    const controller = new AbortController()
+    loadData(controller.signal)
+    return () => controller.abort()
+  }, [id])
 
   const handleRename = async (name: string) => {
     if (!id) return

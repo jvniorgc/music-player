@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { jellyfin, JellyfinItem } from '../../services/jellyfin'
+import { isAbortError } from '../../services/http'
 import { usePlayerStore } from '../../stores/player'
 import { Play, Shuffle, ArrowLeft, ImagePlus } from 'lucide-react'
 import ArtistMetadataEditor from '../Metadata/ArtistMetadataEditor'
@@ -13,19 +14,25 @@ export default function ArtistView() {
   const [loading, setLoading] = useState(true)
   const [showMetadataEditor, setShowMetadataEditor] = useState(false)
 
-  const loadArtist = () => {
+  const loadArtist = (signal?: AbortSignal) => {
     if (!id) return
     setLoading(true)
-    Promise.all([
-      fetch(`${jellyfin.serverUrl}/Users/${jellyfin.userId}/Items/${id}`, {
-        headers: { Authorization: jellyfin.authHeader() }
-      }).then(r => r.json()).then(setArtist),
-      jellyfin.getArtistAlbums(id).then(r => setAlbums(r.Items))
-    ]).finally(() => setLoading(false))
+    Promise.all([jellyfin.getItem(id, signal), jellyfin.getArtistAlbums(id, signal)])
+      .then(([item, res]) => {
+        if (signal?.aborted) return
+        setArtist(item)
+        setAlbums(res.Items)
+      })
+      .catch(err => {
+        if (!isAbortError(err) && !signal?.aborted) console.warn('[ArtistView] failed to load artist', id, err)
+      })
+      .finally(() => { if (!signal?.aborted) setLoading(false) })
   }
 
   useEffect(() => {
-    loadArtist()
+    const controller = new AbortController()
+    loadArtist(controller.signal)
+    return () => controller.abort()
   }, [id])
 
   if (loading) {
@@ -143,7 +150,7 @@ export default function ArtistView() {
           artist={artist}
           open={showMetadataEditor}
           onClose={() => setShowMetadataEditor(false)}
-          onApplied={loadArtist}
+          onApplied={() => loadArtist()}
         />
       )}
     </div>

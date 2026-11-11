@@ -1,3 +1,5 @@
+import { timeoutSignal } from './http'
+
 const MB_BASE = 'https://musicbrainz.org/ws/2'
 const CAA_BASE = 'https://coverartarchive.org'
 const USER_AGENT = 'JellyfinMusicPlayer/0.1.0 (https://github.com/jvniorgc/music-player)'
@@ -37,26 +39,29 @@ export interface MBSearchResult {
   count: number
 }
 
-async function mbFetch<T>(path: string): Promise<T> {
+async function mbFetch<T>(path: string, signal?: AbortSignal): Promise<T> {
   const res = await fetch(`${MB_BASE}${path}`, {
-    headers: { 'User-Agent': USER_AGENT, 'Accept': 'application/json' }
+    headers: { 'User-Agent': USER_AGENT, 'Accept': 'application/json' },
+    signal: timeoutSignal(signal)
   })
   if (!res.ok) throw new Error(`MusicBrainz error: ${res.status}`)
   return res.json()
 }
 
-export async function searchReleases(album: string, artist?: string, limit = 15): Promise<MBRelease[]> {
+export async function searchReleases(album: string, artist?: string, limit = 15, signal?: AbortSignal): Promise<MBRelease[]> {
   let query = `release:"${album}"`
   if (artist) query += ` AND artist:"${artist}"`
   const data = await mbFetch<MBSearchResult>(
-    `/release?query=${encodeURIComponent(query)}&limit=${limit}&fmt=json`
+    `/release?query=${encodeURIComponent(query)}&limit=${limit}&fmt=json`,
+    signal
   )
   return data.releases || []
 }
 
-export async function getReleaseDetails(releaseId: string): Promise<MBRelease> {
+export async function getReleaseDetails(releaseId: string, signal?: AbortSignal): Promise<MBRelease> {
   return mbFetch<MBRelease>(
-    `/release/${releaseId}?inc=recordings+artists+labels+release-groups+tags&fmt=json`
+    `/release/${releaseId}?inc=recordings+artists+labels+release-groups+tags&fmt=json`,
+    signal
   )
 }
 
@@ -64,9 +69,9 @@ export function getCoverArtUrl(releaseId: string, size: 250 | 500 | 1200 = 500):
   return `${CAA_BASE}/release/${releaseId}/front-${size}`
 }
 
-export async function hasCoverArt(releaseId: string): Promise<boolean> {
+export async function hasCoverArt(releaseId: string, signal?: AbortSignal): Promise<boolean> {
   try {
-    const res = await fetch(`${CAA_BASE}/release/${releaseId}`, { method: 'HEAD' })
+    const res = await fetch(`${CAA_BASE}/release/${releaseId}`, { method: 'HEAD', signal: timeoutSignal(signal) })
     return res.ok
   } catch {
     return false
@@ -116,17 +121,19 @@ export interface MBArtistSearchResult {
   count: number
 }
 
-export async function searchArtists(name: string, limit = 15): Promise<MBArtist[]> {
+export async function searchArtists(name: string, limit = 15, signal?: AbortSignal): Promise<MBArtist[]> {
   const query = `artist:"${name}"`
   const data = await mbFetch<MBArtistSearchResult>(
-    `/artist?query=${encodeURIComponent(query)}&limit=${limit}&fmt=json`
+    `/artist?query=${encodeURIComponent(query)}&limit=${limit}&fmt=json`,
+    signal
   )
   return data.artists || []
 }
 
-export async function getArtistDetails(artistId: string): Promise<MBArtist> {
+export async function getArtistDetails(artistId: string, signal?: AbortSignal): Promise<MBArtist> {
   return mbFetch<MBArtist>(
-    `/artist/${artistId}?inc=url-rels+tags&fmt=json`
+    `/artist/${artistId}?inc=url-rels+tags&fmt=json`,
+    signal
   )
 }
 
@@ -138,7 +145,7 @@ export async function getArtistImageUrl(mbid: string): Promise<string | null> {
   try {
     const res = await fetch(
       `https://www.theaudiodb.com/api/v1/json/2/artist-mb.php?i=${mbid}`,
-      { headers: { 'User-Agent': USER_AGENT } }
+      { headers: { 'User-Agent': USER_AGENT }, signal: timeoutSignal() }
     )
     if (!res.ok) return null
     const data = await res.json()
@@ -164,7 +171,8 @@ export async function getArtistImageFromWikidata(artist: MBArtist): Promise<stri
   try {
     const entityId = wikidataRel.url.resource.split('/').pop()
     const res = await fetch(
-      `https://www.wikidata.org/wiki/Special:EntityData/${entityId}.json`
+      `https://www.wikidata.org/wiki/Special:EntityData/${entityId}.json`,
+      { signal: timeoutSignal() }
     )
     if (!res.ok) return null
     const data = await res.json()

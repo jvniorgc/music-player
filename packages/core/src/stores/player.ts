@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { useToastStore } from './toast'
 import { playback, QueueTrack, RepeatMode } from '../services/playback'
 import { JellyfinItem, jellyfin } from '../services/jellyfin'
 import { getRecommendations } from '../services/recommendations'
@@ -169,6 +170,9 @@ export const usePlayerStore = create<PlayerState>((set) => ({
           break
         case 'queuechange':
           syncQueue()
+          break
+        case 'error':
+          useToastStore.getState().show(String(data || 'Playback error'), 'error')
           break
         case 'volumechange':
           set({ volume: data })

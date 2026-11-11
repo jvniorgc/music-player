@@ -26,6 +26,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     try {
       const protocol = serverUrl.match(/^https?:\/\//) ? '' : 'http://'
       const fullUrl = `${protocol}${serverUrl}`
+      // Desktop: allow cross-origin calls to this server even behind a proxy without CORS.
+      await window.api.allowOrigin?.(fullUrl).catch(err => console.warn('[auth] allowOrigin failed', err))
       const auth = await jellyfin.authenticate(fullUrl, username, password)
       await window.api.saveAuth(auth)
       set({ isAuthenticated: true, auth, isLoading: false, primaryImageTag: null })
@@ -60,7 +62,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           return
         }
       }
-    } catch {}
+    } catch (err) {
+      console.warn('[auth] session restore failed', err)
+    }
     set({ isLoading: false })
   },
 
@@ -71,7 +75,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         primaryImageTag: user.PrimaryImageTag || null,
         auth: state.auth ? { ...state.auth, username: user.Name } : state.auth
       }))
-    } catch {}
+    } catch (err) {
+      console.warn('[auth] failed to refresh user info', err)
+    }
   },
 
   updateProfile: async (name?: string, imageBlob?: Blob) => {
@@ -90,3 +96,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     await get().refreshUserInfo()
   }
 }))
+
+export const SESSION_EXPIRED_MESSAGE = 'Session expired. Please sign in again.'
+
+// Central 401 handling: any authenticated request that comes back 401 drops
+// the session and sends the user back to the login screen with a message.
+jellyfin.onUnauthorized(() => {
+  window.api.clearAuth().catch(err => console.warn('[auth] failed to clear stored auth', err))
+  useAuthStore.setState({ isAuthenticated: false, auth: null, primaryImageTag: null, isLoading: false, error: SESSION_EXPIRED_MESSAGE })
+})

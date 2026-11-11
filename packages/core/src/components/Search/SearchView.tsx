@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { jellyfin, JellyfinItem } from '../../services/jellyfin'
+import { isAbortError } from '../../services/http'
 import { usePlayerStore } from '../../stores/player'
 import { useLibraryStore } from '../../stores/library'
 import { useToastStore } from '../../stores/toast'
@@ -41,21 +42,26 @@ export default function SearchView() {
 
     if (!query.trim()) {
       setResults(null)
+      setLoading(false)
       return
     }
 
+    // Each query gets its own controller: a newer keystroke aborts the
+    // in-flight request and stale responses are ignored.
+    const controller = new AbortController()
     debounceRef.current = setTimeout(async () => {
       setLoading(true)
       try {
-        const res = await jellyfin.search(query.trim())
-        setResults(res)
+        const res = await jellyfin.search(query.trim(), undefined, controller.signal)
+        if (!controller.signal.aborted) setResults(res)
       } catch (err) {
-        console.error('Search error:', err)
+        if (!controller.signal.aborted && !isAbortError(err)) console.error('Search error:', err)
       }
-      setLoading(false)
+      if (!controller.signal.aborted) setLoading(false)
     }, 300)
 
     return () => {
+      controller.abort()
       if (debounceRef.current) clearTimeout(debounceRef.current)
     }
   }, [query])

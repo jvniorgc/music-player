@@ -56,10 +56,19 @@ export interface JellyfinItem {
   Path?: string
 }
 
+/** Full item DTO as returned by /Users/{id}/Items/{id}, round-tripped on updates. */
+export type JellyfinFullItem = JellyfinItem & { Tags?: string[]; [key: string]: unknown }
+
 export interface JellyfinItemsResponse {
   Items: JellyfinItem[]
   TotalRecordCount: number
 }
+
+import { timeoutSignal } from './http'
+
+type RequestOptions = RequestInit & { timeoutMs?: number }
+
+const UPLOAD_TIMEOUT_MS = 120_000
 
 const CLIENT_NAME = 'JellyfinMusicPlayer'
 const CLIENT_VERSION = '0.1.0'
@@ -68,6 +77,24 @@ const DEVICE_ID = 'jellyfin-music-player-' + Math.random().toString(36).slice(2)
 
 class JellyfinService {
   private auth: JellyfinAuth | null = null
+  private unauthorizedListeners = new Set<() => void>()
+
+  /**
+   * Subscribe to session expiry: fired once when an authenticated request gets
+   * a 401 (the token was revoked or expired). Returns an unsubscribe function.
+   */
+  onUnauthorized(cb: () => void): () => void {
+    this.unauthorizedListeners.add(cb)
+    return () => { this.unauthorizedListeners.delete(cb) }
+  }
+
+  private handleUnauthorized() {
+    if (!this.auth) return
+    this.auth = null
+    for (const cb of this.unauthorizedListeners) {
+      try { cb() } catch (err) { console.warn('[jellyfin] unauthorized listener failed', err) }
+    }
+  }
 
   get isAuthenticated() {
     return this.auth !== null
@@ -110,17 +137,29 @@ class JellyfinService {
     return parts.join(', ')
   }
 
-  private async request<T>(path: string, options?: RequestInit): Promise<T> {
+  /** Authenticated fetch against the server: adds auth, a timeout, and central 401 handling. */
+  private async rawFetch(path: string, options?: RequestOptions): Promise<Response> {
     if (!this.auth) throw new Error('Not authenticated')
+    const { timeoutMs, signal, ...init } = options ?? {}
     const url = `${this.auth.serverUrl}${path}`
     const res = await fetch(url, {
-      ...options,
+      ...init,
+      signal: timeoutSignal(signal ?? undefined, timeoutMs),
       headers: {
         'Authorization': this.authHeader(),
         'Content-Type': 'application/json',
-        ...options?.headers
+        ...init.headers
       }
     })
+    if (res.status === 401) {
+      this.handleUnauthorized()
+      throw new Error('Session expired')
+    }
+    return res
+  }
+
+  private async request<T>(path: string, options?: RequestOptions): Promise<T> {
+    const res = await this.rawFetch(path, options)
     if (!res.ok) {
       const body = await res.text().catch(() => '')
       throw new Error(`API error: ${res.status} ${res.statusText} - ${body}`)
@@ -146,7 +185,8 @@ class JellyfinService {
         'Authorization': `MediaBrowser Client="${CLIENT_NAME}", Device="${DEVICE_NAME}", DeviceId="${DEVICE_ID}", Version="${CLIENT_VERSION}"`,
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({ Username: username, Pw: password })
+      body: JSON.stringify({ Username: username, Pw: password }),
+      signal: timeoutSignal()
     })
 
     if (!res.ok) {
@@ -168,7 +208,7 @@ class JellyfinService {
   async testConnection(serverUrl: string): Promise<boolean> {
     try {
       const cleanUrl = serverUrl.replace(/\/+$/, '')
-      const res = await fetch(`${cleanUrl}/System/Info/Public`)
+      const res = await fetch(`${cleanUrl}/System/Info/Public`, { signal: timeoutSignal(undefined, 10_000) })
       return res.ok
     } catch {
       return false
@@ -182,8 +222,8 @@ class JellyfinService {
     return this.sanitizeItems(res)
   }
 
-  async getAlbumItems(albumId: string): Promise<JellyfinItemsResponse> {
-    return this.request(`/Users/${this.userId}/Items?ParentId=${albumId}&SortBy=ParentIndexNumber,IndexNumber,SortName&Fields=MediaSources,RunTimeTicks,HasLyrics`)
+  async getAlbumItems(albumId: string, signal?: AbortSignal): Promise<JellyfinItemsResponse> {
+    return this.request(`/Users/${this.userId}/Items?ParentId=${albumId}&SortBy=ParentIndexNumber,IndexNumber,SortName&Fields=MediaSources,RunTimeTicks,HasLyrics`, { signal })
   }
 
   async getArtists(startIndex = 0, limit = 100): Promise<JellyfinItemsResponse> {
@@ -191,8 +231,8 @@ class JellyfinService {
     return this.sanitizeItems(res)
   }
 
-  async getArtistAlbums(artistId: string): Promise<JellyfinItemsResponse> {
-    const res = await this.request<JellyfinItemsResponse>(`/Users/${this.userId}/Items?IncludeItemTypes=MusicAlbum&Recursive=true&AlbumArtistIds=${artistId}&SortBy=ProductionYear,SortName&SortOrder=Descending&Fields=PrimaryImageAspectRatio,ProductionYear,Genres`)
+  async getArtistAlbums(artistId: string, signal?: AbortSignal): Promise<JellyfinItemsResponse> {
+    const res = await this.request<JellyfinItemsResponse>(`/Users/${this.userId}/Items?IncludeItemTypes=MusicAlbum&Recursive=true&AlbumArtistIds=${artistId}&SortBy=ProductionYear,SortName&SortOrder=Descending&Fields=PrimaryImageAspectRatio,ProductionYear,Genres`, { signal })
     return this.sanitizeItems(res)
   }
 
@@ -240,8 +280,13 @@ class JellyfinService {
     return { Items: filtered, TotalRecordCount: filtered.length }
   }
 
-  async getPlaylistItems(playlistId: string): Promise<JellyfinItemsResponse> {
-    return this.request(`/Playlists/${playlistId}/Items?UserId=${this.userId}&Fields=MediaSources,RunTimeTicks,AlbumArtist,Album,AlbumId,PlaylistItemId,HasLyrics`)
+  async getPlaylistItems(playlistId: string, signal?: AbortSignal): Promise<JellyfinItemsResponse> {
+    return this.request(`/Playlists/${playlistId}/Items?UserId=${this.userId}&Fields=MediaSources,RunTimeTicks,AlbumArtist,Album,AlbumId,PlaylistItemId,HasLyrics`, { signal })
+  }
+
+  /** A single item (album, artist, playlist, track) for the current user. */
+  async getItem(itemId: string, signal?: AbortSignal): Promise<JellyfinItem> {
+    return this.request<JellyfinItem>(`/Users/${this.userId}/Items/${encodeURIComponent(itemId)}`, { signal })
   }
 
   async getRecentlyPlayed(limit = 20): Promise<JellyfinItemsResponse> {
@@ -259,11 +304,11 @@ class JellyfinService {
     return this.sanitizeItems(res)
   }
 
-  async search(query: string, limit = 6): Promise<{ albums: JellyfinItem[]; artists: JellyfinItem[]; songs: JellyfinItem[] }> {
+  async search(query: string, limit = 6, signal?: AbortSignal): Promise<{ albums: JellyfinItem[]; artists: JellyfinItem[]; songs: JellyfinItem[] }> {
     const [albums, artists, songs] = await Promise.all([
-      this.request<JellyfinItemsResponse>(`/Users/${this.userId}/Items?SearchTerm=${encodeURIComponent(query)}&IncludeItemTypes=MusicAlbum&Recursive=true&Limit=${limit}&Fields=PrimaryImageAspectRatio,ProductionYear,AlbumArtist`),
-      this.request<JellyfinItemsResponse>(`/Artists?SearchTerm=${encodeURIComponent(query)}&UserId=${this.userId}&Limit=${limit}&Fields=PrimaryImageAspectRatio`),
-      this.request<JellyfinItemsResponse>(`/Users/${this.userId}/Items?SearchTerm=${encodeURIComponent(query)}&IncludeItemTypes=Audio&Recursive=true&Limit=${limit}&Fields=RunTimeTicks,AlbumArtist,Album,AlbumId,HasLyrics`)
+      this.request<JellyfinItemsResponse>(`/Users/${this.userId}/Items?SearchTerm=${encodeURIComponent(query)}&IncludeItemTypes=MusicAlbum&Recursive=true&Limit=${limit}&Fields=PrimaryImageAspectRatio,ProductionYear,AlbumArtist`, { signal }),
+      this.request<JellyfinItemsResponse>(`/Artists?SearchTerm=${encodeURIComponent(query)}&UserId=${this.userId}&Limit=${limit}&Fields=PrimaryImageAspectRatio`, { signal }),
+      this.request<JellyfinItemsResponse>(`/Users/${this.userId}/Items?SearchTerm=${encodeURIComponent(query)}&IncludeItemTypes=Audio&Recursive=true&Limit=${limit}&Fields=RunTimeTicks,AlbumArtist,Album,AlbumId,HasLyrics`, { signal })
     ])
     return {
       albums: this.sanitizeItems(albums).Items,
@@ -314,7 +359,7 @@ class JellyfinService {
   }
 
   private async setItemOwnerTag(itemId: string, userId: string): Promise<void> {
-    const item = await this.request<any>(`/Users/${this.userId}/Items/${itemId}`)
+    const item = await this.getFullItem(itemId)
     const tag = this.ownerTag(userId)
     const existingTags: string[] = Array.isArray(item.Tags) ? item.Tags : []
     if (existingTags.includes(tag)) return
@@ -333,7 +378,7 @@ class JellyfinService {
   }
 
   async renameItem(itemId: string, name: string): Promise<void> {
-    const item = await this.request<any>(`/Users/${this.userId}/Items/${itemId}`)
+    const item = await this.getFullItem(itemId)
     item.Name = name
     return this.request(`/Items/${itemId}`, {
       method: 'POST',
@@ -341,11 +386,11 @@ class JellyfinService {
     })
   }
 
-  async getFullItem(itemId: string): Promise<any> {
-    return this.request(`/Users/${this.userId}/Items/${itemId}`)
+  async getFullItem(itemId: string): Promise<JellyfinFullItem> {
+    return this.request<JellyfinFullItem>(`/Users/${this.userId}/Items/${itemId}`)
   }
 
-  async updateItem(itemId: string, updates: Record<string, any>): Promise<void> {
+  async updateItem(itemId: string, updates: Record<string, unknown>): Promise<void> {
     const item = await this.getFullItem(itemId)
     Object.assign(item, updates)
     return this.request(`/Items/${itemId}`, {
@@ -356,7 +401,7 @@ class JellyfinService {
 
   async uploadImage(itemId: string, imageUrl: string): Promise<void> {
     // Download image from URL
-    const res = await fetch(imageUrl, { redirect: 'follow' })
+    const res = await fetch(imageUrl, { redirect: 'follow', signal: timeoutSignal(undefined, UPLOAD_TIMEOUT_MS) })
     if (!res.ok) throw new Error(`Failed to fetch cover art: ${res.status}`)
     const blob = await res.blob()
     await this.uploadImageBlob(itemId, blob)
@@ -375,13 +420,11 @@ class JellyfinService {
     base64 = btoa(base64)
 
     const contentType = blob.type || 'image/jpeg'
-    const uploadRes = await fetch(`${this.serverUrl}/Items/${itemId}/Images/Primary`, {
+    const uploadRes = await this.rawFetch(`/Items/${itemId}/Images/Primary`, {
       method: 'POST',
-      headers: {
-        'Authorization': this.authHeader(),
-        'Content-Type': contentType
-      },
-      body: base64
+      headers: { 'Content-Type': contentType },
+      body: base64,
+      timeoutMs: UPLOAD_TIMEOUT_MS
     })
     if (!uploadRes.ok) throw new Error(`Upload failed: ${uploadRes.status}`)
   }
@@ -444,13 +487,11 @@ class JellyfinService {
     base64 = btoa(base64)
 
     const contentType = blob.type || 'image/jpeg'
-    const res = await fetch(`${this.serverUrl}/Users/${this.userId}/Images/Primary`, {
+    const res = await this.rawFetch(`/Users/${this.userId}/Images/Primary`, {
       method: 'POST',
-      headers: {
-        'Authorization': this.authHeader(),
-        'Content-Type': contentType
-      },
-      body: base64
+      headers: { 'Content-Type': contentType },
+      body: base64,
+      timeoutMs: UPLOAD_TIMEOUT_MS
     })
     if (!res.ok) throw new Error(`Upload failed: ${res.status}`)
   }
@@ -487,9 +528,7 @@ class JellyfinService {
             return null
           }
           try {
-            const r = await fetch(`${this.serverUrl}/Playlists/${item.Id}/Users`, {
-              headers: { 'Authorization': this.authHeader() }
-            })
+            const r = await this.rawFetch(`/Playlists/${item.Id}/Users`)
             return r.status === 200 ? item : null
           } catch {
             return null
@@ -748,7 +787,7 @@ class JellyfinService {
   async getLyrics(itemId: string): Promise<{ Text: string; Start?: number }[]> {
     // Try Jellyfin embedded lyrics first
     try {
-      const res = await fetch(`${this.serverUrl}/Audio/${itemId}/Lyrics?ApiKey=${this.token}`)
+      const res = await this.rawFetch(`/Audio/${itemId}/Lyrics`)
       if (res.ok) {
         const data = await res.json()
         if (data.Lyrics && data.Lyrics.length > 0) return data.Lyrics
@@ -767,7 +806,8 @@ class JellyfinService {
       if (album) params.set('album_name', album)
 
       const lrcRes = await fetch(`https://lrclib.net/api/get?${params}`, {
-        headers: { 'User-Agent': 'JellyfinMusicPlayer/1.0.0' }
+        headers: { 'User-Agent': 'JellyfinMusicPlayer/1.0.0' },
+        signal: timeoutSignal()
       })
       if (!lrcRes.ok) return []
       const lrc = await lrcRes.json()

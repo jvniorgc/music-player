@@ -9,8 +9,11 @@ vi.mock('../services/jellyfin', () => ({
     getCurrentUser: vi.fn(),
     uploadUserImage: vi.fn(),
     updateUserName: vi.fn(),
+    onUnauthorized: vi.fn((cb: () => void) => { unauthorized.cb = cb; return () => {} }),
   },
 }))
+
+const unauthorized = vi.hoisted(() => ({ cb: null as null | (() => void) }))
 
 import { useAuthStore } from './auth'
 import { jellyfin } from '../services/jellyfin'
@@ -141,5 +144,19 @@ describe('refreshUserInfo & updateProfile', () => {
     // refreshUserInfo re-pulls the username from the server after the rename.
     expect(useAuthStore.getState().auth?.username).toBe('NewName')
     await flush()
+  })
+})
+
+describe('session expiry (401)', () => {
+  it('logs out with a "Session expired" message when the service reports 401', async () => {
+    useAuthStore.setState({ isAuthenticated: true, isLoading: false, auth: AUTH })
+    expect(unauthorized.cb).toBeTypeOf('function')
+    unauthorized.cb!()
+    await flush()
+    const s = useAuthStore.getState()
+    expect(s.isAuthenticated).toBe(false)
+    expect(s.auth).toBeNull()
+    expect(s.error).toMatch(/Session expired/)
+    expect(window.api.clearAuth).toHaveBeenCalled()
   })
 })

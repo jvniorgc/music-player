@@ -490,18 +490,45 @@ describe('audio element events', () => {
     audio.dispatch('error')
     expect(seen).toContainEqual(['timeupdate', { currentTime: 12, duration: 200 }])
     expect(seen).toContainEqual(['buffering', true])
-    expect(seen).toContainEqual(['error', 'decode error'])
+    expect(seen.some(([e, d]) => e === 'error' && /Couldn't play/.test(String(d)))).toBe(true)
   })
 
-  it('falls back to a generic error message when the media error has none', async () => {
-    playback.setQueue(makeItems(1), 0)
+  it('skips to the next track when the current one fails mid-playback', async () => {
+    playback.setQueue(makeItems(3), 0)
     await flush()
     const seen: Array<[string, unknown]> = []
     playback.on((e, d) => seen.push([e, d]))
     const audio = (playback as any).audio as FakeAudio
     audio.error = null
     audio.dispatch('error')
-    expect(seen).toContainEqual(['error', 'Playback error'])
+    await flush()
+    expect(seen.some(([e]) => e === 'error')).toBe(true)
+    expect(playback.currentTrack?.id).toBe('t1')
+  })
+
+  it('waits for the network instead of skipping when a stream fails offline', async () => {
+    playback.setQueue(makeItems(3), 0)
+    await flush()
+    const online = vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false)
+    try {
+      const seen: Array<[string, unknown]> = []
+      playback.on((e, d) => seen.push([e, d]))
+      ;(playback as any).audio.dispatch('error')
+      await flush()
+      expect(playback.currentTrack?.id).toBe('t0')
+      expect(seen.some(([e, d]) => e === 'error' && /Connection lost/.test(String(d)))).toBe(true)
+      expect((playback as any)._resumeOnOnline?.trackId).toBe('t0')
+    } finally {
+      online.mockRestore()
+    }
+  })
+
+  it('stops skipping after repeated consecutive failures', async () => {
+    audioConfig.failPlay = true
+    playback.setQueue(makeItems(6), 0)
+    for (let i = 0; i < 10; i++) await flush()
+    // t0, t1 fail and are skipped; the third failure (t2) stops the chain.
+    expect(playback.currentTrack?.id).toBe('t2')
   })
 
   it('ignores events from a stale (non-current) audio element', async () => {
@@ -615,7 +642,8 @@ describe('gapless preloading', () => {
     ;(playback as any).audio.dispatch('ended')
     await flush()
     await flush()
-    expect(playback.currentTrack?.id).toBe('t1')
+    // The full reload of t1 also fails, so it is reported and skipped.
+    expect(playback.currentTrack?.id).toBe('t2')
   })
 
   it('preloads the wrap-around track at the context end with repeat all', async () => {

@@ -138,9 +138,9 @@ export default function AlbumGrid() {
             data-page={pageIndex}
             className="h-0"
           />
-          {pages.has(pageIndex) ? (
+          {pages.get(pageIndex) ? (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-5 mb-5">
-              {pages.get(pageIndex)!.map(item => (
+              {(pages.get(pageIndex) ?? []).map(item => (
                 <AlbumCard
                   key={item.Id}
                   item={item}

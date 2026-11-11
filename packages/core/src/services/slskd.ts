@@ -1,3 +1,5 @@
+import { timeoutSignal } from './http'
+
 const SLSKD_DEFAULT_PORT = '5030'
 const SLSKD_DEFAULT_USER = 'slskd'
 const SLSKD_DEFAULT_PASS = 'slskd'
@@ -18,6 +20,10 @@ export function configure(config: SlskdConfig): void {
   slskdUser = config.username
   slskdPass = config.password
   token = null // force re-auth
+  if (slskdUrl) {
+    // Desktop: allow cross-origin calls to this user-configured server.
+    window.api?.allowOrigin?.(slskdUrl)?.catch(err => console.warn('[slskd] could not allow origin', err))
+  }
 }
 
 export function getConfig(): SlskdConfig {
@@ -99,12 +105,14 @@ async function authenticate(): Promise<string> {
   const res = await fetch(`${slskdUrl}/api/v0/session`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username: slskdUser, password: slskdPass })
+    body: JSON.stringify({ username: slskdUser, password: slskdPass }),
+    signal: timeoutSignal()
   })
   if (!res.ok) throw new Error(`Auth failed: ${res.status}`)
   const data = await res.json()
-  token = data.token
-  return token!
+  if (typeof data?.token !== 'string') throw new Error('slskd returned no token')
+  token = data.token as string
+  return token
 }
 
 async function getToken(): Promise<string> {
@@ -122,7 +130,8 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
       'Authorization': `Bearer ${tok}`,
       'Content-Type': 'application/json',
       ...options?.headers
-    }
+    },
+    signal: timeoutSignal(options?.signal ?? undefined)
   })
 
   // Re-auth on 401
@@ -134,7 +143,8 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
         'Authorization': `Bearer ${tok}`,
         'Content-Type': 'application/json',
         ...options?.headers
-      }
+      },
+      signal: timeoutSignal(options?.signal ?? undefined)
     })
   }
 
@@ -157,12 +167,12 @@ export async function startSearch(searchText: string): Promise<SlskdSearch> {
   })
 }
 
-export async function getSearch(searchId: string): Promise<SlskdSearch> {
-  return request<SlskdSearch>(`/api/v0/searches/${searchId}`)
+export async function getSearch(searchId: string, signal?: AbortSignal): Promise<SlskdSearch> {
+  return request<SlskdSearch>(`/api/v0/searches/${searchId}`, { signal })
 }
 
-export async function getSearchResponses(searchId: string): Promise<SlskdResponse[]> {
-  return request<SlskdResponse[]>(`/api/v0/searches/${searchId}/responses`)
+export async function getSearchResponses(searchId: string, signal?: AbortSignal): Promise<SlskdResponse[]> {
+  return request<SlskdResponse[]>(`/api/v0/searches/${searchId}/responses`, { signal })
 }
 
 export async function deleteSearch(searchId: string): Promise<void> {
@@ -176,8 +186,8 @@ export async function downloadFiles(username: string, files: { filename: string;
   })
 }
 
-export async function getDownloads(): Promise<SlskdTransferGroup[]> {
-  return request<SlskdTransferGroup[]>('/api/v0/transfers/downloads')
+export async function getDownloads(signal?: AbortSignal): Promise<SlskdTransferGroup[]> {
+  return request<SlskdTransferGroup[]>('/api/v0/transfers/downloads', { signal })
 }
 
 export async function removeDownload(username: string, id: string): Promise<void> {
@@ -192,8 +202,8 @@ export async function removeCompletedDownloads(): Promise<void> {
   })
 }
 
-export async function getApplicationInfo(): Promise<{ server: { isConnected: boolean; isLoggedIn: boolean } }> {
-  return request('/api/v0/application')
+export async function getApplicationInfo(signal?: AbortSignal): Promise<{ server: { isConnected: boolean; isLoggedIn: boolean } }> {
+  return request('/api/v0/application', { signal })
 }
 
 // Helpers
