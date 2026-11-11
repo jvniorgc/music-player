@@ -27,6 +27,10 @@ describe('authenticate', () => {
     expect(url).toBe('http://jf.local/Users/AuthenticateByName')
     expect(init?.method).toBe('POST')
     expect(JSON.parse(init?.body as string)).toEqual({ Username: 'me', Pw: 'pw' })
+    // Jellyfin 12 ignores X-Emby-Authorization unless legacy auth is enabled
+    const headers = init?.headers as Record<string, string>
+    expect(headers['X-Emby-Authorization']).toBeUndefined()
+    expect(headers.Authorization).toMatch(/^MediaBrowser Client="[^"]+", Device="[^"]+", DeviceId="[^"]+", Version="[^"]+"$/)
   })
 
   it('throws "Invalid credentials" on 401', async () => {
@@ -131,16 +135,16 @@ describe('toggleFavorite', () => {
 
 describe('URL builders', () => {
   it('builds stream, image, download and user-image URLs from auth', () => {
-    expect(jellyfin.getStreamUrl('it1')).toBe('http://jf.local/Audio/it1/stream?api_key=TKN&static=true')
-    expect(jellyfin.getDownloadUrl('it1')).toBe('http://jf.local/Items/it1/Download?api_key=TKN')
+    expect(jellyfin.getStreamUrl('it1')).toBe('http://jf.local/Audio/it1/stream?ApiKey=TKN&static=true')
+    expect(jellyfin.getDownloadUrl('it1')).toBe('http://jf.local/Items/it1/Download?ApiKey=TKN')
     expect(jellyfin.getImageUrl('it1')).toBe(
-      'http://jf.local/Items/it1/Images/Primary?maxHeight=300&maxWidth=300&quality=90&api_key=TKN',
+      'http://jf.local/Items/it1/Images/Primary?maxHeight=300&maxWidth=300&quality=90&ApiKey=TKN',
     )
     expect(jellyfin.getImageUrl('it1', 'TAG', 512)).toBe(
-      'http://jf.local/Items/it1/Images/Primary?maxHeight=512&maxWidth=512&tag=TAG&quality=90&api_key=TKN',
+      'http://jf.local/Items/it1/Images/Primary?maxHeight=512&maxWidth=512&tag=TAG&quality=90&ApiKey=TKN',
     )
     expect(jellyfin.getUserImageUrl('u9', 'PT')).toBe(
-      'http://jf.local/Users/u9/Images/Primary?maxHeight=200&maxWidth=200&tag=PT&quality=90&api_key=TKN',
+      'http://jf.local/Users/u9/Images/Primary?maxHeight=200&maxWidth=200&tag=PT&quality=90&ApiKey=TKN',
     )
   })
 })

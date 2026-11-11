@@ -188,7 +188,7 @@ export default function SoulseekView() {
       try {
         const res = await fetch(`${jellyfin.serverUrl}/Library/Refresh`, {
           method: 'POST',
-          headers: { 'X-Emby-Authorization': `MediaBrowser Token="${jellyfin.token}"` }
+          headers: { Authorization: jellyfin.authHeader() }
         })
         if (res.ok) toast('Jellyfin library scan started', 'success')
         else toast('No permission to scan the library', 'error')

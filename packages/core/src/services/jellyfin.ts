@@ -97,7 +97,7 @@ class JellyfinService {
     this.auth = null
   }
 
-  private authHeader(): string {
+  authHeader(): string {
     const parts = [
       `MediaBrowser Client="${CLIENT_NAME}"`,
       `Device="${DEVICE_NAME}"`,
@@ -116,7 +116,7 @@ class JellyfinService {
     const res = await fetch(url, {
       ...options,
       headers: {
-        'X-Emby-Authorization': this.authHeader(),
+        'Authorization': this.authHeader(),
         'Content-Type': 'application/json',
         ...options?.headers
       }
@@ -143,7 +143,7 @@ class JellyfinService {
     const res = await fetch(url, {
       method: 'POST',
       headers: {
-        'X-Emby-Authorization': `MediaBrowser Client="${CLIENT_NAME}", Device="${DEVICE_NAME}", DeviceId="${DEVICE_ID}", Version="${CLIENT_VERSION}"`,
+        'Authorization': `MediaBrowser Client="${CLIENT_NAME}", Device="${DEVICE_NAME}", DeviceId="${DEVICE_ID}", Version="${CLIENT_VERSION}"`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({ Username: username, Pw: password })
@@ -378,7 +378,7 @@ class JellyfinService {
     const uploadRes = await fetch(`${this.serverUrl}/Items/${itemId}/Images/Primary`, {
       method: 'POST',
       headers: {
-        'X-Emby-Authorization': this.authHeader(),
+        'Authorization': this.authHeader(),
         'Content-Type': contentType
       },
       body: base64
@@ -447,7 +447,7 @@ class JellyfinService {
     const res = await fetch(`${this.serverUrl}/Users/${this.userId}/Images/Primary`, {
       method: 'POST',
       headers: {
-        'X-Emby-Authorization': this.authHeader(),
+        'Authorization': this.authHeader(),
         'Content-Type': contentType
       },
       body: base64
@@ -457,7 +457,7 @@ class JellyfinService {
 
   getUserImageUrl(userId: string, imageTag?: string, maxSize = 200): string {
     const tag = imageTag ? `&tag=${imageTag}` : ''
-    return `${this.serverUrl}/Users/${userId}/Images/Primary?maxHeight=${maxSize}&maxWidth=${maxSize}${tag}&quality=90&api_key=${this.token}`
+    return `${this.serverUrl}/Users/${userId}/Images/Primary?maxHeight=${maxSize}&maxWidth=${maxSize}${tag}&quality=90&ApiKey=${this.token}`
   }
 
   async getUserPlaylists(userId: string): Promise<JellyfinItemsResponse> {
@@ -488,7 +488,7 @@ class JellyfinService {
           }
           try {
             const r = await fetch(`${this.serverUrl}/Playlists/${item.Id}/Users`, {
-              headers: { 'X-Emby-Authorization': this.authHeader() }
+              headers: { 'Authorization': this.authHeader() }
             })
             return r.status === 200 ? item : null
           } catch {
@@ -733,22 +733,22 @@ class JellyfinService {
   // --- URLs ---
 
   getStreamUrl(itemId: string): string {
-    return `${this.serverUrl}/Audio/${itemId}/stream?api_key=${this.token}&static=true`
+    return `${this.serverUrl}/Audio/${itemId}/stream?ApiKey=${this.token}&static=true`
   }
 
   getImageUrl(itemId: string, imageTag?: string, maxSize = 300): string {
     const tag = imageTag ? `&tag=${imageTag}` : ''
-    return `${this.serverUrl}/Items/${itemId}/Images/Primary?maxHeight=${maxSize}&maxWidth=${maxSize}${tag}&quality=90&api_key=${this.token}`
+    return `${this.serverUrl}/Items/${itemId}/Images/Primary?maxHeight=${maxSize}&maxWidth=${maxSize}${tag}&quality=90&ApiKey=${this.token}`
   }
 
   getDownloadUrl(itemId: string): string {
-    return `${this.serverUrl}/Items/${itemId}/Download?api_key=${this.token}`
+    return `${this.serverUrl}/Items/${itemId}/Download?ApiKey=${this.token}`
   }
 
   async getLyrics(itemId: string): Promise<{ Text: string; Start?: number }[]> {
     // Try Jellyfin embedded lyrics first
     try {
-      const res = await fetch(`${this.serverUrl}/Audio/${itemId}/Lyrics?api_key=${this.token}`)
+      const res = await fetch(`${this.serverUrl}/Audio/${itemId}/Lyrics?ApiKey=${this.token}`)
       if (res.ok) {
         const data = await res.json()
         if (data.Lyrics && data.Lyrics.length > 0) return data.Lyrics

@@ -48,7 +48,7 @@ export default function AlbumView() {
     Promise.all([
       jellyfin.getAlbumItems(id).then(r => setTracks(r.Items)),
       fetch(`${jellyfin.serverUrl}/Users/${jellyfin.userId}/Items/${id}`, {
-        headers: { 'X-Emby-Authorization': `MediaBrowser Token="${jellyfin.token}"` }
+        headers: { Authorization: jellyfin.authHeader() }
       }).then(r => r.json()).then(setAlbum)
     ]).finally(() => setLoading(false))
   }

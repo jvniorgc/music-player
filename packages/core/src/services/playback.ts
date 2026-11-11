@@ -221,7 +221,7 @@ class PlaybackService {
       if (track.source === 'stream') {
         try {
           console.log('[Playback] Retrying with universal endpoint...')
-          const fallbackUrl = `${jellyfin.serverUrl}/Audio/${track.id}/universal?UserId=${jellyfin.userId}&api_key=${jellyfin.token}&MaxStreamingBitrate=320000&AudioCodec=aac&TranscodingContainer=ts&TranscodingProtocol=http`
+          const fallbackUrl = `${jellyfin.serverUrl}/Audio/${track.id}/universal?UserId=${jellyfin.userId}&ApiKey=${jellyfin.token}&MaxStreamingBitrate=320000&AudioCodec=aac&TranscodingContainer=ts&TranscodingProtocol=http`
           this.audio.src = fallbackUrl
           this.audio.load()
           await this.audio.play()

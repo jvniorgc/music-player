@@ -38,7 +38,7 @@ export default function PlaylistView() {
     Promise.all([
       jellyfin.getPlaylistItems(id).then(r => setTracks(r.Items)),
       fetch(`${jellyfin.serverUrl}/Users/${jellyfin.userId}/Items/${id}`, {
-        headers: { 'X-Emby-Authorization': `MediaBrowser Token="${jellyfin.token}"` }
+        headers: { Authorization: jellyfin.authHeader() }
       }).then(r => r.json()).then(setPlaylist)
     ]).finally(() => setLoading(false))
   }

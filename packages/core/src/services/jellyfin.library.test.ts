@@ -222,7 +222,7 @@ describe('users & images', () => {
   })
 
   it('getUserImageUrl builds a primary-image url with the api key', () => {
-    expect(jellyfin.getUserImageUrl('u9', 'TAG', 64)).toBe('http://jf.local/Users/u9/Images/Primary?maxHeight=64&maxWidth=64&tag=TAG&quality=90&api_key=TKN')
+    expect(jellyfin.getUserImageUrl('u9', 'TAG', 64)).toBe('http://jf.local/Users/u9/Images/Primary?maxHeight=64&maxWidth=64&tag=TAG&quality=90&ApiKey=TKN')
     expect(jellyfin.getUserImageUrl('u9')).toContain('maxHeight=200')
   })
 

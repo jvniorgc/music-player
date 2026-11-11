@@ -18,7 +18,7 @@ export default function ArtistView() {
     setLoading(true)
     Promise.all([
       fetch(`${jellyfin.serverUrl}/Users/${jellyfin.userId}/Items/${id}`, {
-        headers: { 'X-Emby-Authorization': `MediaBrowser Token="${jellyfin.token}"` }
+        headers: { Authorization: jellyfin.authHeader() }
       }).then(r => r.json()).then(setArtist),
       jellyfin.getArtistAlbums(id).then(r => setAlbums(r.Items))
     ]).finally(() => setLoading(false))
@@ -37,7 +37,7 @@ export default function ArtistView() {
     : null
 
   const backdropUrl = artist?.BackdropImageTags?.[0]
-    ? `${jellyfin.serverUrl}/Items/${artist?.Id}/Images/Backdrop?tag=${artist.BackdropImageTags[0]}&quality=80&api_key=${jellyfin.token}`
+    ? `${jellyfin.serverUrl}/Items/${artist?.Id}/Images/Backdrop?tag=${artist.BackdropImageTags[0]}&quality=80&ApiKey=${jellyfin.token}`
     : null
 
   return (
