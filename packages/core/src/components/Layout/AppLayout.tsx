@@ -1,5 +1,6 @@
 import { Outlet } from 'react-router-dom'
 import Sidebar from './Sidebar'
+import HistoryNav from './HistoryNav'
 import NowPlayingBar from './NowPlayingBar'
 import QueueView from '../Player/QueueView'
 import FullScreenPlayer from '../Player/FullScreenPlayer'
@@ -23,7 +24,10 @@ export default function AppLayout() {
         <div className="flex-1 flex flex-col min-w-0">
           <NowPlayingBar />
           <main className="flex-1 min-w-0 overflow-y-auto relative">
-            <div className="px-8 pb-8 pt-4">
+            <div className="sticky top-0 z-20 h-12 -mb-12 px-8 flex items-center pointer-events-none [&>*]:pointer-events-auto">
+              <HistoryNav />
+            </div>
+            <div className="px-8 pb-8 pt-14">
               <Outlet />
             </div>
           </main>

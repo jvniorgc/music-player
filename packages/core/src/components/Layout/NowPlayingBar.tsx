@@ -11,7 +11,8 @@ import {
 } from 'lucide-react'
 import AddToPlaylist from '../UI/AddToPlaylist'
 import CoverArt from '../UI/CoverArt'
-import { formatTime, artistNames } from '../../lib/format'
+import { formatTime } from '../../lib/format'
+import { ArtistLinks, AlbumLink } from '../UI/Links'
 
 export default function NowPlayingBar() {
   const {
@@ -63,9 +64,11 @@ export default function NowPlayingBar() {
             loading="eager"
           />
           <div className="min-w-0">
-            <p className="text-[13px] font-medium truncate">{item.Name}</p>
+            <p className="text-[13px] font-medium truncate">
+              {item.AlbumId ? <AlbumLink item={item}>{item.Name}</AlbumLink> : item.Name}
+            </p>
             <p className="text-[11px] text-text-secondary truncate">
-              {artistNames(item, 'Unknown artist')}
+              <ArtistLinks item={item} fallback="Unknown artist" />
             </p>
           </div>
           <ChevronUp size={14} className="text-text-tertiary shrink-0 ml-1" />

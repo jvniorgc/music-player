@@ -3,7 +3,7 @@ import { useAuthStore } from '../../stores/auth'
 import { useLibraryStore } from '../../stores/library'
 import { useDownloadStore } from '../../stores/download'
 import { useToastStore } from '../../stores/toast'
-import { Home, Disc3, Users, ListMusic, Search, LogOut, Download, RefreshCw, Share2, Globe, Shuffle, User } from 'lucide-react'
+import { Home, Disc3, Users, ListMusic, Search, LogOut, Download, RefreshCw, Share2, Globe, Shuffle, User, Music } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { jellyfin } from '../../services/jellyfin'
 import { usePlayerStore } from '../../stores/player'
@@ -16,6 +16,7 @@ const navItems = [
 ]
 
 const libraryItems = [
+  { to: '/songs', icon: Music, label: 'Songs' },
   { to: '/albums', icon: Disc3, label: 'Albums' },
   { to: '/artists', icon: Users, label: 'Artists' },
   { to: '/playlists', icon: ListMusic, label: 'Playlists' },

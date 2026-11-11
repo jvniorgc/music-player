@@ -7,7 +7,7 @@ import { useLibraryStore } from '../../stores/library'
 import { Search, X, Disc3, Users, Music, Loader2 } from 'lucide-react'
 import TrackMenu from '../UI/TrackMenu'
 import AddToPlaylist from '../UI/AddToPlaylist'
-import { artistNames } from '../../lib/format'
+import { TrackSubtitle } from '../UI/Links'
 import TrackRow, { TrackDuration, CoverPlayOverlay } from '../UI/TrackRow'
 import CoverArt from '../UI/CoverArt'
 import { AlbumCard, ArtistCard } from '../UI/MediaCard'
@@ -112,7 +112,7 @@ export default function SearchView() {
                       </CoverArt>
                     }
                     title={song.Name}
-                    subtitle={<>{artistNames(song)}{song.Album ? ` — ${song.Album}` : ''}</>}
+                    subtitle={<TrackSubtitle item={song} />}
                   >
                     <TrackDuration ticks={song.RunTimeTicks} />
                     <TrackMenu track={song} onPlaylistAdd={(s) => setPickerSong(s)} />
@@ -135,8 +135,7 @@ export default function SearchView() {
                     key={album.Id}
                     item={album}
                     onClick={() => navigate(`/album/${album.Id}`)}
-                    subtitle={<>{album.AlbumArtist}{album.ProductionYear ? ` · ${album.ProductionYear}` : ''}</>}
-                  />
+                                      />
                 ))}
               </div>
             </section>

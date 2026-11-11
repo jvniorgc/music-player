@@ -8,7 +8,7 @@ import { jellyfin, JellyfinItem } from '../../services/jellyfin'
 import { Loader2, Download, Check } from 'lucide-react'
 import TrackMenu from '../UI/TrackMenu'
 import AddToPlaylist from '../UI/AddToPlaylist'
-import { artistNames } from '../../lib/format'
+import { ArtistLinks, AlbumLink } from '../UI/Links'
 import TrackRow, { TrackIndex, TrackDuration } from '../UI/TrackRow'
 import CoverArt from '../UI/CoverArt'
 import { useShallow } from 'zustand/react/shallow'
@@ -124,10 +124,10 @@ export default function SongList() {
                   </>
                 }
                 title={song.Name}
-                subtitle={artistNames(song, 'Unknown')}
+                subtitle={<ArtistLinks item={song} fallback="Unknown artist" />}
               >
                 <span className="w-40 text-sm text-text-secondary truncate hidden md:block">
-                  {song.Album || ''}
+                  <AlbumLink item={song} />
                 </span>
 
                 <TrackDuration ticks={song.RunTimeTicks} className="w-12 text-right" />

@@ -9,6 +9,7 @@ import {
   ChevronDown, Volume2, VolumeX, ListMusic, Captions, CaptionsOff
 } from 'lucide-react'
 import ArtworkBackground from './ArtworkBackground'
+import { ArtistLinks, AlbumLink } from '../UI/Links'
 import { formatTime, TICKS_PER_SECOND } from '../../lib/format'
 
 interface LyricLine {
@@ -161,28 +162,11 @@ export default function FullScreenPlayer() {
           <div className="text-center mb-3 md:mb-6 w-full">
             <h2 className="text-xl font-semibold truncate">{item.Name}</h2>
             <p className="text-base text-accent mt-1 truncate">
-              {item.ArtistItems?.length ? (
-                item.ArtistItems.map((a, i) => (
-                  <span key={a.Id}>
-                    {i > 0 && ', '}
-                    <span
-                      onClick={() => { setShowFullScreen(false); navigate(`/artist/${a.Id}`) }}
-                      className="hover:underline cursor-pointer"
-                    >
-                      {a.Name}
-                    </span>
-                  </span>
-                ))
-              ) : (
-                item.AlbumArtist || 'Unknown artist'
-              )}
+              <ArtistLinks item={item} fallback="Unknown artist" />
             </p>
             {item.Album && (
-              <p
-                onClick={() => { if (item.AlbumId) { setShowFullScreen(false); navigate(`/album/${item.AlbumId}`) } }}
-                className={`text-sm text-text-secondary mt-1 truncate ${item.AlbumId ? 'hover:underline cursor-pointer hover:text-text-primary transition-colors' : ''}`}
-              >
-                {item.Album}
+              <p className="text-sm text-text-secondary mt-1 truncate">
+                <AlbumLink item={item} />
               </p>
             )}
           </div>

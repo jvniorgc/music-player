@@ -5,11 +5,11 @@ import { isAbortError } from '../../services/http'
 import { usePlayerStore } from '../../stores/player'
 import { useLibraryStore } from '../../stores/library'
 import { useToastStore } from '../../stores/toast'
-import { Play, Pause, Shuffle, ListMusic, ArrowLeft, Pencil, Trash2, X as XIcon } from 'lucide-react'
+import { Play, Pause, Shuffle, ListMusic, Pencil, Trash2, X as XIcon } from 'lucide-react'
 import { InputModal, ConfirmModal } from '../UI/Modal'
 import TrackMenu from '../UI/TrackMenu'
 import AddToPlaylist from '../UI/AddToPlaylist'
-import { artistNames } from '../../lib/format'
+import { TrackSubtitle } from '../UI/Links'
 import TrackRow, { TrackIndex, TrackDuration } from '../UI/TrackRow'
 import CoverArt from '../UI/CoverArt'
 import { buttonClass } from '../UI/Button'
@@ -104,13 +104,6 @@ export default function PlaylistView() {
 
   return (
     <div className="fade-in">
-      <button
-        onClick={() => navigate(-1)}
-        className="flex items-center gap-1 text-accent hover:text-accent-hover text-sm mb-6 transition-colors"
-      >
-        <ArrowLeft size={16} />
-        Back
-      </button>
 
       <div className="flex gap-8 mb-8">
         <div className="w-56 h-56 rounded-lg overflow-hidden bg-surface-2 shadow-lg shrink-0">
@@ -188,7 +181,7 @@ export default function PlaylistView() {
                   </>
                 }
                 title={track.Name}
-                subtitle={<>{artistNames(track, 'Unknown')}{track.Album ? ` — ${track.Album}` : ''}</>}
+                subtitle={<TrackSubtitle item={track} />}
               >
                 <TrackDuration ticks={track.RunTimeTicks} />
 

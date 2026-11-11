@@ -3,7 +3,8 @@ import { jellyfin } from '../../services/jellyfin'
 import { QueueTrack } from '../../services/playback'
 import CoverArt from '../UI/CoverArt'
 import { X, Music } from 'lucide-react'
-import { formatTicks, artistNames } from '../../lib/format'
+import { formatTicks } from '../../lib/format'
+import { ArtistLinks, TrackSubtitle } from '../UI/Links'
 import { useShallow } from 'zustand/react/shallow'
 
 function TrackRow({ track, index, onPlay, onRemove }: {
@@ -27,7 +28,7 @@ function TrackRow({ track, index, onPlay, onRemove }: {
       <div className="min-w-0 flex-1">
         <p className="text-sm truncate">{track.item.Name}</p>
         <p className="text-xs text-text-secondary truncate">
-          {artistNames(track.item)}
+          <ArtistLinks item={track.item} />
         </p>
       </div>
       <button
@@ -83,7 +84,7 @@ export default function QueueView() {
             <div className="min-w-0 flex-1">
               <p className="text-sm font-medium truncate">{currentTrack.item.Name}</p>
               <p className="text-xs text-text-secondary truncate">
-                {artistNames(currentTrack.item)}
+                <TrackSubtitle item={currentTrack.item} />
               </p>
             </div>
             <span className="text-[11px] text-text-tertiary tabular-nums">

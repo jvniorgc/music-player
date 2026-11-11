@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { jellyfin, JellyfinItem } from '../../services/jellyfin'
 import { isAbortError } from '../../services/http'
-import { ArrowLeft, ImagePlus } from 'lucide-react'
+import { ImagePlus } from 'lucide-react'
 import ArtistMetadataEditor from '../Metadata/ArtistMetadataEditor'
 import { AlbumCard } from '../UI/MediaCard'
 
@@ -48,7 +48,7 @@ export default function ArtistView() {
     : null
 
   return (
-    <div className="fade-in -mx-8 -mt-12">
+    <div className="fade-in -mx-8 -mt-14">
       {/* Hero section */}
       <div className="relative h-72 overflow-hidden">
         {backdropUrl ? (
@@ -61,13 +61,6 @@ export default function ArtistView() {
         <div className="absolute inset-0 bg-gradient-to-t from-bg via-bg/50 to-transparent" />
 
         <div className="absolute bottom-0 left-0 right-0 px-8 pb-6">
-          <button
-            onClick={() => navigate(-1)}
-            className="flex items-center gap-1 text-accent hover:text-accent-hover text-sm mb-4 transition-colors"
-          >
-            <ArrowLeft size={16} />
-            Back
-          </button>
 
           <div className="flex items-end gap-6">
             {imageUrl ? (

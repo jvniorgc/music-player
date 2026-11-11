@@ -3,6 +3,7 @@ import { Play } from 'lucide-react'
 import CoverArt, { type CoverKind } from './CoverArt'
 import { jellyfin, type JellyfinItem } from '../../services/jellyfin'
 import { usePlayerStore } from '../../stores/player'
+import { ArtistLinks } from './Links'
 
 export const CARD_FALLBACK_CLASS =
   'w-full h-full flex items-center justify-center bg-surface-2'
@@ -89,7 +90,7 @@ export function AlbumCard({ item, onClick, subtitle, fallback }: {
       title={item.Name}
       subtitle={subtitle ?? (
         <>
-          {item.AlbumArtist || item.ArtistItems?.[0]?.Name || ''}
+          <ArtistLinks item={item.AlbumArtists?.length ? { AlbumArtists: item.AlbumArtists } : item} />
           {item.ProductionYear ? ` · ${item.ProductionYear}` : ''}
         </>
       )}

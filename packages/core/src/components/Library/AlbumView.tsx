@@ -5,13 +5,14 @@ import { isAbortError } from '../../services/http'
 import { usePlayerStore } from '../../stores/player'
 import { useDownloadStore } from '../../stores/download'
 import { useLibraryStore } from '../../stores/library'
-import { Play, Pause, Shuffle, Download, Check, ArrowLeft, Pencil } from 'lucide-react'
+import { Play, Pause, Shuffle, Download, Check, Pencil } from 'lucide-react'
 import MetadataEditor from '../Metadata/MetadataEditor'
 import TrackMenu from '../UI/TrackMenu'
 import AddToPlaylist from '../UI/AddToPlaylist'
 import { formatTotalDuration } from '../../lib/format'
 import TrackRow, { TrackIndex, TrackDuration } from '../UI/TrackRow'
 import { CoverFallbackIcon } from '../UI/CoverArt'
+import { ArtistLinks } from '../UI/Links'
 import { buttonClass } from '../UI/Button'
 import { useShallow } from 'zustand/react/shallow'
 
@@ -85,13 +86,6 @@ export default function AlbumView() {
 
   return (
     <div className="fade-in">
-      <button
-        onClick={() => navigate(-1)}
-        className="flex items-center gap-1 text-accent hover:text-accent-hover text-sm mb-6 transition-colors"
-      >
-        <ArrowLeft size={16} />
-        Back
-      </button>
 
       {/* Header */}
       <div className="flex gap-8 mb-8">
@@ -179,7 +173,7 @@ export default function AlbumView() {
               onClick={() => playItems(tracks, i)}
               leading={<TrackIndex number={track.IndexNumber || i + 1} isCurrent={isCurrent} isPlaying={isPlaying} className="w-7" />}
               title={track.Name}
-              subtitle={track.Artists && track.Artists.length > 0 && track.Artists[0] !== album.AlbumArtist && track.Artists.join(', ')}
+              subtitle={track.Artists && track.Artists.length > 0 && track.Artists[0] !== album.AlbumArtist && <ArtistLinks item={track} />}
             >
               {downloaded && <Check size={14} className="text-accent shrink-0" />}
 

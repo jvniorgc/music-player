@@ -6,6 +6,7 @@ import { useDownloadStore } from './stores/download'
 import LoginScreen from './components/Auth/LoginScreen'
 import AppLayout from './components/Layout/AppLayout'
 import HomePage from './components/Home/HomePage'
+import SongList from './components/Library/SongList'
 import AlbumGrid from './components/Library/AlbumGrid'
 import AlbumView from './components/Library/AlbumView'
 import ArtistGrid from './components/Library/ArtistGrid'
@@ -73,6 +74,7 @@ export default function App() {
         <Route element={<AppLayout />}>
           <Route path="/" element={<HomePage />} />
           <Route path="/search" element={<SearchView />} />
+          <Route path="/songs" element={<SongList />} />
           <Route path="/albums" element={<AlbumGrid />} />
           <Route path="/album/:id" element={<AlbumView />} />
           <Route path="/artists" element={<ArtistGrid />} />

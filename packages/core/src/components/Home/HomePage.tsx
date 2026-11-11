@@ -5,7 +5,7 @@ import { usePlayerStore } from '../../stores/player'
 import { useToastStore } from '../../stores/toast'
 import { jellyfin } from '../../services/jellyfin'
 import { Clock, Radio, Loader2 } from 'lucide-react'
-import { artistNames } from '../../lib/format'
+import { TrackSubtitle } from '../UI/Links'
 import TrackRow, { TrackDuration, CoverPlayOverlay } from '../UI/TrackRow'
 import CoverArt from '../UI/CoverArt'
 import { AlbumCard } from '../UI/MediaCard'
@@ -107,7 +107,7 @@ export default function HomePage() {
                   </CoverArt>
                 }
                 title={item.Name}
-                subtitle={<>{artistNames(item, 'Unknown')}{item.Album ? ` — ${item.Album}` : ''}</>}
+                subtitle={<TrackSubtitle item={item} />}
               >
                 <TrackDuration ticks={item.RunTimeTicks} />
               </TrackRow>
