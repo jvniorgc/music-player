@@ -67,7 +67,7 @@ export default function TrackMenu({ track, extraItems, onPlaylistAdd }: TrackMen
       {open && (
         <div
           ref={menuRef}
-          className="fixed z-50 bg-bg-elevated border border-border rounded-xl shadow-2xl py-1.5 min-w-[180px]"
+          className="fixed z-50 bg-surface-2 border border-border rounded-lg shadow-lg shadow-black/40 py-1.5 min-w-[180px]"
           style={{ left: position.x, top: position.y }}
           onClick={e => e.stopPropagation()}
         >

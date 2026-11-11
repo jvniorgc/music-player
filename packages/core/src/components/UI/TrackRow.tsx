@@ -5,10 +5,10 @@ import { formatTicks } from '../../lib/format'
 /** Animated equalizer bars shown for the currently playing track. */
 export function PlayingBars() {
   return (
-    <div className="flex items-center justify-end gap-[2px]">
-      <div className="w-[3px] h-3 bg-accent rounded-full animate-pulse" />
-      <div className="w-[3px] h-4 bg-accent rounded-full animate-pulse" style={{ animationDelay: '0.15s' }} />
-      <div className="w-[3px] h-2 bg-accent rounded-full animate-pulse" style={{ animationDelay: '0.3s' }} />
+    <div className="flex items-end justify-end gap-[2px] h-3" aria-label="Playing">
+      <div className="eq-bar w-[3px] h-3 bg-accent rounded-[1px]" />
+      <div className="eq-bar w-[3px] h-3 bg-accent rounded-[1px]" style={{ animationDelay: '-0.4s' }} />
+      <div className="eq-bar w-[3px] h-3 bg-accent rounded-[1px]" style={{ animationDelay: '-0.7s' }} />
     </div>
   )
 }
@@ -68,11 +68,11 @@ export interface TrackRowProps {
 
 /** A clickable song row used by all track lists. */
 export default function TrackRow({
-  title, subtitle, isCurrent = false, onClick, className = 'px-5 py-3', leading, children,
+  title, subtitle, isCurrent = false, onClick, className = 'px-4 py-2 rounded-sm', leading, children,
 }: TrackRowProps) {
   return (
     <div
-      className={`flex items-center gap-4 ${className} hover:bg-white/5 transition-colors cursor-pointer group${isCurrent ? ' bg-white/5' : ''}`}
+      className={`flex items-center gap-4 ${className} hover:bg-white/[0.06] transition-colors cursor-pointer group${isCurrent ? ' bg-white/[0.04]' : ''}`}
       onClick={onClick}
     >
       {leading}

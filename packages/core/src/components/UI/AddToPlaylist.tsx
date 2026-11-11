@@ -56,7 +56,7 @@ export default function AddToPlaylist({ song, onClose }: AddToPlaylistProps) {
       />
       <InputModal
         open={!!pendingSong}
-        title="New Playlist"
+        title="New playlist"
         placeholder="Playlist name"
         confirmLabel="Create"
         onClose={() => setPendingSong(null)}

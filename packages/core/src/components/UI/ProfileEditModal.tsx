@@ -6,7 +6,8 @@ import { LastfmSettings } from '../Settings/LastfmSettings'
 import { useAuthStore } from '../../stores/auth'
 import { jellyfin } from '../../services/jellyfin'
 import { useToastStore } from '../../stores/toast'
-import { Button, Input } from './Button'
+import { Button, Input, buttonClass } from './Button'
+import { CoverFallbackIcon } from './CoverArt'
 import { useShallow } from 'zustand/react/shallow'
 
 interface ProfileEditModalProps {
@@ -87,7 +88,7 @@ export function ProfileEditModal({ open, onClose }: ProfileEditModalProps) {
   }
 
   return (
-    <Modal open={open} title="Edit Profile" onClose={handleClose}>
+    <Modal open={open} title="Edit profile" onClose={handleClose}>
       {cropping && rawImageUrl ? (
         <ImageCropper
           imageUrl={rawImageUrl}
@@ -99,14 +100,14 @@ export function ProfileEditModal({ open, onClose }: ProfileEditModalProps) {
           {/* Avatar picker */}
           <button
             onClick={() => fileInputRef.current?.click()}
-            className="relative w-24 h-24 rounded-full overflow-hidden group shrink-0 focus:outline-none focus:ring-2 focus:ring-accent"
+            className="relative w-24 h-24 rounded-full overflow-hidden group shrink-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
             title="Change profile photo"
           >
             {displayImage ? (
               <img src={displayImage} className="w-full h-full object-cover" alt="Avatar" />
             ) : (
-              <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-bg-elevated to-bg-tertiary">
-                <span className="text-4xl">👤</span>
+              <div className="w-full h-full flex items-center justify-center bg-surface-2">
+                <CoverFallbackIcon kind="artist" size={36} />
               </div>
             )}
             <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -124,7 +125,7 @@ export function ProfileEditModal({ open, onClose }: ProfileEditModalProps) {
 
           {/* Name input */}
           <div className="w-full">
-            <label className="block text-xs font-medium text-text-secondary mb-1.5 uppercase tracking-wider">
+            <label className="block text-xs font-medium text-text-secondary mb-1.5">
               Display Name
             </label>
             <Input
@@ -152,7 +153,7 @@ export function ProfileEditModal({ open, onClose }: ProfileEditModalProps) {
             <button
               onClick={handleSave}
               disabled={saving || !name.trim()}
-              className="px-5 py-2 rounded-full text-sm font-semibold bg-accent hover:bg-accent-hover text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
+              className={buttonClass('primary')}
             >
               {saving && <Loader2 size={14} className="animate-spin" />}
               Save

@@ -64,6 +64,6 @@ describe('Button', () => {
     render(<Button variant="secondary" className="extra">Go</Button>)
     const btn = screen.getByText('Go')
     expect(btn.getAttribute('type')).toBe('button')
-    expect(btn.className).toMatch(/text-text-secondary.* extra$/)
+    expect(btn.className).toMatch(/bg-surface-2.* extra$/)
   })
 })

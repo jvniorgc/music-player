@@ -1,16 +1,18 @@
 import type { MouseEvent, ReactNode } from 'react'
 import { Play } from 'lucide-react'
-import CoverArt from './CoverArt'
+import CoverArt, { type CoverKind } from './CoverArt'
 import { jellyfin, type JellyfinItem } from '../../services/jellyfin'
 import { usePlayerStore } from '../../stores/player'
 
 export const CARD_FALLBACK_CLASS =
-  'w-full h-full flex items-center justify-center bg-gradient-to-br from-bg-elevated to-bg-tertiary'
+  'w-full h-full flex items-center justify-center bg-surface-2'
 
 export interface MediaCardProps {
   imageUrl?: string | null
-  /** Content shown in place of the image when missing. */
-  fallback: ReactNode
+  /** Placeholder icon kind when the image is missing. */
+  kind?: CoverKind
+  /** Custom placeholder content; overrides `kind`. */
+  fallback?: ReactNode
   fallbackClassName?: string
   shape?: 'square' | 'circle'
   title: ReactNode
@@ -25,7 +27,7 @@ export interface MediaCardProps {
 
 /** Grid card with square/round cover art, hover dimming and optional play button. */
 export default function MediaCard({
-  imageUrl, fallback, fallbackClassName = CARD_FALLBACK_CLASS, shape = 'square',
+  imageUrl, kind = 'album', fallback, fallbackClassName = CARD_FALLBACK_CLASS, shape = 'square',
   title, subtitle, caption, onClick, onContextMenu, onPlay,
 }: MediaCardProps) {
   const circle = shape === 'circle'
@@ -37,23 +39,26 @@ export default function MediaCard({
     >
       <CoverArt
         src={imageUrl}
-        className={`relative aspect-square ${circle ? 'rounded-full mx-auto' : 'rounded-xl'} overflow-hidden bg-bg-elevated mb-3 shadow-lg shadow-black/20`}
+        className={`relative aspect-square ${circle ? 'rounded-full mx-auto' : 'rounded-md'} overflow-hidden bg-surface-2 mb-2`}
+        kind={kind}
+        iconSize={40}
         fallback={fallback}
         fallbackClassName={fallbackClassName}
       >
-        <div className={`absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors${circle ? ' rounded-full' : ''}`} />
+        <div className={`absolute inset-0 bg-black/0 group-hover:bg-black/25 transition-colors${circle ? ' rounded-full' : ''}`} />
         {onPlay && (
           <button
             onClick={(e) => { e.stopPropagation(); onPlay(e) }}
-            className="absolute bottom-3 right-3 w-10 h-10 bg-accent rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 transform translate-y-1 group-hover:translate-y-0 shadow-lg shadow-black/30"
+            aria-label="Play"
+            className="absolute bottom-2 right-2 w-9 h-9 bg-accent hover:bg-accent-hover rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity shadow-md"
           >
-            <Play size={18} className="text-white ml-0.5" fill="white" />
+            <Play size={16} className="text-white ml-0.5" fill="white" />
           </button>
         )}
       </CoverArt>
       {caption ?? (
         <>
-          <p className="text-sm font-medium truncate">{title}</p>
+          <p className="text-sm font-medium text-text-primary truncate">{title}</p>
           {subtitle != null && <p className="text-xs text-text-secondary truncate">{subtitle}</p>}
         </>
       )}
@@ -70,7 +75,7 @@ export async function playAlbum(albumId: string): Promise<void> {
   }
 }
 
-export function AlbumCard({ item, onClick, subtitle, fallback = <span className="text-4xl">💿</span> }: {
+export function AlbumCard({ item, onClick, subtitle, fallback }: {
   item: JellyfinItem
   onClick: () => void
   /** Defaults to "Album artist · Year". */
@@ -94,7 +99,7 @@ export function AlbumCard({ item, onClick, subtitle, fallback = <span className=
   )
 }
 
-export function ArtistCard({ item, onClick, subtitle, fallback = <span className="text-4xl">🎤</span> }: {
+export function ArtistCard({ item, onClick, subtitle, fallback }: {
   item: JellyfinItem
   onClick: () => void
   subtitle?: ReactNode
@@ -103,6 +108,7 @@ export function ArtistCard({ item, onClick, subtitle, fallback = <span className
   return (
     <MediaCard
       shape="circle"
+      kind="artist"
       imageUrl={item.ImageTags?.Primary ? jellyfin.getImageUrl(item.Id, item.ImageTags.Primary) : null}
       fallback={fallback}
       title={item.Name}

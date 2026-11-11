@@ -102,7 +102,7 @@ export function ImageCropper({ imageUrl, onCrop, onCancel, size = 240 }: ImageCr
         onPointerUp={handlePointerUp}
         onWheel={handleWheel}
       >
-        <div className="absolute inset-0 bg-bg-elevated" />
+        <div className="absolute inset-0 bg-surface-2" />
         {imgNaturalSize.w > 0 && (
           <img
             src={imageUrl}

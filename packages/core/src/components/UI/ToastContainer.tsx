@@ -9,9 +9,9 @@ const icons = {
 }
 
 const colors = {
-  success: 'bg-green-600/90 border-green-500/30',
-  error: 'bg-red-600/90 border-red-500/30',
-  info: 'bg-bg-elevated/90 border-border'
+  success: 'text-success',
+  error: 'text-danger',
+  info: 'text-text-secondary'
 }
 
 export default function ToastContainer() {
@@ -26,13 +26,13 @@ export default function ToastContainer() {
         return (
           <div
             key={toast.id}
-            className={`flex items-center gap-3 px-4 py-3 rounded-xl border backdrop-blur-xl shadow-2xl min-w-[280px] max-w-[400px] fade-in ${colors[toast.type]}`}
+            className={`flex items-center gap-3 px-4 py-3 rounded-md border border-border bg-surface-2 shadow-lg shadow-black/40 min-w-[280px] max-w-[400px] fade-in`}
           >
-            <Icon size={16} className="shrink-0" />
-            <span className="text-sm flex-1">{toast.message}</span>
+            <Icon size={16} className={`shrink-0 ${colors[toast.type]}`} />
+            <span className="text-sm text-text-primary flex-1">{toast.message}</span>
             <button
               onClick={() => dismiss(toast.id)}
-              className="p-0.5 rounded-full hover:bg-white/10 text-white/60 shrink-0"
+              className="p-0.5 rounded-full hover:bg-white/10 text-text-tertiary hover:text-text-primary shrink-0"
             >
               <X size={14} />
             </button>

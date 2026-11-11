@@ -24,13 +24,13 @@ export function Modal({ open, title, onClose, children }: ModalProps) {
 
   return createPortal(
     <div className="fixed inset-0 z-[100] flex items-center justify-center" onClick={onClose}>
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+      <div className="absolute inset-0 bg-black/60" />
       <div
-        className="relative bg-bg-secondary rounded-2xl shadow-2xl w-full max-w-md mx-4 fade-in"
+        className="relative bg-surface-1 border border-border rounded-lg shadow-lg w-full max-w-md mx-4 fade-in"
         onClick={e => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between px-6 py-4 border-b border-border-subtle">
-          <h2 className="text-lg font-bold">{title}</h2>
+        <div className="flex items-center justify-between px-6 py-4 border-b border-border">
+          <h2 className="text-lg font-semibold">{title}</h2>
           <Button variant="icon" onClick={onClose}>
             <X size={18} />
           </Button>
@@ -147,7 +147,7 @@ export function PlaylistPicker({ open, playlists, onClose, onSelect, onCreate }:
           <button
             key={pl.Id}
             onClick={() => { onSelect(pl.Id); onClose() }}
-            className="w-full text-left px-4 py-2.5 rounded-lg text-sm hover:bg-white/10 transition-colors truncate"
+            className="w-full text-left px-4 py-2.5 rounded-sm text-sm hover:bg-white/10 transition-colors truncate"
           >
             {pl.Name}
           </button>
@@ -155,9 +155,9 @@ export function PlaylistPicker({ open, playlists, onClose, onSelect, onCreate }:
       </div>
       <button
         onClick={() => { onCreate(); onClose() }}
-        className="w-full mt-3 px-4 py-2.5 rounded-xl text-sm font-medium text-accent border border-accent/30 hover:bg-accent/10 transition-colors"
+        className="w-full mt-3 px-4 h-8 rounded-sm text-sm font-medium text-accent border border-border hover:bg-white/5 transition-colors"
       >
-        + New Playlist
+        New playlist
       </button>
     </Modal>
   )

@@ -94,7 +94,7 @@ describe('ConfirmModal', () => {
 
   it('applies destructive styling when requested', () => {
     render(<ConfirmModal open title="T" message="m" destructive confirmLabel="Remove" onClose={() => {}} onConfirm={() => {}} />)
-    expect(screen.getByRole('button', { name: 'Remove' }).className).toContain('bg-red-600')
+    expect(screen.getByRole('button', { name: 'Remove' }).className).toContain('bg-danger')
   })
 })
 
@@ -114,7 +114,7 @@ describe('PlaylistPicker', () => {
     const onCreate = vi.fn()
     const onClose = vi.fn()
     render(<PlaylistPicker open playlists={playlists} onClose={onClose} onSelect={() => {}} onCreate={onCreate} />)
-    fireEvent.click(screen.getByRole('button', { name: '+ New Playlist' }))
+    fireEvent.click(screen.getByRole('button', { name: 'New playlist' }))
     expect(onCreate).toHaveBeenCalledTimes(1)
     expect(onClose).toHaveBeenCalledTimes(1)
   })
@@ -122,6 +122,6 @@ describe('PlaylistPicker', () => {
   it('renders an empty list without a create-implied selection', () => {
     render(<PlaylistPicker open playlists={[]} onClose={() => {}} onSelect={() => {}} onCreate={() => {}} />)
     const dialog = screen.getByText('Add to Playlist').closest('div')!
-    expect(within(dialog.parentElement!).getByRole('button', { name: '+ New Playlist' })).toBeInTheDocument()
+    expect(within(dialog.parentElement!).getByRole('button', { name: 'New playlist' })).toBeInTheDocument()
   })
 })
