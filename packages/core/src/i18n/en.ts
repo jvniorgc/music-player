@@ -282,6 +282,7 @@ export const en = {
   'social.period': "Time period",
   'social.gridSize': "Grid size",
   'social.noData': "No data for this period",
+  'social.periodUnavailable': "Stats for this period are unavailable. Install or update the Playback Reporting plugin on the server.",
   'social.plays': { one: "{count} play", other: "{count} plays" } as Plural,
   'social.tracks': { one: "{count} track", other: "{count} tracks" } as Plural,
   'period.7d': "7 days",

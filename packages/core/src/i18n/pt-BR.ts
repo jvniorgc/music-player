@@ -281,6 +281,7 @@ export const ptBR: Messages = {
   'social.period': "Período",
   'social.gridSize': "Tamanho da grade",
   'social.noData': "Sem dados para este período",
+  'social.periodUnavailable': "Estatísticas por período indisponíveis. Instale ou atualize o plugin Playback Reporting no servidor.",
   'social.plays': { one: "{count} reprodução", other: "{count} reproduções" },
   'social.tracks': { one: "{count} faixa", other: "{count} faixas" },
   'period.7d': "7 dias",

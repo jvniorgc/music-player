@@ -52,6 +52,7 @@ export default function UserProfileView() {
   const [playlists, setPlaylists] = useState<JellyfinItem[]>([])
   const [topItems, setTopItems] = useState<(JellyfinItem & { periodPlayCount?: number })[]>([])
   const [viewMode, setViewMode] = useState<ViewMode>('artists')
+  const [topError, setTopError] = useState(false)
   const [timePeriod, setTimePeriod] = useState<TimePeriod>('7d')
   const [gridSize, setGridSize] = useState<GridSize>('4x2')
   const [loading, setLoading] = useState(true)
@@ -81,21 +82,23 @@ export default function UserProfileView() {
     if (!id) return
     const loadTop = async () => {
       setTopLoading(true)
+      setTopError(false)
+      const minDate = getMinDate(timePeriod)
       try {
-        const minDate = getMinDate(timePeriod)
         const count = GRID_COUNT[gridSize]
         let items: (JellyfinItem & { periodPlayCount?: number })[]
         if (viewMode === 'artists') {
-          items = await jellyfin.getUserTopArtists(id, count, minDate)
+          items = await jellyfin.getUserTopArtists(id, count, minDate, false)
         } else if (viewMode === 'albums') {
-          items = await jellyfin.getUserTopAlbums(id, count, minDate)
+          items = await jellyfin.getUserTopAlbums(id, count, minDate, false)
         } else {
-          items = await jellyfin.getUserTopSongs(id, count, minDate)
+          items = await jellyfin.getUserTopSongs(id, count, minDate, false)
         }
         setTopItems(items)
       } catch (err) {
         console.error('Failed to load top items:', err)
         setTopItems([])
+        setTopError(minDate !== undefined)
       } finally {
         setTopLoading(false)
       }
@@ -215,7 +218,7 @@ export default function UserProfileView() {
           </div>
         ) : topItems.length === 0 ? (
           <div className="py-12 text-center text-text-tertiary text-sm">
-            {t('social.noData')}
+            {t(topError ? 'social.periodUnavailable' : 'social.noData')}
           </div>
         ) : (
           <div

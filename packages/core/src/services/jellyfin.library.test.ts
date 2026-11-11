@@ -424,6 +424,13 @@ describe('listening stats', () => {
     const res = await jellyfin.getUserTopSongs('u1', 20, '2024-01-01')
     expect(res).toHaveLength(1)
   })
+  it.each(['getUserTopArtists', 'getUserTopAlbums', 'getUserTopSongs'] as const)(
+    '%s (period) throws instead of falling back when fallbackToAllTime is false',
+    async (method) => {
+      mockFetchRouter([['/user_usage_stats/submit_custom_query', textRes('boom', 500)]])
+      await expect(jellyfin[method]('u1', 20, '2024-01-01', false)).rejects.toThrow()
+    },
+  )
 })
 
 describe('playlist ownership & misc error paths', () => {
