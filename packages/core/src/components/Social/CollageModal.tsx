@@ -3,6 +3,7 @@ import { jellyfin, JellyfinItem } from '../../services/jellyfin'
 import { useToastStore } from '../../stores/toast'
 import { TimePeriod, TIME_LABELS, getMinDate } from './UserProfileView'
 import { X, Download, Loader2, Grid3x3 } from 'lucide-react'
+import { artistNames } from '../../lib/format'
 
 type CollageType = 'albums' | 'songs'
 
@@ -72,7 +73,7 @@ const TITLE_LINE_SPACING = 1.35
 function subtitleFor(item: TopItem, type: CollageType): string {
   return type === 'albums'
     ? (item.AlbumArtist || '')
-    : (item.Artists?.join(', ') || item.AlbumArtist || '')
+    : artistNames(item)
 }
 
 function ellipsize(ctx: CanvasRenderingContext2D, text: string, maxWidth: number): string {

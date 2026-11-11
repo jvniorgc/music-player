@@ -10,23 +10,7 @@ import { Play, Pause, Shuffle, Download, Check, Clock, ArrowLeft, Pencil } from 
 import MetadataEditor from '../Metadata/MetadataEditor'
 import { PlaylistPicker, InputModal } from '../UI/Modal'
 import TrackMenu from '../UI/TrackMenu'
-
-function formatDuration(ticks?: number): string {
-  if (!ticks) return ''
-  const seconds = Math.floor(ticks / 10_000_000)
-  const m = Math.floor(seconds / 60)
-  const s = seconds % 60
-  return `${m}:${s.toString().padStart(2, '0')}`
-}
-
-function formatTotalDuration(items: JellyfinItem[]): string {
-  const totalTicks = items.reduce((sum, item) => sum + (item.RunTimeTicks || 0), 0)
-  const totalMinutes = Math.floor(totalTicks / 10_000_000 / 60)
-  if (totalMinutes < 60) return `${totalMinutes} min`
-  const h = Math.floor(totalMinutes / 60)
-  const m = totalMinutes % 60
-  return `${h} h ${m} min`
-}
+import { formatTicks, formatTotalDuration } from '../../lib/format'
 
 export default function AlbumView() {
   const { id } = useParams<{ id: string }>()
@@ -225,7 +209,7 @@ export default function AlbumView() {
               {downloaded && <Check size={14} className="text-accent shrink-0" />}
 
               <span className="text-xs text-text-tertiary tabular-nums shrink-0">
-                {formatDuration(track.RunTimeTicks)}
+                {formatTicks(track.RunTimeTicks)}
               </span>
 
               <TrackMenu track={track} onPlaylistAdd={(t) => setPickerSong(t)} />

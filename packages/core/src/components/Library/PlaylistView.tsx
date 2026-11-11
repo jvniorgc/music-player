@@ -8,14 +8,7 @@ import { useToastStore } from '../../stores/toast'
 import { Play, Pause, Shuffle, ListMusic, ArrowLeft, Pencil, Trash2, X as XIcon } from 'lucide-react'
 import { InputModal, ConfirmModal, PlaylistPicker } from '../UI/Modal'
 import TrackMenu from '../UI/TrackMenu'
-
-function formatDuration(ticks?: number): string {
-  if (!ticks) return ''
-  const seconds = Math.floor(ticks / 10_000_000)
-  const m = Math.floor(seconds / 60)
-  const s = seconds % 60
-  return `${m}:${s.toString().padStart(2, '0')}`
-}
+import { formatTicks, artistNames } from '../../lib/format'
 
 export default function PlaylistView() {
   const { id } = useParams<{ id: string }>()
@@ -212,13 +205,13 @@ export default function PlaylistView() {
                 <div className="min-w-0 flex-1">
                   <p className={`text-sm font-medium truncate ${isCurrent ? 'text-accent' : ''}`}>{track.Name}</p>
                   <p className="text-xs text-text-secondary truncate">
-                    {track.Artists?.join(', ') || track.AlbumArtist || 'Unknown'}
+                    {artistNames(track, 'Unknown')}
                     {track.Album ? ` — ${track.Album}` : ''}
                   </p>
                 </div>
 
                 <span className="text-xs text-text-tertiary tabular-nums shrink-0">
-                  {formatDuration(track.RunTimeTicks)}
+                  {formatTicks(track.RunTimeTicks)}
                 </span>
 
                 <TrackMenu

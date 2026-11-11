@@ -2,14 +2,7 @@ import { usePlayerStore } from '../../stores/player'
 import { jellyfin } from '../../services/jellyfin'
 import { QueueTrack } from '../../services/playback'
 import { X, Music } from 'lucide-react'
-
-function formatDuration(ticks?: number): string {
-  if (!ticks) return ''
-  const seconds = Math.floor(ticks / 10_000_000)
-  const m = Math.floor(seconds / 60)
-  const s = seconds % 60
-  return `${m}:${s.toString().padStart(2, '0')}`
-}
+import { formatTicks, artistNames } from '../../lib/format'
 
 function TrackRow({ track, index, onPlay, onRemove }: {
   track: QueueTrack
@@ -37,7 +30,7 @@ function TrackRow({ track, index, onPlay, onRemove }: {
       <div className="min-w-0 flex-1">
         <p className="text-sm truncate">{track.item.Name}</p>
         <p className="text-xs text-text-secondary truncate">
-          {track.item.Artists?.join(', ') || track.item.AlbumArtist}
+          {artistNames(track.item)}
         </p>
       </div>
       <button
@@ -48,7 +41,7 @@ function TrackRow({ track, index, onPlay, onRemove }: {
         <X size={14} />
       </button>
       <span className="text-[11px] text-text-tertiary tabular-nums">
-        {formatDuration(track.item.RunTimeTicks)}
+        {formatTicks(track.item.RunTimeTicks)}
       </span>
     </div>
   )
@@ -94,11 +87,11 @@ export default function QueueView() {
             <div className="min-w-0 flex-1">
               <p className="text-sm font-medium truncate">{currentTrack.item.Name}</p>
               <p className="text-xs text-text-secondary truncate">
-                {currentTrack.item.Artists?.join(', ') || currentTrack.item.AlbumArtist}
+                {artistNames(currentTrack.item)}
               </p>
             </div>
             <span className="text-[11px] text-text-tertiary tabular-nums">
-              {formatDuration(currentTrack.item.RunTimeTicks)}
+              {formatTicks(currentTrack.item.RunTimeTicks)}
             </span>
           </div>
         </div>

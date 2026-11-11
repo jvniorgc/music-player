@@ -8,13 +8,7 @@ import {
   ChevronDown, Volume2, VolumeX, ListMusic, Captions, CaptionsOff
 } from 'lucide-react'
 import AnimatedBackground from './AnimatedBackground'
-
-function formatTime(seconds: number): string {
-  if (!isFinite(seconds)) return '0:00'
-  const m = Math.floor(seconds / 60)
-  const s = Math.floor(seconds % 60)
-  return `${m}:${s.toString().padStart(2, '0')}`
-}
+import { formatTime, TICKS_PER_SECOND } from '../../lib/format'
 
 interface LyricLine {
   Text: string
@@ -77,7 +71,7 @@ export default function FullScreenPlayer() {
       const lines = lyricsRef.current
       const isTimed = lines.length > 0 && lines[0].Start !== undefined
       if (isTimed) {
-        const currentTicks = playback.currentTime * 10000000
+        const currentTicks = playback.currentTime * TICKS_PER_SECOND
         let idx = -1
         for (let i = lines.length - 1; i >= 0; i--) {
           if (lines[i].Start !== undefined && lines[i].Start! <= currentTicks) {

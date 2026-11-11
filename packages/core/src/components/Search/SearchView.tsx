@@ -8,14 +8,7 @@ import { useToastStore } from '../../stores/toast'
 import { Search, X, Play, Disc3, Users, Music, Loader2 } from 'lucide-react'
 import { PlaylistPicker, InputModal } from '../UI/Modal'
 import TrackMenu from '../UI/TrackMenu'
-
-function formatDuration(ticks?: number): string {
-  if (!ticks) return ''
-  const seconds = Math.floor(ticks / 10_000_000)
-  const m = Math.floor(seconds / 60)
-  const s = seconds % 60
-  return `${m}:${s.toString().padStart(2, '0')}`
-}
+import { formatTicks, artistNames } from '../../lib/format'
 
 export default function SearchView() {
   const [query, setQuery] = useState('')
@@ -128,12 +121,12 @@ export default function SearchView() {
                       <div className="min-w-0 flex-1">
                         <p className="text-sm font-medium truncate">{song.Name}</p>
                         <p className="text-xs text-text-secondary truncate">
-                          {song.Artists?.join(', ') || song.AlbumArtist}
+                          {artistNames(song)}
                           {song.Album ? ` — ${song.Album}` : ''}
                         </p>
                       </div>
                       <span className="text-xs text-text-tertiary tabular-nums">
-                        {formatDuration(song.RunTimeTicks)}
+                        {formatTicks(song.RunTimeTicks)}
                       </span>
                       <TrackMenu track={song} onPlaylistAdd={(s) => setPickerSong(s)} />
                     </div>

@@ -1,5 +1,6 @@
 import { JellyfinItem, jellyfin } from './jellyfin'
 import * as lastfm from './lastfm'
+import { secondsToTicks, ticksToSeconds } from '../lib/format'
 
 export type RepeatMode = 'none' | 'all' | 'one'
 
@@ -640,7 +641,7 @@ class PlaybackService {
 
     const ended = this._current
     if (ended) {
-      const ticks = Math.floor(this.duration * 10_000_000)
+      const ticks = secondsToTicks(this.duration)
       jellyfin.reportPlaybackStopped(ended.id, ticks).catch(err => console.warn('[Playback] reportPlaybackStopped failed:', err))
     }
 
@@ -670,7 +671,7 @@ class PlaybackService {
     const item = this.scrobbleItem
     if (!item || this.scrobbleDone) return
     const played = this.audio.currentTime
-    const duration = item.RunTimeTicks ? item.RunTimeTicks / 10_000_000 : this.audio.duration
+    const duration = item.RunTimeTicks ? ticksToSeconds(item.RunTimeTicks) : this.audio.duration
     if (lastfm.shouldScrobble(played, duration)) {
       this.scrobbleDone = true
       lastfm.scrobble(item, this.scrobbleStartedAt).catch(err => console.warn('[Playback] Last.fm scrobble failed:', err))

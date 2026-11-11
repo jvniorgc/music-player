@@ -3,14 +3,7 @@ import { useDownloadStore } from '../../stores/download'
 import { usePlayerStore } from '../../stores/player'
 import { jellyfin, JellyfinItem } from '../../services/jellyfin'
 import { Download, Trash2, Play, Music, HardDrive, Loader2 } from 'lucide-react'
-
-function formatDuration(ticks?: number): string {
-  if (!ticks) return ''
-  const seconds = Math.floor(ticks / 10_000_000)
-  const m = Math.floor(seconds / 60)
-  const s = seconds % 60
-  return `${m}:${s.toString().padStart(2, '0')}`
-}
+import { formatTicks, artistNames } from '../../lib/format'
 
 export default function DownloadsView() {
   const { downloads, loadDownloads, removeDownload, initListeners } = useDownloadStore()
@@ -107,13 +100,13 @@ export default function DownloadsView() {
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-medium truncate">{dl.metadata?.Name || dl.filename}</p>
                   <p className="text-xs text-text-secondary truncate">
-                    {dl.metadata?.Artists?.join(', ') || dl.metadata?.AlbumArtist || ''}
+                    {artistNames(dl.metadata)}
                     {dl.metadata?.Album ? ` — ${dl.metadata.Album}` : ''}
                   </p>
                 </div>
 
                 <span className="text-xs text-text-tertiary tabular-nums shrink-0">
-                  {formatDuration(dl.metadata?.RunTimeTicks)}
+                  {formatTicks(dl.metadata?.RunTimeTicks)}
                 </span>
 
                 <button

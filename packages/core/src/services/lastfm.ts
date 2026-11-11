@@ -1,12 +1,12 @@
 import type { JellyfinItem } from './jellyfin'
 import type { LastfmStatus, LastfmTrack } from '../platform'
+import { TICKS_PER_SECOND } from '../lib/format'
 
 // Last.fm scrobbling rules: a track must be longer than 30s and must have been
 // played for at least half its length OR for 4 minutes, whichever comes first.
 const MIN_TRACK_SECONDS = 30
 const SCROBBLE_THRESHOLD_SECONDS = 240
 
-const TICKS_PER_SECOND = 10_000_000
 
 /** Translate a Jellyfin track into Last.fm scrobble metadata, or null if unusable. */
 export function toScrobbleMeta(item: JellyfinItem): LastfmTrack | null {

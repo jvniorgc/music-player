@@ -5,14 +5,7 @@ import { usePlayerStore } from '../../stores/player'
 import { useToastStore } from '../../stores/toast'
 import { jellyfin, JellyfinItem } from '../../services/jellyfin'
 import { Play, Clock, Radio, Loader2 } from 'lucide-react'
-
-function formatDuration(ticks?: number): string {
-  if (!ticks) return ''
-  const seconds = Math.floor(ticks / 10_000_000)
-  const m = Math.floor(seconds / 60)
-  const s = seconds % 60
-  return `${m}:${s.toString().padStart(2, '0')}`
-}
+import { formatTicks, artistNames } from '../../lib/format'
 
 function AlbumCard({ item, onClick }: { item: JellyfinItem; onClick: () => void }) {
   const imageUrl = jellyfin.getImageUrl(item.Id, item.ImageTags?.Primary)
@@ -82,12 +75,12 @@ function TrackRow({ item, index, items }: { item: JellyfinItem; index: number; i
       <div className="min-w-0 flex-1">
         <p className="text-sm font-medium truncate">{item.Name}</p>
         <p className="text-xs text-text-secondary truncate">
-          {item.Artists?.join(', ') || item.AlbumArtist || 'Unknown'}
+          {artistNames(item, 'Unknown')}
           {item.Album ? ` — ${item.Album}` : ''}
         </p>
       </div>
       <span className="text-xs text-text-tertiary tabular-nums shrink-0">
-        {formatDuration(item.RunTimeTicks)}
+        {formatTicks(item.RunTimeTicks)}
       </span>
     </div>
   )

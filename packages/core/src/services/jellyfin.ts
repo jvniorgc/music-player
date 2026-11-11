@@ -65,6 +65,7 @@ export interface JellyfinItemsResponse {
 }
 
 import { timeoutSignal } from './http'
+import { TICKS_PER_SECOND } from '../lib/format'
 
 type RequestOptions = RequestInit & { timeoutMs?: number }
 
@@ -856,7 +857,7 @@ function parseLRC(lrc: string): { Text: string; Start?: number }[] {
       const min = parseInt(match[1])
       const sec = parseInt(match[2])
       const ms = parseInt(match[3].padEnd(3, '0'))
-      const ticks = (min * 60 + sec + ms / 1000) * 10000000
+      const ticks = (min * 60 + sec + ms / 1000) * TICKS_PER_SECOND
       const text = match[4].trim()
       if (text) lines.push({ Text: text, Start: ticks })
     }

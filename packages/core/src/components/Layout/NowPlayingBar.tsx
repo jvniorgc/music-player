@@ -10,13 +10,7 @@ import {
   Download, Check, ListPlus
 } from 'lucide-react'
 import { PlaylistPicker, InputModal } from '../UI/Modal'
-
-function formatTime(seconds: number): string {
-  if (!isFinite(seconds)) return '0:00'
-  const m = Math.floor(seconds / 60)
-  const s = Math.floor(seconds % 60)
-  return `${m}:${s.toString().padStart(2, '0')}`
-}
+import { formatTime, artistNames } from '../../lib/format'
 
 export default function NowPlayingBar() {
   const {
@@ -89,7 +83,7 @@ export default function NowPlayingBar() {
           <div className="min-w-0">
             <p className="text-[13px] font-medium truncate">{item.Name}</p>
             <p className="text-[11px] text-text-secondary truncate">
-              {item.Artists?.join(', ') || item.AlbumArtist || 'Unknown Artist'}
+              {artistNames(item, 'Unknown Artist')}
             </p>
           </div>
           <ChevronUp size={14} className="text-text-tertiary shrink-0 ml-1" />

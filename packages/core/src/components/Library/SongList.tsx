@@ -7,14 +7,7 @@ import { jellyfin, JellyfinItem } from '../../services/jellyfin'
 import { Play, Loader2, Download, Check, Music } from 'lucide-react'
 import { PlaylistPicker, InputModal } from '../UI/Modal'
 import TrackMenu from '../UI/TrackMenu'
-
-function formatDuration(ticks?: number): string {
-  if (!ticks) return ''
-  const seconds = Math.floor(ticks / 10_000_000)
-  const m = Math.floor(seconds / 60)
-  const s = seconds % 60
-  return `${m}:${s.toString().padStart(2, '0')}`
-}
+import { formatTicks, artistNames } from '../../lib/format'
 
 export default function SongList() {
   const { songs, totalSongs, playlists, isLoading, fetchSongs, loadMoreSongs, fetchPlaylists } = useLibraryStore()
@@ -135,7 +128,7 @@ export default function SongList() {
                   {song.Name}
                 </p>
                 <p className="text-xs text-text-secondary truncate">
-                  {song.Artists?.join(', ') || song.AlbumArtist || 'Unknown'}
+                  {artistNames(song, 'Unknown')}
                 </p>
               </div>
 
@@ -144,7 +137,7 @@ export default function SongList() {
               </span>
 
               <span className="w-12 text-xs text-text-tertiary tabular-nums text-right shrink-0">
-                {formatDuration(song.RunTimeTicks)}
+                {formatTicks(song.RunTimeTicks)}
               </span>
 
               <div className="w-20 flex justify-end gap-1 items-center">

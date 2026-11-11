@@ -4,6 +4,7 @@ import { jellyfin, JellyfinItem, JellyfinUser } from '../../services/jellyfin'
 import { usePlayerStore } from '../../stores/player'
 import { ArrowLeft, ListMusic, Loader2, Grid3x3 } from 'lucide-react'
 import CollageModal from './CollageModal'
+import { artistNames } from '../../lib/format'
 
 type ViewMode = 'artists' | 'albums' | 'songs'
 export type TimePeriod = '7d' | '30d' | '3m' | '1y' | 'all'
@@ -257,7 +258,7 @@ function ChartCell({ item, rank, viewMode, onClick }: {
     ? (plays != null ? `${plays} plays` : '')
     : viewMode === 'albums'
       ? (item.AlbumArtist || '')
-      : (item.Artists?.join(', ') || item.AlbumArtist || '')
+      : artistNames(item)
 
   return (
     <div className="group relative aspect-square cursor-pointer overflow-hidden bg-bg-elevated" onClick={onClick}>
