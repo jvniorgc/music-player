@@ -9,7 +9,7 @@ import {
   ChevronDown, Volume2, VolumeX, ListMusic, Captions, CaptionsOff
 } from 'lucide-react'
 import ArtworkBackground from './ArtworkBackground'
-import { ArtistLinks, AlbumLink } from '../UI/Links'
+import { ArtistLinks, AlbumLink, PlayingFrom } from '../UI/Links'
 import { formatTime, TICKS_PER_SECOND } from '../../lib/format'
 
 interface LyricLine {
@@ -160,6 +160,7 @@ export default function FullScreenPlayer() {
 
           {/* Track info */}
           <div className="text-center mb-3 md:mb-6 w-full">
+            <PlayingFrom className="mb-2" />
             <h2 className="text-xl font-semibold truncate">{item.Name}</h2>
             <p className="text-base text-accent mt-1 truncate">
               <ArtistLinks item={item} fallback="Unknown artist" />

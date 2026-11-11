@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { useToastStore } from './toast'
-import { playback, QueueTrack, RepeatMode } from '../services/playback'
+import { playback, QueueTrack, RepeatMode, PlaybackContext } from '../services/playback'
 import { JellyfinItem, jellyfin } from '../services/jellyfin'
 import { getRecommendations } from '../services/recommendations'
 
@@ -11,6 +11,7 @@ interface PlayerState {
   /** Remaining context tracks ("Next from <context>"). */
   contextUpNext: QueueTrack[]
   contextName: string
+  context: PlaybackContext | null
   isPlaying: boolean
   isBuffering: boolean
   currentTime: number
@@ -22,12 +23,20 @@ interface PlayerState {
   showQueue: boolean
 
   // Actions
-  playItems: (items: JellyfinItem[], startIndex?: number, contextName?: string) => void
+  /** Plays `items` as the current context, starting at `startIndex`. */
+  playItems: (items: JellyfinItem[], startIndex?: number, context?: PlaybackContext | string) => void
+  /** Plays `items` with shuffle turned on, from a random track. */
+  shuffleItems: (items: JellyfinItem[], context?: PlaybackContext | string) => void
+  /** "Shuffle all": random songs from the whole library. */
   shuffleAllSongs: () => Promise<void>
-  /** Generate a "Tocar Mix" queue from recent listening; returns how many tracks were queued. */
+  /** "Instant mix": a queue generated from recent listening; returns how many tracks were queued. */
   startRadio: () => Promise<number>
+  /** "Start radio" for one track (Jellyfin InstantMix); returns how many tracks were queued. */
+  startTrackRadio: (item: JellyfinItem) => Promise<number>
   addToQueue: (item: JellyfinItem) => void
   addNext: (item: JellyfinItem) => void
+  addItemsToQueue: (items: JellyfinItem[]) => void
+  addItemsNext: (items: JellyfinItem[]) => void
   removeFromUserQueue: (index: number) => void
   removeFromContext: (index: number) => void
   playUserQueueAt: (index: number) => void
@@ -50,6 +59,7 @@ export const usePlayerStore = create<PlayerState>((set) => ({
   userQueue: [],
   contextUpNext: [],
   contextName: '',
+  context: null,
   isPlaying: false,
   isBuffering: false,
   currentTime: 0,
@@ -60,27 +70,40 @@ export const usePlayerStore = create<PlayerState>((set) => ({
   showFullScreen: false,
   showQueue: false,
 
-  playItems: (items, startIndex = 0, contextName = '') => {
-    playback.setQueue(items, startIndex, contextName)
+  playItems: (items, startIndex = 0, context = '') => {
+    playback.setQueue(items, startIndex, context)
+  },
+
+  shuffleItems: (items, context = '') => {
+    if (items.length > 0) playback.setQueue(items, 0, context, { shuffle: true })
   },
 
   shuffleAllSongs: async () => {
     const res = await jellyfin.getRandomSongs()
     if (res.Items.length > 0) {
-      playback.setQueue(res.Items, 0, 'Shuffle All')
+      playback.setQueue(res.Items, 0, { type: 'library', name: 'Your library' })
     }
   },
 
   startRadio: async () => {
     const items = await getRecommendations()
     if (items.length > 0) {
-      playback.setQueue(items, 0, 'Tocar Mix')
+      playback.setQueue(items, 0, { type: 'mix', name: 'Instant mix' })
     }
     return items.length
   },
 
+  startTrackRadio: async (item) => {
+    const res = await jellyfin.getInstantMix(item.Id)
+    const rest = res.Items.filter(i => i.Id !== item.Id)
+    playback.setQueue([item, ...rest], 0, { type: 'radio', id: item.Id, name: `${item.Name} radio` })
+    return rest.length + 1
+  },
+
   addToQueue: (item) => playback.addToQueue(item),
   addNext: (item) => playback.addNext(item),
+  addItemsToQueue: (items) => playback.addItemsToQueue(items),
+  addItemsNext: (items) => playback.addItemsNext(items),
   removeFromUserQueue: (index) => playback.removeFromUserQueue(index),
   removeFromContext: (index) => playback.removeFromContext(index),
   playUserQueueAt: (index) => playback.playUserQueueAt(index),
@@ -108,7 +131,8 @@ export const usePlayerStore = create<PlayerState>((set) => ({
     const syncQueue = () => set({
       userQueue: [...playback.userQueue],
       contextUpNext: [...playback.contextUpNext],
-      contextName: playback.contextName
+      contextName: playback.contextName,
+      context: playback.context
     })
 
     // Set up Media Session action handlers for OS media controls

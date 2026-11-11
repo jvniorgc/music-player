@@ -1,6 +1,6 @@
 import { jellyfin, JellyfinItem } from './jellyfin'
 
-// Tuning constants for the "Tocar Mix" generator.
+// Tuning constants for the "Instant mix" generator.
 const SEED_LIMIT = 40
 const MAX_SEEDS = 12
 const MAX_SEED_PER_ARTIST = 2
@@ -223,7 +223,7 @@ function injectTrending(base: JellyfinItem[], trending: JellyfinItem[], rng: () 
 }
 
 /**
- * Build a "Tocar Mix" queue from the user's recent listening.
+ * Build an "Instant mix" queue from the user's recent listening.
  *
  * Variant A (preferred): seed with the last month's most-played songs, expand
  * via Last.fm `track.getSimilar`, and resolve each recommendation against the

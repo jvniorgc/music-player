@@ -113,7 +113,7 @@ export default function SongList() {
               <TrackRow
                 className="px-5 py-2.5"
                 isCurrent={isCurrent}
-                onClick={() => playItems(songs, i)}
+                onClick={() => playItems(songs, i, { type: 'songs', name: 'Songs' })}
                 leading={
                   <>
                     <TrackIndex number={i + 1} isCurrent={isCurrent} isPlaying={isPlaying} />

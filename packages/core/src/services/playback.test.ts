@@ -717,3 +717,121 @@ describe('last.fm scrobbling', () => {
     expect(lf.scrobble).toHaveBeenCalledWith(expect.objectContaining({ Id: 't0' }), expect.any(Number))
   })
 })
+
+describe('playback context', () => {
+  it('stores a structured context and wraps plain names as custom', () => {
+    playback.setQueue(makeItems(2), 0, { type: 'album', id: 'a1', name: 'Album' })
+    expect(playback.context).toEqual({ type: 'album', id: 'a1', name: 'Album' })
+    expect(playback.contextName).toBe('Album')
+    playback.setQueue(makeItems(2), 0, 'Mix')
+    expect(playback.context).toEqual({ type: 'custom', name: 'Mix' })
+    playback.setQueue(makeItems(2), 0)
+    expect(playback.context).toBeNull()
+  })
+
+  it('shuffle option turns shuffle on and starts from a random track', () => {
+    const events: [string, unknown][] = []
+    playback.on((e, d) => events.push([e, d]))
+    vi.spyOn(Math, 'random').mockReturnValue(0.99)
+    playback.setQueue(makeItems(4), 0, 'X', { shuffle: true })
+    expect(playback.shuffle).toBe(true)
+    expect(events).toContainEqual(['shufflechange', true])
+    expect(playback.currentTrack?.id).toBe('t3')
+    expect(playback.contextUpNext).toHaveLength(3)
+    // Already shuffled: no second shufflechange.
+    events.length = 0
+    playback.setQueue(makeItems(2), 0, 'Y', { shuffle: true })
+    expect(events.some(([e]) => e === 'shufflechange')).toBe(false)
+  })
+
+  it('addItemsToQueue/addItemsNext queue several tracks in order', () => {
+    playback.setQueue(makeItems(1), 0)
+    playback.addItemsToQueue([])
+    playback.addItemsNext([])
+    expect(playback.userQueue).toHaveLength(0)
+    playback.addItemsToQueue([item('a'), item('b')])
+    playback.addItemsNext([item('c'), item('d')])
+    expect(ids(playback.userQueue)).toEqual(['c', 'd', 'a', 'b'])
+  })
+})
+
+describe('session snapshot', () => {
+  it('returns null when nothing is loaded', () => {
+    expect(playback.getSnapshot()).toBeNull()
+  })
+
+  it('captures context order, cursor, user queue and modes', async () => {
+    playback.setQueue(makeItems(3), 1, { type: 'playlist', id: 'p', name: 'P' })
+    playback.addToQueue(item('q'))
+    playback.toggleRepeat()
+    await flush()
+    const snap = playback.getSnapshot()!
+    expect(snap.current.Id).toBe('t1')
+    expect(snap.items.map(i => i.Id)).toEqual(['t0', 't1', 't2'])
+    expect(snap.position).toBe(1)
+    expect(snap.userQueue.map(i => i.Id)).toEqual(['q'])
+    expect(snap.repeat).toBe('all')
+    expect(snap.context).toEqual({ type: 'playlist', id: 'p', name: 'P' })
+  })
+
+  it('restores paused at the saved position and starts reporting on first play', async () => {
+    const { jellyfin } = await import('./jellyfin')
+    const report = vi.spyOn(jellyfin, 'reportPlaybackStart')
+    const events: [string, any][] = []
+    playback.on((e, d) => events.push([e, d]))
+    const ok = await playback.restoreSnapshot({
+      current: { ...item('t1'), RunTimeTicks: 600_000_000 },
+      items: makeItems(3), position: 1, userQueue: [item('q')],
+      time: 42, shuffle: true, repeat: 'one', context: { type: 'album', id: 'a', name: 'A' },
+    })
+    expect(ok).toBe(true)
+    expect(playback.currentTrack?.id).toBe('t1')
+    expect(playback.isPlaying).toBe(false)
+    expect(playback.shuffle).toBe(true)
+    expect(playback.repeat).toBe('one')
+    expect(ids(playback.contextUpNext)).toEqual(['t2'])
+    expect(ids(playback.userQueue)).toEqual(['q'])
+    expect(events).toContainEqual(['timeupdate', { currentTime: 42, duration: 60 }])
+    const audio = (playback as any).audio
+    audio.dispatch('loadedmetadata')
+    expect(audio.currentTime).toBe(42)
+    expect(report).not.toHaveBeenCalled()
+
+    await playback.play()
+    expect(report).toHaveBeenCalledWith('t1')
+    report.mockClear()
+    playback.pause()
+    await playback.play()
+    expect(report).not.toHaveBeenCalled()
+  })
+
+  it('does not replace an active session and survives source failures', async () => {
+    const snap = { current: item('x'), items: [], position: -1, userQueue: [], time: 0, shuffle: false, repeat: 'none' as const, context: null }
+    playback.setQueue(makeItems(1), 0)
+    expect(await playback.restoreSnapshot(snap)).toBe(false)
+
+    await loadEngine()
+    vi.mocked(window.api.getDownloadPath).mockResolvedValue(null)
+    const { jellyfin } = await import('./jellyfin')
+    vi.spyOn(jellyfin, 'getStreamUrl').mockImplementation(() => { throw new Error('no url') })
+    expect(await playback.restoreSnapshot(snap)).toBe(false)
+    expect(playback.currentTrack?.id).toBe('x')
+  })
+
+  it('ignores a restore superseded by a new queue', async () => {
+    const snap = { current: item('x'), items: [], position: -1, userQueue: [], time: 5, shuffle: false, repeat: 'none' as const, context: null }
+    const pending = playback.restoreSnapshot(snap)
+    playback.clearQueue()
+    expect(await pending).toBe(false)
+  })
+
+  it('ignores loadedmetadata after the track changed', async () => {
+    const snap = { current: item('x'), items: [], position: -1, userQueue: [], time: 5, shuffle: false, repeat: 'none' as const, context: null }
+    await playback.restoreSnapshot(snap)
+    const audio = (playback as any).audio
+    audio.currentTime = 0
+    playback.clearQueue()
+    audio.dispatch('loadedmetadata')
+    expect(audio.currentTime).toBe(0)
+  })
+})

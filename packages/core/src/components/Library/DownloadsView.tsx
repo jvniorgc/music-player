@@ -25,7 +25,7 @@ export default function DownloadsView() {
 
   const handlePlayAll = () => {
     const items = completed.map(d => d.metadata).filter(Boolean)
-    if (items.length > 0) playItems(items)
+    if (items.length > 0) playItems(items, 0, { type: 'downloads', name: 'Downloads' })
   }
 
   return (
@@ -81,7 +81,7 @@ export default function DownloadsView() {
             return (
               <TrackRow
                 key={dl.itemId}
-                onClick={() => playItems(completed.map(d => d.metadata), i)}
+                onClick={() => playItems(completed.map(d => d.metadata), i, { type: 'downloads', name: 'Downloads' })}
                 leading={
                   <CoverArt
                     src={dl.metadata?.AlbumId ? jellyfin.getImageUrl(dl.metadata.AlbumId, undefined, 80) : null}

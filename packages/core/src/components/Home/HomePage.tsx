@@ -96,7 +96,7 @@ export default function HomePage() {
               <TrackRow
                 key={item.Id}
                 className="px-4 py-2 rounded-sm"
-                onClick={() => playItems(recentlyPlayed, i)}
+                onClick={() => playItems(recentlyPlayed, i, { type: 'home', name: 'Recently played' })}
                 leading={
                   <CoverArt
                     src={item.AlbumId ? jellyfin.getImageUrl(item.AlbumId, undefined, 80) : null}

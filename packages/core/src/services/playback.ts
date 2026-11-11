@@ -11,6 +11,36 @@ export interface QueueTrack {
   localPath?: string
 }
 
+/** Where the current queue was started from ("Playing from <name>"). */
+export type PlaybackContextType =
+  | 'album' | 'playlist' | 'artist' | 'songs' | 'search' | 'home' | 'library' | 'mix' | 'radio' | 'downloads' | 'custom'
+
+export interface PlaybackContext {
+  type: PlaybackContextType
+  /** Album/playlist/artist id, or the query for a search context. */
+  id?: string
+  name: string
+}
+
+/** Everything needed to rebuild the queue on the next launch (see lib/session.ts). */
+export interface PlaybackSnapshot {
+  current: JellyfinItem
+  /** Context tracks in play order. */
+  items: JellyfinItem[]
+  /** Position of the context cursor within `items` (-1 when none). */
+  position: number
+  userQueue: JellyfinItem[]
+  time: number
+  shuffle: boolean
+  repeat: RepeatMode
+  context: PlaybackContext | null
+}
+
+function toContext(context: PlaybackContext | string | null | undefined): PlaybackContext | null {
+  if (!context) return null
+  return typeof context === 'string' ? { type: 'custom', name: context } : context
+}
+
 type PlaybackListener = (event: string, data?: any) => void
 
 /**
@@ -38,7 +68,10 @@ class PlaybackService {
   private _context: QueueTrack[] = []
   private _order: number[] = []
   private _orderPos = -1
-  private _contextName = ''
+  private _contextInfo: PlaybackContext | null = null
+  // Set by restoreSnapshot(): the track is loaded paused and its "start"
+  // side-effects (report/scrobble/preload) run on the first play().
+  private _pendingStart = false
 
   // Manually-queued tracks (FIFO) and the playback history (for "previous").
   private _userQueue: QueueTrack[] = []
@@ -183,7 +216,8 @@ class PlaybackService {
     }
     return out
   }
-  get contextName() { return this._contextName }
+  get contextName() { return this._contextInfo?.name ?? '' }
+  get context(): PlaybackContext | null { return this._contextInfo }
   get isPlaying() { return !this.audio.paused }
   get currentTime() { return this.audio.currentTime }
   get duration() { return this.audio.duration || 0 }
@@ -227,6 +261,7 @@ class PlaybackService {
     if (!track) return
     this.finalizeScrobble()
     this._resumeOnOnline = null
+    this._pendingStart = false
 
     // Emit trackchange immediately so UI updates
     this.emit('trackchange', track)
@@ -494,10 +529,17 @@ class PlaybackService {
   }
 
   /** Starts playing a new context (album/playlist). The user queue is preserved. */
-  setQueue(items: JellyfinItem[], startIndex = 0, contextName = '') {
+  setQueue(items: JellyfinItem[], startIndex = 0, context: PlaybackContext | string = '', opts: { shuffle?: boolean } = {}) {
     this._context = items.map(item => ({ id: item.Id, item }))
-    this._contextName = contextName
+    this._contextInfo = toContext(context)
     this._history = []
+    if (opts.shuffle) {
+      startIndex = Math.floor(Math.random() * items.length)
+      if (!this._shuffle) {
+        this._shuffle = true
+        this.emit('shufflechange', true)
+      }
+    }
     const start = Math.max(0, Math.min(startIndex, items.length - 1))
     this.buildOrder(start)
     this._current = this._orderPos >= 0 ? this._context[this._order[this._orderPos]] : null
@@ -520,6 +562,84 @@ class PlaybackService {
     this.invalidatePreload()
     this.preloadNext()
     this.emit('queuechange')
+  }
+
+  /** Appends several tracks to the user queue. */
+  addItemsToQueue(items: JellyfinItem[]) {
+    if (items.length === 0) return
+    this._userQueue.push(...items.map(item => ({ id: item.Id, item })))
+    this.invalidatePreload()
+    this.preloadNext()
+    this.emit('queuechange')
+  }
+
+  /** Inserts several tracks, in order, at the front of the user queue. */
+  addItemsNext(items: JellyfinItem[]) {
+    if (items.length === 0) return
+    this._userQueue.unshift(...items.map(item => ({ id: item.Id, item })))
+    this.invalidatePreload()
+    this.preloadNext()
+    this.emit('queuechange')
+  }
+
+  /** Serializable view of the session, or null when nothing is loaded. */
+  getSnapshot(): PlaybackSnapshot | null {
+    if (!this._current) return null
+    return {
+      current: this._current.item,
+      items: this._order.map(i => this._context[i].item),
+      position: this._orderPos,
+      userQueue: this._userQueue.map(t => t.item),
+      time: this.audio.currentTime || 0,
+      shuffle: this._shuffle,
+      repeat: this._repeat,
+      context: this._contextInfo,
+    }
+  }
+
+  /**
+   * Loads a saved session paused at its saved position (never autoplays).
+   * Ignored when something is already loaded.
+   */
+  async restoreSnapshot(snap: PlaybackSnapshot): Promise<boolean> {
+    if (this._current) return false
+    this._context = snap.items.map(item => ({ id: item.Id, item }))
+    this._order = this._context.map((_, i) => i)
+    this._orderPos = Math.max(-1, Math.min(snap.position, this._order.length - 1))
+    this._userQueue = snap.userQueue.map(item => ({ id: item.Id, item }))
+    this._history = []
+    this._contextInfo = snap.context
+    this._shuffle = snap.shuffle
+    this._repeat = snap.repeat
+    const track: QueueTrack = { id: snap.current.Id, item: snap.current }
+    this._current = track
+    this._pendingStart = true
+    this.emit('shufflechange', this._shuffle)
+    this.emit('repeatchange', this._repeat)
+    this.emit('queuechange')
+    this.emit('trackchange', track)
+
+    try {
+      const url = await this.resolveSource(track)
+      if (this._current !== track) return false
+      const audio = this.audio
+      const time = Math.max(0, snap.time)
+      audio.addEventListener('loadedmetadata', () => {
+        if (this.audio !== audio || this._current !== track) return
+        if (time > 0) audio.currentTime = time
+        this.emit('timeupdate', { currentTime: time, duration: audio.duration || 0 })
+      }, { once: true })
+      audio.src = url
+      audio.load()
+      this.emit('timeupdate', {
+        currentTime: time,
+        duration: track.item.RunTimeTicks ? ticksToSeconds(track.item.RunTimeTicks) : 0,
+      })
+      return true
+    } catch (err) {
+      console.warn('[Playback] Session restore failed:', err)
+      return false
+    }
   }
 
   removeFromUserQueue(index: number) {
@@ -572,7 +692,8 @@ class PlaybackService {
     this._context = []
     this._order = []
     this._orderPos = -1
-    this._contextName = ''
+    this._contextInfo = null
+    this._pendingStart = false
     this._userQueue = []
     this._history = []
     this._current = null
@@ -581,8 +702,14 @@ class PlaybackService {
   }
 
   async play() {
-    if (this.audio.src) {
-      await this.audio.play()
+    if (!this.audio.src) return
+    await this.audio.play()
+    const track = this._current
+    if (this._pendingStart && track) {
+      this._pendingStart = false
+      jellyfin.reportPlaybackStart(track.id).catch(err => console.warn('[Playback] reportPlaybackStart failed:', err))
+      this.startScrobbleTracking(track)
+      this.preloadNext()
     }
   }
 

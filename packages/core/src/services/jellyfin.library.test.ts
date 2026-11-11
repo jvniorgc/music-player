@@ -69,6 +69,18 @@ describe('library getters', () => {
     expect(url).toContain('Limit=25')
   })
 
+  it('getArtistTopSongs sorts an artist\'s songs by play count', async () => {
+    const fetchMock = mockFetchRouter([['ArtistIds=ar1', jsonRes({
+      Items: [{ Id: 's0', Name: 'Hit', Type: 'Audio' }, { Id: 's1', Name: ' ' }],
+      TotalRecordCount: 2,
+    })]])
+    const res = await jellyfin.getArtistTopSongs('ar1', 5)
+    expect(res).toEqual([{ Id: 's0', Name: 'Hit', Type: 'Audio' }])
+    const url = fetchMock.mock.calls[0][0] as string
+    expect(url).toContain('SortBy=PlayCount')
+    expect(url).toContain('Limit=5')
+  })
+
   it('getSongsByArtist filters by artist name and sanitizes results', async () => {
     const fetchMock = mockFetchRouter([['IncludeItemTypes=Audio', jsonRes({
       Items: [{ Id: 's0', Name: 'Song', Type: 'Audio' }, { Id: 's1', Name: '   ' }],

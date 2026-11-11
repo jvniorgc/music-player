@@ -2,6 +2,7 @@ import { Fragment, type MouseEvent, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import type { JellyfinItem } from '../../services/jellyfin'
 import { usePlayerStore } from '../../stores/player'
+import { contextPath } from '../../lib/playbackContext'
 
 const LINK_CLASS = 'hover:underline hover:text-text-primary cursor-pointer'
 
@@ -71,5 +72,25 @@ export function TrackSubtitle({ item, showAlbum = true, fallback = 'Unknown arti
       <ArtistLinks item={item} fallback={fallback} />
       {showAlbum && item.Album && <> — <AlbumLink item={item} /></>}
     </>
+  )
+}
+
+/** "Playing from <context>", linking to the context's page when it has one. */
+export function PlayingFrom({ className = '' }: { className?: string }) {
+  const context = usePlayerStore(s => s.context)
+  const go = useLinkNavigate()
+  if (!context?.name) return null
+  const to = contextPath(context)
+  return (
+    <p className={`text-xs text-text-tertiary truncate ${className}`}>
+      Playing from{' '}
+      {to ? (
+        <a href={`#${to}`} className={`${LINK_CLASS} text-text-secondary font-medium`} onClick={e => go(e, to)}>
+          {context.name}
+        </a>
+      ) : (
+        <span className="text-text-secondary font-medium">{context.name}</span>
+      )}
+    </p>
   )
 }

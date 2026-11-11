@@ -67,10 +67,13 @@ export default function MediaCard({
   )
 }
 
-export async function playAlbum(albumId: string): Promise<void> {
+export async function playAlbum(album: Pick<JellyfinItem, 'Id' | 'Name'>, opts: { shuffle?: boolean } = {}): Promise<void> {
   try {
-    const res = await jellyfin.getAlbumItems(albumId)
-    if (res.Items.length > 0) usePlayerStore.getState().playItems(res.Items)
+    const res = await jellyfin.getAlbumItems(album.Id)
+    const ctx = { type: 'album' as const, id: album.Id, name: album.Name }
+    if (res.Items.length === 0) return
+    if (opts.shuffle) usePlayerStore.getState().shuffleItems(res.Items, ctx)
+    else usePlayerStore.getState().playItems(res.Items, 0, ctx)
   } catch (err) {
     console.error('Failed to play album:', err)
   }
@@ -95,7 +98,7 @@ export function AlbumCard({ item, onClick, subtitle, fallback }: {
         </>
       )}
       onClick={onClick}
-      onPlay={() => playAlbum(item.Id)}
+      onPlay={() => playAlbum(item)}
     />
   )
 }

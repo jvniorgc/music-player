@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { jellyfin, JellyfinItem } from '../../services/jellyfin'
 import { isAbortError } from '../../services/http'
 import { usePlayerStore } from '../../stores/player'
+import type { PlaybackContext } from '../../services/playback'
 import { useDownloadStore } from '../../stores/download'
 import { useLibraryStore } from '../../stores/library'
 import { Play, Pause, Shuffle, Download, Check, Pencil } from 'lucide-react'
@@ -22,7 +23,7 @@ export default function AlbumView() {
   const [album, setAlbum] = useState<JellyfinItem | null>(null)
   const [tracks, setTracks] = useState<JellyfinItem[]>([])
   const [loading, setLoading] = useState(true)
-  const { playItems, currentTrack, isPlaying, togglePlay } = usePlayerStore(useShallow(s => ({ playItems: s.playItems, currentTrack: s.currentTrack, isPlaying: s.isPlaying, togglePlay: s.togglePlay })))
+  const { playItems, shuffleItems, currentTrack, isPlaying, togglePlay } = usePlayerStore(useShallow(s => ({ playItems: s.playItems, shuffleItems: s.shuffleItems, currentTrack: s.currentTrack, isPlaying: s.isPlaying, togglePlay: s.togglePlay })))
   const { isDownloaded, startDownload } = useDownloadStore(useShallow(s => ({ isDownloaded: s.isDownloaded, startDownload: s.startDownload, downloads: s.downloads })))
   const { playlists, fetchPlaylists } = useLibraryStore(useShallow(s => ({ playlists: s.playlists, fetchPlaylists: s.fetchPlaylists })))
   const [showMetadata, setShowMetadata] = useState(false)
@@ -61,19 +62,19 @@ export default function AlbumView() {
   }
 
   const imageUrl = jellyfin.getImageUrl(album.Id, album.ImageTags?.Primary, 600)
+  const albumContext: PlaybackContext = { type: 'album', id: album.Id, name: album.Name }
   const isCurrentAlbum = currentTrack && tracks.some(t => t.Id === currentTrack.id)
 
   const handlePlayAll = () => {
     if (isCurrentAlbum && isPlaying) {
       togglePlay()
     } else {
-      playItems(tracks)
+      playItems(tracks, 0, albumContext)
     }
   }
 
   const handleShuffle = () => {
-    const shuffled = [...tracks].sort(() => Math.random() - 0.5)
-    playItems(shuffled)
+    shuffleItems(tracks, albumContext)
   }
 
   const handleDownloadAll = () => {
@@ -170,7 +171,7 @@ export default function AlbumView() {
             <TrackRow
               key={track.Id}
               isCurrent={isCurrent}
-              onClick={() => playItems(tracks, i)}
+              onClick={() => playItems(tracks, i, albumContext)}
               leading={<TrackIndex number={track.IndexNumber || i + 1} isCurrent={isCurrent} isPlaying={isPlaying} className="w-7" />}
               title={track.Name}
               subtitle={track.Artists && track.Artists.length > 0 && track.Artists[0] !== album.AlbumArtist && <ArtistLinks item={track} />}

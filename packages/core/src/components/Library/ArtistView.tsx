@@ -2,7 +2,14 @@ import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { jellyfin, JellyfinItem } from '../../services/jellyfin'
 import { isAbortError } from '../../services/http'
-import { ImagePlus } from 'lucide-react'
+import { ImagePlus, Play, Shuffle } from 'lucide-react'
+import { usePlayerStore } from '../../stores/player'
+import type { PlaybackContext } from '../../services/playback'
+import TrackRow, { TrackIndex, TrackDuration } from '../UI/TrackRow'
+import CoverArt from '../UI/CoverArt'
+import TrackMenu from '../UI/TrackMenu'
+import { AlbumLink } from '../UI/Links'
+import { buttonClass } from '../UI/Button'
 import ArtistMetadataEditor from '../Metadata/ArtistMetadataEditor'
 import { AlbumCard } from '../UI/MediaCard'
 
@@ -13,6 +20,11 @@ export default function ArtistView() {
   const [albums, setAlbums] = useState<JellyfinItem[]>([])
   const [loading, setLoading] = useState(true)
   const [showMetadataEditor, setShowMetadataEditor] = useState(false)
+  const [topSongs, setTopSongs] = useState<JellyfinItem[]>([])
+  const playItems = usePlayerStore(s => s.playItems)
+  const shuffleItems = usePlayerStore(s => s.shuffleItems)
+  const currentId = usePlayerStore(s => s.currentTrack?.id)
+  const isPlaying = usePlayerStore(s => s.isPlaying)
 
   const loadArtist = (signal?: AbortSignal) => {
     if (!id) return
@@ -23,6 +35,8 @@ export default function ArtistView() {
         setArtist(item)
         setAlbums(res.Items)
       })
+      .then(() => jellyfin.getArtistTopSongs(id, 10, signal))
+      .then(songs => { if (!signal?.aborted && songs) setTopSongs(songs) })
       .catch(err => {
         if (!isAbortError(err) && !signal?.aborted) console.warn('[ArtistView] failed to load artist', id, err)
       })
@@ -46,6 +60,8 @@ export default function ArtistView() {
   const backdropUrl = artist?.BackdropImageTags?.[0]
     ? `${jellyfin.serverUrl}/Items/${artist?.Id}/Images/Backdrop?tag=${artist.BackdropImageTags[0]}&quality=80&ApiKey=${jellyfin.token}`
     : null
+
+  const artistContext: PlaybackContext = { type: 'artist', id: id || '', name: artist?.Name || 'Artist' }
 
   return (
     <div className="fade-in -mx-8 -mt-14">
@@ -90,10 +106,55 @@ export default function ArtistView() {
                   {imageUrl ? 'Change image' : 'Find image'}
                 </button>
               </div>
+              {topSongs.length > 0 && (
+                <div className="flex items-center gap-3 mt-4">
+                  <button onClick={() => playItems(topSongs, 0, artistContext)} className={buttonClass('primary')}>
+                    <Play size={16} fill="white" className="ml-0.5" />
+                    Play
+                  </button>
+                  <button onClick={() => shuffleItems(topSongs, artistContext)} className={buttonClass('secondary')}>
+                    <Shuffle size={15} />
+                    Shuffle
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>
       </div>
+
+      {topSongs.length > 0 && (
+        <div className="px-8 mt-8">
+          <h2 className="text-heading font-semibold mb-4">Popular</h2>
+          <div className="-mx-4">
+            {topSongs.slice(0, 5).map((song, i) => {
+              const isCurrent = currentId === song.Id
+              return (
+                <TrackRow
+                  key={song.Id}
+                  isCurrent={isCurrent}
+                  onClick={() => playItems(topSongs, i, artistContext)}
+                  leading={
+                    <>
+                      <TrackIndex number={i + 1} isCurrent={isCurrent} isPlaying={isPlaying} className="w-6" />
+                      <CoverArt
+                        src={song.AlbumId ? jellyfin.getImageUrl(song.AlbumId, undefined, 80) : null}
+                        className="w-10 h-10 rounded-sm overflow-hidden bg-surface-2 shrink-0"
+                        kind="track"
+                      />
+                    </>
+                  }
+                  title={song.Name}
+                  subtitle={<AlbumLink item={song} />}
+                >
+                  <TrackDuration ticks={song.RunTimeTicks} />
+                  <TrackMenu track={song} />
+                </TrackRow>
+              )
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Albums */}
       <div className="px-8 mt-8">

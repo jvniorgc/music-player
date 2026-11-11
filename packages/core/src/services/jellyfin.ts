@@ -237,6 +237,12 @@ class JellyfinService {
     return this.sanitizeItems(res)
   }
 
+  /** An artist's most played songs ("Popular"). */
+  async getArtistTopSongs(artistId: string, limit = 10, signal?: AbortSignal): Promise<JellyfinItem[]> {
+    const res = await this.request<JellyfinItemsResponse>(`/Users/${this.userId}/Items?IncludeItemTypes=Audio&Recursive=true&ArtistIds=${artistId}&SortBy=PlayCount,SortName&SortOrder=Descending&Limit=${limit}&Fields=MediaSources,RunTimeTicks,AlbumArtist,Album,AlbumId,Artists,HasLyrics`, { signal })
+    return this.sanitizeItems(res).Items
+  }
+
   async getSongs(startIndex = 0, limit = 100, sortBy = 'SortName'): Promise<JellyfinItemsResponse> {
     const res = await this.request<JellyfinItemsResponse>(`/Users/${this.userId}/Items?IncludeItemTypes=Audio&Recursive=true&SortBy=${sortBy}&SortOrder=Ascending&StartIndex=${startIndex}&Limit=${limit}&Fields=MediaSources,RunTimeTicks,AlbumArtist,Album,AlbumId,HasLyrics`)
     return this.sanitizeItems(res)
@@ -260,7 +266,7 @@ class JellyfinService {
 
   /**
    * Songs in the user's library credited to a given artist name, randomly
-   * sampled. Powers artist-level recommendation expansion for Tocar Mix.
+   * sampled. Powers artist-level recommendation expansion for the instant mix.
    */
   async getSongsByArtist(artistName: string, limit = 5): Promise<JellyfinItem[]> {
     const res = await this.request<JellyfinItemsResponse>(

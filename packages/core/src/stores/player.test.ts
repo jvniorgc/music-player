@@ -9,6 +9,9 @@ vi.mock('../services/playback', () => ({
     setQueue: vi.fn(),
     addToQueue: vi.fn(),
     addNext: vi.fn(),
+    addItemsToQueue: vi.fn(),
+    addItemsNext: vi.fn(),
+    context: null,
     removeFromUserQueue: vi.fn(),
     removeFromContext: vi.fn(),
     playUserQueueAt: vi.fn(),
@@ -26,7 +29,7 @@ vi.mock('../services/playback', () => ({
 }))
 
 vi.mock('../services/jellyfin', () => ({
-  jellyfin: { getImageUrl: (id: string) => `img://${id}`, getRandomSongs: vi.fn() },
+  jellyfin: { getImageUrl: (id: string) => `img://${id}`, getRandomSongs: vi.fn(), getInstantMix: vi.fn() },
 }))
 
 vi.mock('../services/recommendations', () => ({
@@ -95,12 +98,12 @@ describe('delegation to the playback engine', () => {
     expect(playback.toggleRepeat).toHaveBeenCalled()
   })
 
-  it('shuffleAllSongs fetches a random sample and plays it as "Shuffle All"', async () => {
+  it('shuffleAllSongs fetches a random sample and plays it with a library context', async () => {
     const items = [{ Id: 's0', Name: 'S0', Type: 'Audio' }]
     vi.mocked(jellyfin.getRandomSongs).mockResolvedValue({ Items: items, TotalRecordCount: 1 })
     await usePlayerStore.getState().shuffleAllSongs()
     expect(jellyfin.getRandomSongs).toHaveBeenCalled()
-    expect(playback.setQueue).toHaveBeenCalledWith(items, 0, 'Shuffle All')
+    expect(playback.setQueue).toHaveBeenCalledWith(items, 0, { type: 'library', name: 'Your library' })
   })
 
   it('shuffleAllSongs does nothing when the server returns no songs', async () => {
@@ -109,7 +112,7 @@ describe('delegation to the playback engine', () => {
     expect(playback.setQueue).not.toHaveBeenCalled()
   })
 
-  it('startRadio queues recommendations as "Tocar Mix" and returns the count', async () => {
+  it('startRadio queues recommendations as "Instant mix" and returns the count', async () => {
     const items = [
       { Id: 'r0', Name: 'R0', Type: 'Audio' },
       { Id: 'r1', Name: 'R1', Type: 'Audio' },
@@ -117,7 +120,7 @@ describe('delegation to the playback engine', () => {
     vi.mocked(getRecommendations).mockResolvedValue(items)
     const count = await usePlayerStore.getState().startRadio()
     expect(getRecommendations).toHaveBeenCalled()
-    expect(playback.setQueue).toHaveBeenCalledWith(items, 0, 'Tocar Mix')
+    expect(playback.setQueue).toHaveBeenCalledWith(items, 0, { type: 'mix', name: 'Instant mix' })
     expect(count).toBe(2)
   })
 
@@ -126,6 +129,32 @@ describe('delegation to the playback engine', () => {
     const count = await usePlayerStore.getState().startRadio()
     expect(playback.setQueue).not.toHaveBeenCalled()
     expect(count).toBe(0)
+  })
+
+  it('shuffleItems plays with shuffle on and ignores empty lists', () => {
+    const items = [{ Id: 'a', Name: 'A', Type: 'Audio' }]
+    const ctx = { type: 'album' as const, id: 'al', name: 'Album' }
+    usePlayerStore.getState().shuffleItems([], ctx)
+    expect(playback.setQueue).not.toHaveBeenCalled()
+    usePlayerStore.getState().shuffleItems(items, ctx)
+    expect(playback.setQueue).toHaveBeenCalledWith(items, 0, ctx, { shuffle: true })
+  })
+
+  it('startTrackRadio seeds an InstantMix with the track first', async () => {
+    const seed = { Id: 's', Name: 'Song', Type: 'Audio' }
+    const other = { Id: 'o', Name: 'Other', Type: 'Audio' }
+    vi.mocked(jellyfin.getInstantMix).mockResolvedValue({ Items: [seed, other], TotalRecordCount: 2 })
+    const count = await usePlayerStore.getState().startTrackRadio(seed)
+    expect(playback.setQueue).toHaveBeenCalledWith([seed, other], 0, { type: 'radio', id: 's', name: 'Song radio' })
+    expect(count).toBe(2)
+  })
+
+  it('forwards multi-item queue actions', () => {
+    const items = [{ Id: 'a', Name: 'A', Type: 'Audio' }]
+    usePlayerStore.getState().addItemsToQueue(items)
+    usePlayerStore.getState().addItemsNext(items)
+    expect(playback.addItemsToQueue).toHaveBeenCalledWith(items)
+    expect(playback.addItemsNext).toHaveBeenCalledWith(items)
   })
 
   it('setVolume delegates and mirrors the value into store state', () => {

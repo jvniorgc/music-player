@@ -4,7 +4,7 @@ import { QueueTrack } from '../../services/playback'
 import CoverArt from '../UI/CoverArt'
 import { X, Music } from 'lucide-react'
 import { formatTicks } from '../../lib/format'
-import { ArtistLinks, TrackSubtitle } from '../UI/Links'
+import { ArtistLinks, TrackSubtitle, PlayingFrom } from '../UI/Links'
 import { useShallow } from 'zustand/react/shallow'
 
 function TrackRow({ track, index, onPlay, onRemove }: {
@@ -72,6 +72,8 @@ export default function QueueView() {
         </button>
       </div>
 
+      <PlayingFrom className="px-6 -mt-1 mb-3" />
+
       {/* Now Playing */}
       {currentTrack && (
         <div className="px-4 mb-4">
@@ -119,7 +121,7 @@ export default function QueueView() {
         {contextUpNext.length > 0 && (
           <div>
             <p className="text-xs font-medium text-text-tertiary px-2 mb-2">
-              {contextName ? `Next from: ${contextName}` : 'Next up'}
+              {contextName ? `Next from ${contextName}` : 'Next up'}
             </p>
             <div className="space-y-0.5">
               {contextUpNext.map((track, i) => (

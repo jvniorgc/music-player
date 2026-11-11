@@ -7,6 +7,9 @@ import FullScreenPlayer from '../Player/FullScreenPlayer'
 import ToastContainer from '../UI/ToastContainer'
 import { usePlayerStore } from '../../stores/player'
 import { useEffect } from 'react'
+import { playback } from '../../services/playback'
+import { jellyfin } from '../../services/jellyfin'
+import { startSessionPersistence } from '../../lib/session'
 import { useShallow } from 'zustand/react/shallow'
 
 export default function AppLayout() {
@@ -14,7 +17,12 @@ export default function AppLayout() {
 
   useEffect(() => {
     const cleanup = initListeners()
-    return cleanup
+    // Resume the last session (paused) once the store mirrors the engine.
+    const stopPersistence = startSessionPersistence(playback, { serverUrl: jellyfin.serverUrl, userId: jellyfin.userId })
+    return () => {
+      stopPersistence()
+      cleanup()
+    }
   }, [])
 
   return (

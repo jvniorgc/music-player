@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { jellyfin, JellyfinItem } from '../../services/jellyfin'
 import { isAbortError } from '../../services/http'
 import { usePlayerStore } from '../../stores/player'
+import type { PlaybackContext } from '../../services/playback'
 import { useLibraryStore } from '../../stores/library'
 import { useToastStore } from '../../stores/toast'
 import { Play, Pause, Shuffle, ListMusic, Pencil, Trash2, X as XIcon } from 'lucide-react'
@@ -22,7 +23,7 @@ export default function PlaylistView() {
   const [playlist, setPlaylist] = useState<JellyfinItem | null>(null)
   const [tracks, setTracks] = useState<JellyfinItem[]>([])
   const [loading, setLoading] = useState(true)
-  const { playItems, currentTrack, isPlaying, togglePlay } = usePlayerStore(useShallow(s => ({ playItems: s.playItems, currentTrack: s.currentTrack, isPlaying: s.isPlaying, togglePlay: s.togglePlay })))
+  const { playItems, shuffleItems, currentTrack, isPlaying, togglePlay } = usePlayerStore(useShallow(s => ({ playItems: s.playItems, shuffleItems: s.shuffleItems, currentTrack: s.currentTrack, isPlaying: s.isPlaying, togglePlay: s.togglePlay })))
   const fetchPlaylists = useLibraryStore(s => s.fetchPlaylists)
   const toast = useToastStore(s => s.show)
 
@@ -100,6 +101,7 @@ export default function PlaylistView() {
     ? jellyfin.getImageUrl(playlist.Id, playlist.ImageTags.Primary, 600)
     : null
 
+  const playlistContext: PlaybackContext = { type: 'playlist', id: id || '', name: playlist?.Name || 'Playlist' }
   const isCurrentPlaylist = currentTrack && tracks.some(t => t.Id === currentTrack.id)
 
   return (
@@ -125,7 +127,7 @@ export default function PlaylistView() {
             <button
               onClick={() => {
                 if (isCurrentPlaylist && isPlaying) togglePlay()
-                else playItems(tracks)
+                else playItems(tracks, 0, playlistContext)
               }}
               className={buttonClass('primary')}
             >
@@ -134,8 +136,7 @@ export default function PlaylistView() {
             </button>
             <button
               onClick={() => {
-                const shuffled = [...tracks].sort(() => Math.random() - 0.5)
-                playItems(shuffled)
+                shuffleItems(tracks, playlistContext)
               }}
               className={buttonClass('secondary')}
             >
@@ -169,7 +170,7 @@ export default function PlaylistView() {
               <TrackRow
                 key={`${track.Id}-${i}`}
                 isCurrent={isCurrent}
-                onClick={() => playItems(tracks, i)}
+                onClick={() => playItems(tracks, i, playlistContext)}
                 leading={
                   <>
                     <TrackIndex number={i + 1} isCurrent={isCurrent} isPlaying={isPlaying} className="w-7" />
