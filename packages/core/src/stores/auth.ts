@@ -1,3 +1,4 @@
+import { normalizeServerUrl, friendlyLoginError, saveLastLogin } from '../lib/url'
 import { create } from 'zustand'
 import { JellyfinAuth, jellyfin } from '../services/jellyfin'
 
@@ -24,16 +25,16 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   login: async (serverUrl, username, password) => {
     set({ isLoading: true, error: null })
     try {
-      const protocol = serverUrl.match(/^https?:\/\//) ? '' : 'http://'
-      const fullUrl = `${protocol}${serverUrl}`
+      const fullUrl = normalizeServerUrl(serverUrl)
+      saveLastLogin(fullUrl, username.trim())
       // Desktop: allow cross-origin calls to this server even behind a proxy without CORS.
       await window.api.allowOrigin?.(fullUrl).catch(err => console.warn('[auth] allowOrigin failed', err))
-      const auth = await jellyfin.authenticate(fullUrl, username, password)
+      const auth = await jellyfin.authenticate(fullUrl, username.trim(), password)
       await window.api.saveAuth(auth)
       set({ isAuthenticated: true, auth, isLoading: false, primaryImageTag: null })
       get().refreshUserInfo()
     } catch (err: any) {
-      set({ error: err.message, isLoading: false })
+      set({ error: friendlyLoginError(err), isLoading: false })
     }
   },
 

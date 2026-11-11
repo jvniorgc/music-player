@@ -46,12 +46,19 @@ describe('login', () => {
     expect(jellyfin.authenticate).toHaveBeenCalledWith('https://secure:8920', 'me', 'pw')
   })
 
+  it('defaults bare hostnames to https and remembers the last server', async () => {
+    vi.mocked(jellyfin.authenticate).mockResolvedValue(AUTH)
+    await useAuthStore.getState().login(' music.example.com/ ', ' me ', 'pw')
+    expect(jellyfin.authenticate).toHaveBeenCalledWith('https://music.example.com', 'me', 'pw')
+    expect(JSON.parse(localStorage.getItem('last_login')!)).toEqual({ serverUrl: 'https://music.example.com', username: 'me' })
+  })
+
   it('records the error and stops loading on failure', async () => {
     vi.mocked(jellyfin.authenticate).mockRejectedValue(new Error('Invalid credentials'))
     await useAuthStore.getState().login('host', 'me', 'bad')
     const s = useAuthStore.getState()
     expect(s.isAuthenticated).toBe(false)
-    expect(s.error).toBe('Invalid credentials')
+    expect(s.error).toBe('Incorrect username or password.')
     expect(s.isLoading).toBe(false)
   })
 })

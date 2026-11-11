@@ -3,17 +3,19 @@ import { useAuthStore } from '../../stores/auth'
 import { Loader2, Server, AlertCircle } from 'lucide-react'
 import { Button, Input } from '../UI/Button'
 import AppIcon from '../UI/AppIcon'
+import { loadLastLogin } from '../../lib/url'
 import { useShallow } from 'zustand/react/shallow'
 
 export default function LoginScreen() {
   const { login, isLoading, error } = useAuthStore(useShallow(s => ({ login: s.login, isLoading: s.isLoading, error: s.error })))
-  const [serverUrl, setServerUrl] = useState('')
-  const [username, setUsername] = useState('')
+  const [last] = useState(loadLastLogin)
+  const [serverUrl, setServerUrl] = useState(last.serverUrl)
+  const [username, setUsername] = useState(last.username)
   const [password, setPassword] = useState('')
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    if (serverUrl && username) {
+    if (serverUrl.trim() && username.trim()) {
       login(serverUrl, username, password)
     }
   }
@@ -49,8 +51,7 @@ export default function LoginScreen() {
               value={username}
               onChange={e => setUsername(e.target.value)}
               placeholder="username"
-
-              autoFocus
+              autoFocus={!last.username}
             />
           </div>
 
@@ -61,13 +62,17 @@ export default function LoginScreen() {
               value={password}
               onChange={e => setPassword(e.target.value)}
               placeholder="password"
+              autoFocus={!!last.username}
             />
           </div>
 
           {error && (
             <div className="flex items-center gap-2 text-danger text-sm bg-danger/10 rounded-sm px-3 py-2">
-              <AlertCircle size={14} />
-              <span>{error}</span>
+              <AlertCircle size={14} className="shrink-0" />
+              <span className="flex-1">{error}</span>
+              <button type="submit" disabled={isLoading} className="text-xs font-medium underline underline-offset-2 hover:text-text-primary shrink-0">
+                Try again
+              </button>
             </div>
           )}
 

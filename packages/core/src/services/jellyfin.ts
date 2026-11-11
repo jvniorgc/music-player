@@ -191,8 +191,8 @@ class JellyfinService {
     })
 
     if (!res.ok) {
-      if (res.status === 401) throw new Error('Invalid credentials')
-      throw new Error(`Error connecting: ${res.status}`)
+      const message = res.status === 401 ? 'Invalid credentials' : `Error connecting: ${res.status}`
+      throw Object.assign(new Error(message), { status: res.status })
     }
 
     const data = await res.json()
