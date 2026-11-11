@@ -235,7 +235,6 @@ class PlaybackService {
     this._loading = true
     try {
       const url = await this.resolveSource(track)
-      console.log('[Playback] Playing:', track.item.Name, '| Source:', track.source, '| URL:', url.substring(0, 120))
 
       this.audio.src = url
       this.audio.load()
@@ -260,7 +259,6 @@ class PlaybackService {
       await this.audio.play()
       this._loading = false
       this._consecutiveFailures = 0
-      console.log('[Playback] Playing successfully')
 
       jellyfin.reportPlaybackStart(track.id).catch(err => console.warn('[Playback] reportPlaybackStart failed:', err))
       this.startScrobbleTracking(track)
@@ -278,12 +276,10 @@ class PlaybackService {
       // If direct stream failed, try the universal endpoint as a fallback.
       if (track.source === 'stream' && !this.isOffline()) {
         try {
-          console.log('[Playback] Retrying with universal endpoint...')
           const fallbackUrl = `${jellyfin.serverUrl}/Audio/${track.id}/universal?UserId=${jellyfin.userId}&ApiKey=${jellyfin.token}&MaxStreamingBitrate=320000&AudioCodec=aac&TranscodingContainer=ts&TranscodingProtocol=http`
           this.audio.src = fallbackUrl
           this.audio.load()
           await this.audio.play()
-          console.log('[Playback] Fallback succeeded')
           this._consecutiveFailures = 0
           this.startScrobbleTracking(track)
           return
@@ -322,7 +318,6 @@ class PlaybackService {
     this.emit('trackchange', track)
 
     this.audio.play().then(() => {
-      console.log('[Playback] Gapless transition to:', track.item.Name)
       jellyfin.reportPlaybackStart(track.id).catch(err => console.warn('[Playback] reportPlaybackStart failed:', err))
       this.startScrobbleTracking(track)
       if (track.source === 'stream') {
@@ -427,7 +422,6 @@ class PlaybackService {
       audio.addEventListener('canplay', () => {
         if (this._preloadAudio === audio) {
           this._preloadReady = true
-          console.log('[Playback] Next track preloaded and ready:', next.item.Name)
         }
       }, { once: true })
 
