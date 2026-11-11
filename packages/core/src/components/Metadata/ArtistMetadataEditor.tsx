@@ -6,9 +6,8 @@ import {
 } from '../../services/musicbrainz'
 import { useToastStore } from '../../stores/toast'
 import { Modal } from '../UI/Modal'
-import {
-  Search, Loader2, Check, X, User, ArrowLeft, Image, MapPin, Calendar, Upload
-} from 'lucide-react'
+import { Search, Loader2, Check, User, ArrowLeft, Image, MapPin, Calendar, Upload } from 'lucide-react'
+import { Button } from '../UI/Button'
 
 interface ArtistMetadataEditorProps {
   artist: JellyfinItem
@@ -194,12 +193,12 @@ export default function ArtistMetadataEditor({ artist, open, onClose, onApplied 
   const renderResults = () => (
     <div className="space-y-3">
       <div className="flex items-center gap-2 mb-2">
-        <button
+        <Button
+          variant="icon"
           onClick={() => setStep('search')}
-          className="p-1.5 rounded-full hover:bg-white/10 text-text-tertiary"
         >
           <ArrowLeft size={16} />
-        </button>
+        </Button>
         <span className="text-sm text-text-secondary">{results.length} results</span>
       </div>
       <div className="max-h-80 overflow-y-auto space-y-1 -mx-1">
@@ -248,12 +247,12 @@ export default function ArtistMetadataEditor({ artist, open, onClose, onApplied 
   const renderPreview = () => (
     <div className="space-y-4">
       <div className="flex items-center gap-2 mb-2">
-        <button
+        <Button
+          variant="icon"
           onClick={() => setStep('results')}
-          className="p-1.5 rounded-full hover:bg-white/10 text-text-tertiary"
         >
           <ArrowLeft size={16} />
-        </button>
+        </Button>
         <span className="text-sm text-text-secondary">Preview</span>
       </div>
 
@@ -319,12 +318,12 @@ export default function ArtistMetadataEditor({ artist, open, onClose, onApplied 
 
           {/* Apply button */}
           <div className="flex justify-end gap-3 pt-2">
-            <button
+            <Button
+              variant="secondary"
               onClick={onClose}
-              className="px-5 py-2 rounded-full text-sm text-text-secondary hover:text-text-primary hover:bg-white/10 transition-colors"
             >
               Cancel
-            </button>
+            </Button>
             <button
               onClick={handleApply}
               disabled={applying || !imageUrl}

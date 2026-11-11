@@ -3,9 +3,7 @@ import { useAuthStore } from '../../stores/auth'
 import { useLibraryStore } from '../../stores/library'
 import { useDownloadStore } from '../../stores/download'
 import { useToastStore } from '../../stores/toast'
-import {
-  Home, Disc3, Users, Music, ListMusic, Search, LogOut, Download, RefreshCw, Share2, Globe, Shuffle
-} from 'lucide-react'
+import { Home, Disc3, Users, ListMusic, Search, LogOut, Download, RefreshCw, Share2, Globe, Shuffle } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { jellyfin } from '../../services/jellyfin'
 import { usePlayerStore } from '../../stores/player'
@@ -28,7 +26,7 @@ const libraryItems = [
 export default function Sidebar() {
   const isMac = window.api.platform === 'darwin'
   const { logout, auth, primaryImageTag } = useAuthStore()
-  const { playlists, fetchPlaylists, refreshAll, isLoading } = useLibraryStore()
+  const { playlists, fetchPlaylists, refreshAll } = useLibraryStore()
   const { loadDownloads } = useDownloadStore()
   const shuffleAllSongs = usePlayerStore(s => s.shuffleAllSongs)
   const toast = useToastStore(s => s.show)

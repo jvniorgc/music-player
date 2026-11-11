@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import MediaCard from '../UI/MediaCard'
 import { useLibraryStore } from '../../stores/library'
 import { jellyfin, JellyfinItem } from '../../services/jellyfin'
-import { ListMusic, Plus, MoreHorizontal, Pencil, Trash2, Lock } from 'lucide-react'
+import { ListMusic, Plus, MoreHorizontal, Pencil, Trash2 } from 'lucide-react'
 import { InputModal, ConfirmModal } from '../UI/Modal'
 import { useToastStore } from '../../stores/toast'
 
@@ -84,72 +85,62 @@ export default function PlaylistList() {
       {playlists.length > 0 ? (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-5">
           {playlists.map(pl => {
-            const imageUrl = pl.ImageTags?.Primary
-              ? jellyfin.getImageUrl(pl.Id, pl.ImageTags.Primary)
-              : null
-
             return (
-              <div
+              <MediaCard
                 key={pl.Id}
-                className="group cursor-pointer relative"
+                imageUrl={pl.ImageTags?.Primary ? jellyfin.getImageUrl(pl.Id, pl.ImageTags.Primary) : null}
+                fallback={<ListMusic size={48} className="text-accent/60" />}
+                fallbackClassName="w-full h-full flex items-center justify-center bg-gradient-to-br from-accent/20 to-pink-600/20"
+                title={pl.Name}
                 onClick={() => navigate(`/playlist/${pl.Id}`)}
                 onContextMenu={e => {
                   e.preventDefault()
                   setContextMenu({ id: pl.Id, x: e.clientX, y: e.clientY })
                 }}
-              >
-                <div className="relative aspect-square rounded-xl overflow-hidden bg-bg-elevated mb-3 shadow-lg shadow-black/20">
-                  {imageUrl ? (
-                    <img src={imageUrl} className="w-full h-full object-cover" alt="" loading="lazy" />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-accent/20 to-pink-600/20">
-                      <ListMusic size={48} className="text-accent/60" />
+                caption={<>
+                  <div className="flex items-center justify-between">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium truncate">{pl.Name}</p>
+                      <p className="text-xs text-text-secondary">
+                        {pl.ChildCount ? `${pl.ChildCount} songs` : 'Playlist'}
+                      </p>
+                    </div>
+                    <button
+                      onClick={e => {
+                        e.stopPropagation()
+                        setContextMenu({ id: pl.Id, x: e.clientX, y: e.clientY })
+                      }}
+                      className="p-1.5 rounded-full opacity-0 group-hover:opacity-100 hover:bg-white/10 text-text-tertiary transition-all shrink-0"
+                    >
+                      <MoreHorizontal size={16} />
+                    </button>
+                  </div>
+
+                  {/* Context menu */}
+                  {contextMenu?.id === pl.Id && (
+                    <div
+                      className="fixed z-50 bg-bg-elevated border border-border rounded-xl shadow-2xl py-1.5 min-w-[160px]"
+                      style={{ left: contextMenu.x, top: contextMenu.y }}
+                      onClick={e => e.stopPropagation()}
+                    >
+                      <button
+                        onClick={() => { setContextMenu(null); setRenameTarget(pl) }}
+                        className="flex items-center gap-3 w-full px-4 py-2 text-sm hover:bg-white/10 transition-colors"
+                      >
+                        <Pencil size={14} />
+                        Rename
+                      </button>
+                      <button
+                        onClick={() => { setContextMenu(null); setDeleteTarget(pl) }}
+                        className="flex items-center gap-3 w-full px-4 py-2 text-sm text-red-400 hover:bg-white/10 transition-colors"
+                      >
+                        <Trash2 size={14} />
+                        Delete
+                      </button>
                     </div>
                   )}
-                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors" />
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium truncate">{pl.Name}</p>
-                    <p className="text-xs text-text-secondary">
-                      {pl.ChildCount ? `${pl.ChildCount} songs` : 'Playlist'}
-                    </p>
-                  </div>
-                  <button
-                    onClick={e => {
-                      e.stopPropagation()
-                      setContextMenu({ id: pl.Id, x: e.clientX, y: e.clientY })
-                    }}
-                    className="p-1.5 rounded-full opacity-0 group-hover:opacity-100 hover:bg-white/10 text-text-tertiary transition-all shrink-0"
-                  >
-                    <MoreHorizontal size={16} />
-                  </button>
-                </div>
-
-                {/* Context menu */}
-                {contextMenu?.id === pl.Id && (
-                  <div
-                    className="fixed z-50 bg-bg-elevated border border-border rounded-xl shadow-2xl py-1.5 min-w-[160px]"
-                    style={{ left: contextMenu.x, top: contextMenu.y }}
-                    onClick={e => e.stopPropagation()}
-                  >
-                    <button
-                      onClick={() => { setContextMenu(null); setRenameTarget(pl) }}
-                      className="flex items-center gap-3 w-full px-4 py-2 text-sm hover:bg-white/10 transition-colors"
-                    >
-                      <Pencil size={14} />
-                      Rename
-                    </button>
-                    <button
-                      onClick={() => { setContextMenu(null); setDeleteTarget(pl) }}
-                      className="flex items-center gap-3 w-full px-4 py-2 text-sm text-red-400 hover:bg-white/10 transition-colors"
-                    >
-                      <Trash2 size={14} />
-                      Delete
-                    </button>
-                  </div>
-                )}
-              </div>
+                </>}
+              />
             )
           })}
         </div>

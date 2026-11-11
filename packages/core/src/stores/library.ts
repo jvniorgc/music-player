@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { JellyfinItem, JellyfinItemsResponse, jellyfin } from '../services/jellyfin'
+import { JellyfinItem, jellyfin } from '../services/jellyfin'
 
 interface LibraryState {
   albums: JellyfinItem[]

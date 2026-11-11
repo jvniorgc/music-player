@@ -6,9 +6,12 @@ import { usePlayerStore } from '../../stores/player'
 import { useLibraryStore } from '../../stores/library'
 import { useToastStore } from '../../stores/toast'
 import { Play, Pause, Shuffle, ListMusic, ArrowLeft, Pencil, Trash2, X as XIcon } from 'lucide-react'
-import { InputModal, ConfirmModal, PlaylistPicker } from '../UI/Modal'
+import { InputModal, ConfirmModal } from '../UI/Modal'
 import TrackMenu from '../UI/TrackMenu'
-import { formatTicks, artistNames } from '../../lib/format'
+import AddToPlaylist from '../UI/AddToPlaylist'
+import { artistNames } from '../../lib/format'
+import TrackRow, { TrackIndex, TrackDuration } from '../UI/TrackRow'
+import CoverArt from '../UI/CoverArt'
 
 export default function PlaylistView() {
   const { id } = useParams<{ id: string }>()
@@ -17,14 +20,12 @@ export default function PlaylistView() {
   const [tracks, setTracks] = useState<JellyfinItem[]>([])
   const [loading, setLoading] = useState(true)
   const { playItems, currentTrack, isPlaying, togglePlay } = usePlayerStore()
-  const { playlists, fetchPlaylists } = useLibraryStore()
+  const fetchPlaylists = useLibraryStore(s => s.fetchPlaylists)
   const toast = useToastStore(s => s.show)
 
   const [showRename, setShowRename] = useState(false)
   const [showDelete, setShowDelete] = useState(false)
   const [pickerSong, setPickerSong] = useState<JellyfinItem | null>(null)
-  const [showCreatePlaylist, setShowCreatePlaylist] = useState(false)
-  const [pendingSong, setPendingSong] = useState<JellyfinItem | null>(null)
 
   const loadData = (signal?: AbortSignal) => {
     if (!id) return
@@ -167,52 +168,26 @@ export default function PlaylistView() {
         <div className="bg-bg-secondary/40 rounded-xl overflow-hidden">
           {tracks.map((track, i) => {
             const isCurrent = currentTrack?.id === track.Id
-            const albumImage = track.AlbumId ? jellyfin.getImageUrl(track.AlbumId, undefined, 80) : null
 
             return (
-              <div
+              <TrackRow
                 key={`${track.Id}-${i}`}
-                className={`flex items-center gap-4 px-5 py-3 hover:bg-white/5 transition-colors cursor-pointer group ${
-                  isCurrent ? 'bg-white/5' : ''
-                }`}
+                isCurrent={isCurrent}
                 onClick={() => playItems(tracks, i)}
+                leading={
+                  <>
+                    <TrackIndex number={i + 1} isCurrent={isCurrent} isPlaying={isPlaying} className="w-7" />
+                    <CoverArt
+                      src={track.AlbumId ? jellyfin.getImageUrl(track.AlbumId, undefined, 80) : null}
+                      className="w-10 h-10 rounded overflow-hidden bg-bg-elevated shrink-0"
+                      fallback={<ListMusic size={16} className="text-text-tertiary" />}
+                    />
+                  </>
+                }
+                title={track.Name}
+                subtitle={<>{artistNames(track, 'Unknown')}{track.Album ? ` — ${track.Album}` : ''}</>}
               >
-                <div className="w-7 text-right">
-                  {isCurrent && isPlaying ? (
-                    <div className="flex items-center justify-end gap-[2px]">
-                      <div className="w-[3px] h-3 bg-accent rounded-full animate-pulse" />
-                      <div className="w-[3px] h-4 bg-accent rounded-full animate-pulse" style={{ animationDelay: '0.15s' }} />
-                      <div className="w-[3px] h-2 bg-accent rounded-full animate-pulse" style={{ animationDelay: '0.3s' }} />
-                    </div>
-                  ) : (
-                    <>
-                      <span className={`text-sm tabular-nums group-hover:hidden ${isCurrent ? 'text-accent' : 'text-text-tertiary'}`}>
-                        {i + 1}
-                      </span>
-                      <Play size={14} className="text-white hidden group-hover:block ml-auto" fill="white" />
-                    </>
-                  )}
-                </div>
-
-                {albumImage ? (
-                  <img src={albumImage} className="w-10 h-10 rounded object-cover" alt="" loading="lazy" />
-                ) : (
-                  <div className="w-10 h-10 rounded bg-bg-elevated flex items-center justify-center">
-                    <ListMusic size={16} className="text-text-tertiary" />
-                  </div>
-                )}
-
-                <div className="min-w-0 flex-1">
-                  <p className={`text-sm font-medium truncate ${isCurrent ? 'text-accent' : ''}`}>{track.Name}</p>
-                  <p className="text-xs text-text-secondary truncate">
-                    {artistNames(track, 'Unknown')}
-                    {track.Album ? ` — ${track.Album}` : ''}
-                  </p>
-                </div>
-
-                <span className="text-xs text-text-tertiary tabular-nums shrink-0">
-                  {formatTicks(track.RunTimeTicks)}
-                </span>
+                <TrackDuration ticks={track.RunTimeTicks} />
 
                 <TrackMenu
                   track={track}
@@ -227,7 +202,7 @@ export default function PlaylistView() {
                     </button>
                   }
                 />
-              </div>
+              </TrackRow>
             )
           })}
         </div>
@@ -258,41 +233,7 @@ export default function PlaylistView() {
         onConfirm={handleDelete}
       />
 
-      <PlaylistPicker
-        open={!!pickerSong}
-        playlists={playlists}
-        onClose={() => setPickerSong(null)}
-        onSelect={async (playlistId) => {
-          if (!pickerSong) return
-          try {
-            await jellyfin.addToPlaylist(playlistId, [pickerSong.Id])
-            toast('Added to playlist', 'success')
-          } catch { toast('Could not add to playlist', 'error') }
-          setPickerSong(null)
-        }}
-        onCreate={() => {
-          setPendingSong(pickerSong)
-          setPickerSong(null)
-          setShowCreatePlaylist(true)
-        }}
-      />
-
-      <InputModal
-        open={showCreatePlaylist}
-        title="New Playlist"
-        placeholder="Playlist name"
-        confirmLabel="Create"
-        onClose={() => { setShowCreatePlaylist(false); setPendingSong(null) }}
-        onConfirm={async (name) => {
-          if (!pendingSong) return
-          try {
-            await jellyfin.createPlaylist(name, [pendingSong.Id])
-            fetchPlaylists()
-            toast('Playlist created', 'success')
-          } catch { toast('Error creating playlist', 'error') }
-          setPendingSong(null)
-        }}
-      />
+      <AddToPlaylist song={pickerSong} onClose={() => setPickerSong(null)} />
     </div>
   )
 }

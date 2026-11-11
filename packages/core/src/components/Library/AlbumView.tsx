@@ -5,12 +5,12 @@ import { isAbortError } from '../../services/http'
 import { usePlayerStore } from '../../stores/player'
 import { useDownloadStore } from '../../stores/download'
 import { useLibraryStore } from '../../stores/library'
-import { useToastStore } from '../../stores/toast'
-import { Play, Pause, Shuffle, Download, Check, Clock, ArrowLeft, Pencil } from 'lucide-react'
+import { Play, Pause, Shuffle, Download, Check, ArrowLeft, Pencil } from 'lucide-react'
 import MetadataEditor from '../Metadata/MetadataEditor'
-import { PlaylistPicker, InputModal } from '../UI/Modal'
 import TrackMenu from '../UI/TrackMenu'
-import { formatTicks, formatTotalDuration } from '../../lib/format'
+import AddToPlaylist from '../UI/AddToPlaylist'
+import { formatTotalDuration } from '../../lib/format'
+import TrackRow, { TrackIndex, TrackDuration } from '../UI/TrackRow'
 
 export default function AlbumView() {
   const { id } = useParams<{ id: string }>()
@@ -21,11 +21,8 @@ export default function AlbumView() {
   const { playItems, currentTrack, isPlaying, togglePlay } = usePlayerStore()
   const { isDownloaded, startDownload } = useDownloadStore()
   const { playlists, fetchPlaylists } = useLibraryStore()
-  const toast = useToastStore(s => s.show)
   const [showMetadata, setShowMetadata] = useState(false)
   const [pickerSong, setPickerSong] = useState<JellyfinItem | null>(null)
-  const [showCreatePlaylist, setShowCreatePlaylist] = useState(false)
-  const [pendingSong, setPendingSong] = useState<JellyfinItem | null>(null)
 
   const loadData = (signal?: AbortSignal) => {
     if (!id) return
@@ -173,47 +170,20 @@ export default function AlbumView() {
           const downloaded = isDownloaded(track.Id)
 
           return (
-            <div
+            <TrackRow
               key={track.Id}
-              className={`flex items-center gap-4 px-5 py-3 hover:bg-white/5 transition-colors cursor-pointer group ${
-                isCurrent ? 'bg-white/5' : ''
-              }`}
+              isCurrent={isCurrent}
               onClick={() => playItems(tracks, i)}
+              leading={<TrackIndex number={track.IndexNumber || i + 1} isCurrent={isCurrent} isPlaying={isPlaying} className="w-7" />}
+              title={track.Name}
+              subtitle={track.Artists && track.Artists.length > 0 && track.Artists[0] !== album.AlbumArtist && track.Artists.join(', ')}
             >
-              <div className="w-7 text-right relative">
-                {isCurrent && isPlaying ? (
-                  <div className="flex items-center justify-end gap-[2px]">
-                    <div className="w-[3px] h-3 bg-accent rounded-full animate-pulse" />
-                    <div className="w-[3px] h-4 bg-accent rounded-full animate-pulse" style={{ animationDelay: '0.15s' }} />
-                    <div className="w-[3px] h-2 bg-accent rounded-full animate-pulse" style={{ animationDelay: '0.3s' }} />
-                  </div>
-                ) : (
-                  <>
-                    <span className={`text-sm tabular-nums ${isCurrent ? 'text-accent' : 'text-text-tertiary group-hover:invisible'}`}>
-                      {track.IndexNumber || i + 1}
-                    </span>
-                    <Play size={14} className="text-white invisible group-hover:visible absolute right-0 top-1/2 -translate-y-1/2" fill="white" />
-                  </>
-                )}
-              </div>
-
-              <div className="min-w-0 flex-1">
-                <p className={`text-sm font-medium truncate ${isCurrent ? 'text-accent' : ''}`}>
-                  {track.Name}
-                </p>
-                {track.Artists && track.Artists.length > 0 && track.Artists[0] !== album.AlbumArtist && (
-                  <p className="text-xs text-text-secondary truncate">{track.Artists.join(', ')}</p>
-                )}
-              </div>
-
               {downloaded && <Check size={14} className="text-accent shrink-0" />}
 
-              <span className="text-xs text-text-tertiary tabular-nums shrink-0">
-                {formatTicks(track.RunTimeTicks)}
-              </span>
+              <TrackDuration ticks={track.RunTimeTicks} />
 
               <TrackMenu track={track} onPlaylistAdd={(t) => setPickerSong(t)} />
-            </div>
+            </TrackRow>
           )
         })}
       </div>
@@ -226,41 +196,7 @@ export default function AlbumView() {
         onApplied={() => loadData()}
       />
 
-      <PlaylistPicker
-        open={!!pickerSong}
-        playlists={playlists}
-        onClose={() => setPickerSong(null)}
-        onSelect={async (playlistId) => {
-          if (!pickerSong) return
-          try {
-            await jellyfin.addToPlaylist(playlistId, [pickerSong.Id])
-            toast('Added to playlist', 'success')
-          } catch { toast('Could not add to playlist', 'error') }
-          setPickerSong(null)
-        }}
-        onCreate={() => {
-          setPendingSong(pickerSong)
-          setPickerSong(null)
-          setShowCreatePlaylist(true)
-        }}
-      />
-
-      <InputModal
-        open={showCreatePlaylist}
-        title="New Playlist"
-        placeholder="Playlist name"
-        confirmLabel="Create"
-        onClose={() => { setShowCreatePlaylist(false); setPendingSong(null) }}
-        onConfirm={async (name) => {
-          if (!pendingSong) return
-          try {
-            await jellyfin.createPlaylist(name, [pendingSong.Id])
-            fetchPlaylists()
-            toast('Playlist created', 'success')
-          } catch { toast('Error creating playlist', 'error') }
-          setPendingSong(null)
-        }}
-      />
+      <AddToPlaylist song={pickerSong} onClose={() => setPickerSong(null)} />
     </div>
   )
 }

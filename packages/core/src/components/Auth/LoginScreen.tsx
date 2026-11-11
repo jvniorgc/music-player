@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useAuthStore } from '../../stores/auth'
 import { Music2, Loader2, Server, AlertCircle } from 'lucide-react'
+import { Input } from '../UI/Button'
 
 export default function LoginScreen() {
   const { login, isLoading, error } = useAuthStore()
@@ -43,24 +44,23 @@ export default function LoginScreen() {
 
           <div>
             <label className="block text-xs font-medium text-text-secondary mb-1.5 ml-1">User</label>
-            <input
+            <Input
               type="text"
               value={username}
               onChange={e => setUsername(e.target.value)}
               placeholder="username"
-              className="w-full bg-bg-elevated border border-border rounded-xl px-4 py-3 text-sm text-text-primary placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-accent transition"
+
               autoFocus
             />
           </div>
 
           <div>
             <label className="block text-xs font-medium text-text-secondary mb-1.5 ml-1">Password</label>
-            <input
+            <Input
               type="password"
               value={password}
               onChange={e => setPassword(e.target.value)}
               placeholder="password"
-              className="w-full bg-bg-elevated border border-border rounded-xl px-4 py-3 text-sm text-text-primary placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-accent transition"
             />
           </div>
 

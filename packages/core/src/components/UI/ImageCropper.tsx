@@ -1,5 +1,6 @@
 import { useRef, useState, useCallback, useEffect } from 'react'
 import { ZoomIn, ZoomOut } from 'lucide-react'
+import { Button } from './Button'
 
 interface ImageCropperProps {
   imageUrl: string
@@ -141,18 +142,17 @@ export function ImageCropper({ imageUrl, onCrop, onCancel, size = 240 }: ImageCr
 
       {/* Actions */}
       <div className="flex gap-3 w-full justify-end">
-        <button
+        <Button
+          variant="secondary"
           onClick={onCancel}
-          className="px-5 py-2 rounded-full text-sm text-text-secondary hover:text-text-primary hover:bg-white/10 transition-colors"
         >
           Back
-        </button>
-        <button
+        </Button>
+        <Button
           onClick={handleCrop}
-          className="px-5 py-2 rounded-full text-sm font-semibold bg-accent hover:bg-accent-hover text-white transition-colors"
         >
           Apply
-        </button>
+        </Button>
       </div>
     </div>
   )

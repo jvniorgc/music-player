@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { X } from 'lucide-react'
+import { Button, Input } from './Button'
 
 interface ModalProps {
   open: boolean
@@ -30,9 +31,9 @@ export function Modal({ open, title, onClose, children }: ModalProps) {
       >
         <div className="flex items-center justify-between px-6 py-4 border-b border-border-subtle">
           <h2 className="text-lg font-bold">{title}</h2>
-          <button onClick={onClose} className="p-1.5 rounded-full hover:bg-white/10 text-text-tertiary transition-colors">
+          <Button variant="icon" onClick={onClose}>
             <X size={18} />
-          </button>
+          </Button>
         </div>
         <div className="px-6 py-5">{children}</div>
       </div>
@@ -72,29 +73,27 @@ export function InputModal({ open, title, placeholder, initialValue = '', confir
 
   return (
     <Modal open={open} title={title} onClose={onClose}>
-      <input
+      <Input
         ref={inputRef}
         type="text"
         value={value}
         onChange={e => setValue(e.target.value)}
         onKeyDown={e => e.key === 'Enter' && handleSubmit()}
         placeholder={placeholder}
-        className="w-full bg-bg-elevated border border-border rounded-xl px-4 py-3 text-sm text-text-primary placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-accent transition"
       />
       <div className="flex justify-end gap-3 mt-5">
-        <button
+        <Button
+          variant="secondary"
           onClick={onClose}
-          className="px-5 py-2 rounded-full text-sm text-text-secondary hover:text-text-primary hover:bg-white/10 transition-colors"
         >
           Cancel
-        </button>
-        <button
+        </Button>
+        <Button
           onClick={handleSubmit}
           disabled={!value.trim()}
-          className="px-5 py-2 rounded-full text-sm font-semibold bg-accent hover:bg-accent-hover text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
         >
           {confirmLabel}
-        </button>
+        </Button>
       </div>
     </Modal>
   )
@@ -115,20 +114,18 @@ export function ConfirmModal({ open, title, message, confirmLabel = 'Confirm', d
     <Modal open={open} title={title} onClose={onClose}>
       <p className="text-sm text-text-secondary">{message}</p>
       <div className="flex justify-end gap-3 mt-5">
-        <button
+        <Button
+          variant="secondary"
           onClick={onClose}
-          className="px-5 py-2 rounded-full text-sm text-text-secondary hover:text-text-primary hover:bg-white/10 transition-colors"
         >
           Cancel
-        </button>
-        <button
+        </Button>
+        <Button
+          variant={destructive ? 'danger' : 'primary'}
           onClick={() => { onConfirm(); onClose() }}
-          className={`px-5 py-2 rounded-full text-sm font-semibold text-white transition-colors ${
-            destructive ? 'bg-red-600 hover:bg-red-500' : 'bg-accent hover:bg-accent-hover'
-          }`}
         >
           {confirmLabel}
-        </button>
+        </Button>
       </div>
     </Modal>
   )

@@ -2,23 +2,21 @@ import { useEffect, useCallback, useRef, useState } from 'react'
 import { useLibraryStore } from '../../stores/library'
 import { usePlayerStore } from '../../stores/player'
 import { useDownloadStore } from '../../stores/download'
-import { useToastStore } from '../../stores/toast'
 import { jellyfin, JellyfinItem } from '../../services/jellyfin'
-import { Play, Loader2, Download, Check, Music } from 'lucide-react'
-import { PlaylistPicker, InputModal } from '../UI/Modal'
+import { Loader2, Download, Check } from 'lucide-react'
 import TrackMenu from '../UI/TrackMenu'
-import { formatTicks, artistNames } from '../../lib/format'
+import AddToPlaylist from '../UI/AddToPlaylist'
+import { artistNames } from '../../lib/format'
+import TrackRow, { TrackIndex, TrackDuration } from '../UI/TrackRow'
+import CoverArt from '../UI/CoverArt'
 
 export default function SongList() {
   const { songs, totalSongs, playlists, isLoading, fetchSongs, loadMoreSongs, fetchPlaylists } = useLibraryStore()
   const { playItems, currentTrack, isPlaying } = usePlayerStore()
   const { isDownloaded, startDownload } = useDownloadStore()
-  const toast = useToastStore(s => s.show)
   const loaderRef = useRef<HTMLDivElement>(null)
 
   const [pickerSong, setPickerSong] = useState<JellyfinItem | null>(null)
-  const [showCreatePlaylist, setShowCreatePlaylist] = useState(false)
-  const [pendingSong, setPendingSong] = useState<JellyfinItem | null>(null)
 
   useEffect(() => {
     if (songs.length === 0) fetchSongs()
@@ -36,32 +34,6 @@ export default function SongList() {
     if (loaderRef.current) observer.observe(loaderRef.current)
     return () => observer.disconnect()
   }, [observerCallback])
-
-  const handleAddToPlaylist = async (playlistId: string) => {
-    if (!pickerSong) return
-    try {
-      await jellyfin.addToPlaylist(playlistId, [pickerSong.Id])
-      toast('Added to playlist', 'success')
-    } catch (err) {
-      console.error('Failed to add to playlist:', err)
-      toast('Could not add to playlist', 'error')
-    }
-    setPickerSong(null)
-  }
-
-  const handleCreateAndAdd = async (name: string) => {
-    const song = pendingSong || pickerSong
-    if (!song) return
-    try {
-      await jellyfin.createPlaylist(name, [song.Id])
-      fetchPlaylists()
-      toast('Playlist created', 'success')
-    } catch (err) {
-      console.error('Failed to create playlist:', err)
-      toast('Error creating playlist', 'error')
-    }
-    setPendingSong(null)
-  }
 
   return (
     <div className="fade-in">
@@ -86,59 +58,30 @@ export default function SongList() {
         {songs.map((song, i) => {
           const isCurrent = currentTrack?.id === song.Id
           const downloaded = isDownloaded(song.Id)
-          const imageUrl = song.AlbumId ? jellyfin.getImageUrl(song.AlbumId, undefined, 80) : null
 
           return (
-            <div
+            <TrackRow
               key={`${song.Id}-${i}`}
-              className={`flex items-center gap-4 px-5 py-2.5 hover:bg-white/5 transition-colors cursor-pointer group ${
-                isCurrent ? 'bg-white/5' : ''
-              }`}
+              className="px-5 py-2.5"
+              isCurrent={isCurrent}
               onClick={() => playItems(songs, i)}
+              leading={
+                <>
+                  <TrackIndex number={i + 1} isCurrent={isCurrent} isPlaying={isPlaying} />
+                  <CoverArt
+                    src={song.AlbumId ? jellyfin.getImageUrl(song.AlbumId, undefined, 80) : null}
+                    className="w-10 h-10 rounded overflow-hidden bg-bg-elevated shrink-0"
+                  />
+                </>
+              }
+              title={song.Name}
+              subtitle={artistNames(song, 'Unknown')}
             >
-              <div className="w-8 text-right">
-                {isCurrent && isPlaying ? (
-                  <div className="flex items-center justify-end gap-[2px]">
-                    <div className="w-[3px] h-3 bg-accent rounded-full animate-pulse" />
-                    <div className="w-[3px] h-4 bg-accent rounded-full animate-pulse" style={{ animationDelay: '0.15s' }} />
-                    <div className="w-[3px] h-2 bg-accent rounded-full animate-pulse" style={{ animationDelay: '0.3s' }} />
-                  </div>
-                ) : (
-                  <>
-                    <span className={`text-sm tabular-nums group-hover:hidden ${isCurrent ? 'text-accent' : 'text-text-tertiary'}`}>
-                      {i + 1}
-                    </span>
-                    <Play size={14} className="text-white hidden group-hover:block ml-auto" fill="white" />
-                  </>
-                )}
-              </div>
-
-              <div className="w-10 h-10 rounded overflow-hidden bg-bg-elevated shrink-0">
-                {imageUrl ? (
-                  <img src={imageUrl} className="w-full h-full object-cover" alt="" loading="lazy" />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center">
-                    <Music size={16} className="text-text-tertiary" />
-                  </div>
-                )}
-              </div>
-
-              <div className="min-w-0 flex-1">
-                <p className={`text-sm font-medium truncate ${isCurrent ? 'text-accent' : ''}`}>
-                  {song.Name}
-                </p>
-                <p className="text-xs text-text-secondary truncate">
-                  {artistNames(song, 'Unknown')}
-                </p>
-              </div>
-
               <span className="w-40 text-sm text-text-secondary truncate hidden md:block">
                 {song.Album || ''}
               </span>
 
-              <span className="w-12 text-xs text-text-tertiary tabular-nums text-right shrink-0">
-                {formatTicks(song.RunTimeTicks)}
-              </span>
+              <TrackDuration ticks={song.RunTimeTicks} className="w-12 text-right" />
 
               <div className="w-20 flex justify-end gap-1 items-center">
                 <TrackMenu track={song} onPlaylistAdd={(s) => setPickerSong(s)} />
@@ -154,7 +97,7 @@ export default function SongList() {
                   {downloaded ? <Check size={14} /> : <Download size={14} />}
                 </button>
               </div>
-            </div>
+            </TrackRow>
           )
         })}
       </div>
@@ -163,26 +106,7 @@ export default function SongList() {
         {isLoading && <Loader2 size={24} className="animate-spin text-text-tertiary" />}
       </div>
 
-      <PlaylistPicker
-        open={!!pickerSong}
-        playlists={playlists}
-        onClose={() => setPickerSong(null)}
-        onSelect={handleAddToPlaylist}
-        onCreate={() => {
-          setPendingSong(pickerSong)
-          setPickerSong(null)
-          setShowCreatePlaylist(true)
-        }}
-      />
-
-      <InputModal
-        open={showCreatePlaylist}
-        title="New Playlist"
-        placeholder="Playlist name"
-        confirmLabel="Create"
-        onClose={() => { setShowCreatePlaylist(false); setPendingSong(null) }}
-        onConfirm={handleCreateAndAdd}
-      />
+      <AddToPlaylist song={pickerSong} onClose={() => setPickerSong(null)} />
     </div>
   )
 }

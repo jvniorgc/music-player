@@ -3,92 +3,17 @@ import { useNavigate } from 'react-router-dom'
 import { useLibraryStore } from '../../stores/library'
 import { usePlayerStore } from '../../stores/player'
 import { useToastStore } from '../../stores/toast'
-import { jellyfin, JellyfinItem } from '../../services/jellyfin'
-import { Play, Clock, Radio, Loader2 } from 'lucide-react'
-import { formatTicks, artistNames } from '../../lib/format'
-
-function AlbumCard({ item, onClick }: { item: JellyfinItem; onClick: () => void }) {
-  const imageUrl = jellyfin.getImageUrl(item.Id, item.ImageTags?.Primary)
-  const { playItems } = usePlayerStore()
-
-  const handlePlay = async (e: React.MouseEvent) => {
-    e.stopPropagation()
-    try {
-      const res = await jellyfin.getAlbumItems(item.Id)
-      if (res.Items.length > 0) playItems(res.Items)
-    } catch (err) {
-      console.error('Failed to play album:', err)
-    }
-  }
-
-  return (
-    <div
-      className="group cursor-pointer"
-      onClick={onClick}
-    >
-      <div className="relative aspect-square rounded-xl overflow-hidden bg-bg-elevated mb-3 shadow-lg shadow-black/20">
-        {item.ImageTags?.Primary ? (
-          <img src={imageUrl} className="w-full h-full object-cover" alt="" loading="lazy" />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-bg-elevated to-bg-tertiary">
-            <span className="text-4xl">🎵</span>
-          </div>
-        )}
-        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors" />
-        <button
-          onClick={handlePlay}
-          className="absolute bottom-3 right-3 w-10 h-10 bg-accent rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 transform translate-y-1 group-hover:translate-y-0 shadow-lg shadow-black/30"
-        >
-          <Play size={18} className="text-white ml-0.5" fill="white" />
-        </button>
-      </div>
-      <p className="text-sm font-medium truncate">{item.Name}</p>
-      <p className="text-xs text-text-secondary truncate">
-        {item.AlbumArtist || item.ArtistItems?.[0]?.Name || ''}
-        {item.ProductionYear ? ` · ${item.ProductionYear}` : ''}
-      </p>
-    </div>
-  )
-}
-
-function TrackRow({ item, index, items }: { item: JellyfinItem; index: number; items: JellyfinItem[] }) {
-  const { playItems } = usePlayerStore()
-  const imageUrl = item.AlbumId ? jellyfin.getImageUrl(item.AlbumId, undefined, 80) : null
-
-  return (
-    <div
-      className="flex items-center gap-4 px-4 py-2.5 rounded-lg hover:bg-white/5 transition-colors cursor-pointer group"
-      onClick={() => playItems(items, index)}
-    >
-      <div className="w-10 h-10 rounded overflow-hidden bg-bg-elevated shrink-0 relative">
-        {imageUrl ? (
-          <img src={imageUrl} className="w-full h-full object-cover" alt="" loading="lazy" />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center">
-            <span className="text-lg">🎵</span>
-          </div>
-        )}
-        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 flex items-center justify-center transition-colors">
-          <Play size={14} className="text-white opacity-0 group-hover:opacity-100 ml-0.5" fill="white" />
-        </div>
-      </div>
-      <div className="min-w-0 flex-1">
-        <p className="text-sm font-medium truncate">{item.Name}</p>
-        <p className="text-xs text-text-secondary truncate">
-          {artistNames(item, 'Unknown')}
-          {item.Album ? ` — ${item.Album}` : ''}
-        </p>
-      </div>
-      <span className="text-xs text-text-tertiary tabular-nums shrink-0">
-        {formatTicks(item.RunTimeTicks)}
-      </span>
-    </div>
-  )
-}
+import { jellyfin } from '../../services/jellyfin'
+import { Clock, Radio, Loader2 } from 'lucide-react'
+import { artistNames } from '../../lib/format'
+import TrackRow, { TrackDuration, CoverPlayOverlay } from '../UI/TrackRow'
+import CoverArt from '../UI/CoverArt'
+import { AlbumCard } from '../UI/MediaCard'
 
 export default function HomePage() {
   const { recentlyAdded, recentlyPlayed, isLoading, fetchHome } = useLibraryStore()
   const startRadio = usePlayerStore(s => s.startRadio)
+  const playItems = usePlayerStore(s => s.playItems)
   const showToast = useToastStore(s => s.show)
   const [radioLoading, setRadioLoading] = useState(false)
   const navigate = useNavigate()
@@ -150,7 +75,7 @@ export default function HomePage() {
               else if (idx >= 4) cls = 'hidden sm:block'
               return (
                 <div key={item.Id} className={cls}>
-                  <AlbumCard item={item} onClick={() => navigate(`/album/${item.Id}`)} />
+                  <AlbumCard item={item} onClick={() => navigate(`/album/${item.Id}`)} fallback={<span className="text-4xl">🎵</span>} />
                 </div>
               )
             })}
@@ -166,7 +91,24 @@ export default function HomePage() {
           </div>
           <div className="bg-bg-secondary/40 rounded-xl overflow-hidden">
             {recentlyPlayed.slice(0, 10).map((item, i) => (
-              <TrackRow key={item.Id} item={item} index={i} items={recentlyPlayed} />
+              <TrackRow
+                key={item.Id}
+                className="px-4 py-2.5 rounded-lg"
+                onClick={() => playItems(recentlyPlayed, i)}
+                leading={
+                  <CoverArt
+                    src={item.AlbumId ? jellyfin.getImageUrl(item.AlbumId, undefined, 80) : null}
+                    className="w-10 h-10 rounded overflow-hidden bg-bg-elevated shrink-0 relative"
+                    fallback={<span className="text-lg">🎵</span>}
+                  >
+                    <CoverPlayOverlay />
+                  </CoverArt>
+                }
+                title={item.Name}
+                subtitle={<>{artistNames(item, 'Unknown')}{item.Album ? ` — ${item.Album}` : ''}</>}
+              >
+                <TrackDuration ticks={item.RunTimeTicks} />
+              </TrackRow>
             ))}
           </div>
         </section>

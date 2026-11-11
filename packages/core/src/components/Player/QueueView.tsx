@@ -1,6 +1,7 @@
 import { usePlayerStore } from '../../stores/player'
 import { jellyfin } from '../../services/jellyfin'
 import { QueueTrack } from '../../services/playback'
+import CoverArt from '../UI/CoverArt'
 import { X, Music } from 'lucide-react'
 import { formatTicks, artistNames } from '../../lib/format'
 
@@ -16,17 +17,11 @@ function TrackRow({ track, index, onPlay, onRemove }: {
       onClick={onPlay}
     >
       <span className="text-xs text-text-tertiary w-5 text-right tabular-nums group-hover:hidden">{index + 1}</span>
-      {track.item.AlbumId ? (
-        <img
-          src={jellyfin.getImageUrl(track.item.AlbumId, undefined, 80)}
-          className="w-9 h-9 rounded object-cover"
-          alt=""
-        />
-      ) : (
-        <div className="w-9 h-9 rounded bg-bg-elevated flex items-center justify-center">
-          <Music size={14} className="text-text-tertiary" />
-        </div>
-      )}
+      <CoverArt
+        src={track.item.AlbumId ? jellyfin.getImageUrl(track.item.AlbumId, undefined, 80) : null}
+        className="w-9 h-9 rounded overflow-hidden bg-bg-elevated shrink-0"
+        fallback={<Music size={14} className="text-text-tertiary" />}
+      />
       <div className="min-w-0 flex-1">
         <p className="text-sm truncate">{track.item.Name}</p>
         <p className="text-xs text-text-secondary truncate">
@@ -73,17 +68,10 @@ export default function QueueView() {
         <div className="px-4 mb-4">
           <p className="text-[11px] font-semibold text-text-tertiary uppercase tracking-wider px-2 mb-2">Now Playing</p>
           <div className="flex items-center gap-3 px-2 py-2 rounded-lg bg-white/5">
-            {currentTrack.item.AlbumId ? (
-              <img
-                src={jellyfin.getImageUrl(currentTrack.item.AlbumId, undefined, 80)}
-                className="w-10 h-10 rounded object-cover"
-                alt=""
-              />
-            ) : (
-              <div className="w-10 h-10 rounded bg-bg-elevated flex items-center justify-center">
-                <Music size={16} className="text-text-tertiary" />
-              </div>
-            )}
+            <CoverArt
+              src={currentTrack.item.AlbumId ? jellyfin.getImageUrl(currentTrack.item.AlbumId, undefined, 80) : null}
+              className="w-10 h-10 rounded overflow-hidden bg-bg-elevated shrink-0"
+            />
             <div className="min-w-0 flex-1">
               <p className="text-sm font-medium truncate">{currentTrack.item.Name}</p>
               <p className="text-xs text-text-secondary truncate">

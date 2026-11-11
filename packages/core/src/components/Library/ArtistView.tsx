@@ -2,9 +2,9 @@ import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { jellyfin, JellyfinItem } from '../../services/jellyfin'
 import { isAbortError } from '../../services/http'
-import { usePlayerStore } from '../../stores/player'
-import { Play, Shuffle, ArrowLeft, ImagePlus } from 'lucide-react'
+import { ArrowLeft, ImagePlus } from 'lucide-react'
 import ArtistMetadataEditor from '../Metadata/ArtistMetadataEditor'
+import { AlbumCard } from '../UI/MediaCard'
 
 export default function ArtistView() {
   const { id } = useParams<{ id: string }>()
@@ -106,42 +106,14 @@ export default function ArtistView() {
       <div className="px-8 mt-8">
         <h2 className="text-xl font-bold mb-4">Discography</h2>
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-5">
-          {albums.map(album => {
-            const albumImage = jellyfin.getImageUrl(album.Id, album.ImageTags?.Primary)
-            return (
-              <div
-                key={album.Id}
-                className="group cursor-pointer"
-                onClick={() => navigate(`/album/${album.Id}`)}
-              >
-                <div className="relative aspect-square rounded-xl overflow-hidden bg-bg-elevated mb-3 shadow-lg shadow-black/20">
-                  {album.ImageTags?.Primary ? (
-                    <img src={albumImage} className="w-full h-full object-cover" alt="" loading="lazy" />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-bg-elevated to-bg-tertiary">
-                      <span className="text-4xl">💿</span>
-                    </div>
-                  )}
-                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors" />
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      jellyfin.getAlbumItems(album.Id).then(r => {
-                        if (r.Items.length > 0) usePlayerStore.getState().playItems(r.Items)
-                      })
-                    }}
-                    className="absolute bottom-3 right-3 w-10 h-10 bg-accent rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 transform translate-y-1 group-hover:translate-y-0 shadow-lg"
-                  >
-                    <Play size={18} className="text-white ml-0.5" fill="white" />
-                  </button>
-                </div>
-                <p className="text-sm font-medium truncate">{album.Name}</p>
-                <p className="text-xs text-text-secondary">
-                  {album.ProductionYear || ''}{album.Genres?.[0] ? ` · ${album.Genres[0]}` : ''}
-                </p>
-              </div>
-            )
-          })}
+          {albums.map(album => (
+            <AlbumCard
+              key={album.Id}
+              item={album}
+              onClick={() => navigate(`/album/${album.Id}`)}
+              subtitle={<>{album.ProductionYear || ''}{album.Genres?.[0] ? ` · ${album.Genres[0]}` : ''}</>}
+            />
+          ))}
         </div>
       </div>
       {/* Artist Metadata Editor */}

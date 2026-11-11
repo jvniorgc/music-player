@@ -4,11 +4,13 @@ import { jellyfin, JellyfinItem } from '../../services/jellyfin'
 import { isAbortError } from '../../services/http'
 import { usePlayerStore } from '../../stores/player'
 import { useLibraryStore } from '../../stores/library'
-import { useToastStore } from '../../stores/toast'
-import { Search, X, Play, Disc3, Users, Music, Loader2 } from 'lucide-react'
-import { PlaylistPicker, InputModal } from '../UI/Modal'
+import { Search, X, Disc3, Users, Music, Loader2 } from 'lucide-react'
 import TrackMenu from '../UI/TrackMenu'
-import { formatTicks, artistNames } from '../../lib/format'
+import AddToPlaylist from '../UI/AddToPlaylist'
+import { artistNames } from '../../lib/format'
+import TrackRow, { TrackDuration, CoverPlayOverlay } from '../UI/TrackRow'
+import CoverArt from '../UI/CoverArt'
+import { AlbumCard, ArtistCard } from '../UI/MediaCard'
 
 export default function SearchView() {
   const [query, setQuery] = useState('')
@@ -18,12 +20,9 @@ export default function SearchView() {
   const navigate = useNavigate()
   const { playItems } = usePlayerStore()
   const { playlists, fetchPlaylists } = useLibraryStore()
-  const toast = useToastStore(s => s.show)
   const debounceRef = useRef<ReturnType<typeof setTimeout>>()
 
   const [pickerSong, setPickerSong] = useState<JellyfinItem | null>(null)
-  const [showCreatePlaylist, setShowCreatePlaylist] = useState(false)
-  const [pendingSong, setPendingSong] = useState<JellyfinItem | null>(null)
 
   useEffect(() => {
     inputRef.current?.focus()
@@ -98,40 +97,26 @@ export default function SearchView() {
                 <h2 className="text-lg font-bold">Songs</h2>
               </div>
               <div className="bg-bg-secondary/40 rounded-xl overflow-hidden">
-                {results.songs.map((song, i) => {
-                  const imageUrl = song.AlbumId ? jellyfin.getImageUrl(song.AlbumId, undefined, 80) : null
-                  return (
-                    <div
-                      key={song.Id}
-                      className="flex items-center gap-4 px-5 py-2.5 hover:bg-white/5 transition-colors cursor-pointer group"
-                      onClick={() => playItems(results.songs, i)}
-                    >
-                      <div className="w-10 h-10 rounded overflow-hidden bg-bg-elevated shrink-0 relative">
-                        {imageUrl ? (
-                          <img src={imageUrl} className="w-full h-full object-cover" alt="" />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center">
-                            <Music size={16} className="text-text-tertiary" />
-                          </div>
-                        )}
-                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 flex items-center justify-center transition-colors">
-                          <Play size={14} className="text-white opacity-0 group-hover:opacity-100 ml-0.5" fill="white" />
-                        </div>
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm font-medium truncate">{song.Name}</p>
-                        <p className="text-xs text-text-secondary truncate">
-                          {artistNames(song)}
-                          {song.Album ? ` — ${song.Album}` : ''}
-                        </p>
-                      </div>
-                      <span className="text-xs text-text-tertiary tabular-nums">
-                        {formatTicks(song.RunTimeTicks)}
-                      </span>
-                      <TrackMenu track={song} onPlaylistAdd={(s) => setPickerSong(s)} />
-                    </div>
-                  )
-                })}
+                {results.songs.map((song, i) => (
+                  <TrackRow
+                    key={song.Id}
+                    className="px-5 py-2.5"
+                    onClick={() => playItems(results.songs, i)}
+                    leading={
+                      <CoverArt
+                        src={song.AlbumId ? jellyfin.getImageUrl(song.AlbumId, undefined, 80) : null}
+                        className="w-10 h-10 rounded overflow-hidden bg-bg-elevated shrink-0 relative"
+                      >
+                        <CoverPlayOverlay />
+                      </CoverArt>
+                    }
+                    title={song.Name}
+                    subtitle={<>{artistNames(song)}{song.Album ? ` — ${song.Album}` : ''}</>}
+                  >
+                    <TrackDuration ticks={song.RunTimeTicks} />
+                    <TrackMenu track={song} onPlaylistAdd={(s) => setPickerSong(s)} />
+                  </TrackRow>
+                ))}
               </div>
             </section>
           )}
@@ -144,45 +129,15 @@ export default function SearchView() {
                 <h2 className="text-lg font-bold">Albums</h2>
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-5">
-                {results.albums.map(album => {
-                  const imageUrl = jellyfin.getImageUrl(album.Id, album.ImageTags?.Primary)
-                  return (
-                    <div
-                      key={album.Id}
-                      className="group cursor-pointer"
-                      onClick={() => navigate(`/album/${album.Id}`)}
-                    >
-                      <div className="relative aspect-square rounded-xl overflow-hidden bg-bg-elevated mb-3 shadow-lg shadow-black/20">
-                        {album.ImageTags?.Primary ? (
-                          <img src={imageUrl} className="w-full h-full object-cover" alt="" />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-bg-elevated to-bg-tertiary">
-                            <span className="text-3xl">💿</span>
-                          </div>
-                        )}
-                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors" />
-                        <button
-                          onClick={async (e) => {
-                            e.stopPropagation()
-                            try {
-                              const res = await jellyfin.getAlbumItems(album.Id)
-                              if (res.Items.length > 0) playItems(res.Items)
-                            } catch (err) {
-                              console.error('Failed to play album:', err)
-                            }
-                          }}
-                          className="absolute bottom-3 right-3 w-10 h-10 bg-accent rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 transform translate-y-1 group-hover:translate-y-0 shadow-lg shadow-black/30"
-                        >
-                          <Play size={18} className="text-white ml-0.5" fill="white" />
-                        </button>
-                      </div>
-                      <p className="text-sm font-medium truncate">{album.Name}</p>
-                      <p className="text-xs text-text-secondary truncate">
-                        {album.AlbumArtist}{album.ProductionYear ? ` · ${album.ProductionYear}` : ''}
-                      </p>
-                    </div>
-                  )
-                })}
+                {results.albums.map(album => (
+                  <AlbumCard
+                    key={album.Id}
+                    item={album}
+                    onClick={() => navigate(`/album/${album.Id}`)}
+                    subtitle={<>{album.AlbumArtist}{album.ProductionYear ? ` · ${album.ProductionYear}` : ''}</>}
+                    fallback={<span className="text-3xl">💿</span>}
+                  />
+                ))}
               </div>
             </section>
           )}
@@ -195,29 +150,14 @@ export default function SearchView() {
                 <h2 className="text-lg font-bold">Artists</h2>
               </div>
               <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-5">
-                {results.artists.map(artist => {
-                  const imageUrl = artist.ImageTags?.Primary
-                    ? jellyfin.getImageUrl(artist.Id, artist.ImageTags.Primary)
-                    : null
-                  return (
-                    <div
-                      key={artist.Id}
-                      className="group cursor-pointer text-center"
-                      onClick={() => navigate(`/artist/${artist.Id}`)}
-                    >
-                      <div className="aspect-square rounded-full overflow-hidden bg-bg-elevated mb-3 mx-auto shadow-lg">
-                        {imageUrl ? (
-                          <img src={imageUrl} className="w-full h-full object-cover" alt="" />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-bg-elevated to-bg-tertiary">
-                            <span className="text-3xl">🎤</span>
-                          </div>
-                        )}
-                      </div>
-                      <p className="text-sm font-medium truncate">{artist.Name}</p>
-                    </div>
-                  )
-                })}
+                {results.artists.map(artist => (
+                  <ArtistCard
+                    key={artist.Id}
+                    item={artist}
+                    onClick={() => navigate(`/artist/${artist.Id}`)}
+                    fallback={<span className="text-3xl">🎤</span>}
+                  />
+                ))}
               </div>
             </section>
           )}
@@ -239,41 +179,7 @@ export default function SearchView() {
         </div>
       )}
 
-      <PlaylistPicker
-        open={!!pickerSong}
-        playlists={playlists}
-        onClose={() => setPickerSong(null)}
-        onSelect={async (playlistId) => {
-          if (!pickerSong) return
-          try {
-            await jellyfin.addToPlaylist(playlistId, [pickerSong.Id])
-            toast('Added to playlist', 'success')
-          } catch { toast('Could not add to playlist', 'error') }
-          setPickerSong(null)
-        }}
-        onCreate={() => {
-          setPendingSong(pickerSong)
-          setPickerSong(null)
-          setShowCreatePlaylist(true)
-        }}
-      />
-
-      <InputModal
-        open={showCreatePlaylist}
-        title="New Playlist"
-        placeholder="Playlist name"
-        confirmLabel="Create"
-        onClose={() => { setShowCreatePlaylist(false); setPendingSong(null) }}
-        onConfirm={async (name) => {
-          if (!pendingSong) return
-          try {
-            await jellyfin.createPlaylist(name, [pendingSong.Id])
-            fetchPlaylists()
-            toast('Playlist created', 'success')
-          } catch { toast('Error creating playlist', 'error') }
-          setPendingSong(null)
-        }}
-      />
+      <AddToPlaylist song={pickerSong} onClose={() => setPickerSong(null)} />
     </div>
   )
 }

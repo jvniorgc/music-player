@@ -6,6 +6,7 @@ import { LastfmSettings } from '../Settings/LastfmSettings'
 import { useAuthStore } from '../../stores/auth'
 import { jellyfin } from '../../services/jellyfin'
 import { useToastStore } from '../../stores/toast'
+import { Button, Input } from './Button'
 
 interface ProfileEditModalProps {
   open: boolean
@@ -125,12 +126,12 @@ export function ProfileEditModal({ open, onClose }: ProfileEditModalProps) {
             <label className="block text-xs font-medium text-text-secondary mb-1.5 uppercase tracking-wider">
               Display Name
             </label>
-            <input
+            <Input
               type="text"
               value={name}
               onChange={e => setName(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && handleSave()}
-              className="w-full bg-bg-elevated border border-border rounded-xl px-4 py-3 text-sm text-text-primary placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-accent transition"
+
               placeholder="Your name"
             />
           </div>
@@ -140,13 +141,13 @@ export function ProfileEditModal({ open, onClose }: ProfileEditModalProps) {
 
           {/* Actions */}
           <div className="flex justify-end gap-3 w-full">
-            <button
+            <Button
+              variant="secondary"
               onClick={handleClose}
               disabled={saving}
-              className="px-5 py-2 rounded-full text-sm text-text-secondary hover:text-text-primary hover:bg-white/10 transition-colors disabled:opacity-40"
             >
               Cancel
-            </button>
+            </Button>
             <button
               onClick={handleSave}
               disabled={saving || !name.trim()}

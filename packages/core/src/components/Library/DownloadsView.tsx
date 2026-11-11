@@ -1,9 +1,11 @@
 import { useEffect } from 'react'
 import { useDownloadStore } from '../../stores/download'
 import { usePlayerStore } from '../../stores/player'
-import { jellyfin, JellyfinItem } from '../../services/jellyfin'
-import { Download, Trash2, Play, Music, HardDrive, Loader2 } from 'lucide-react'
-import { formatTicks, artistNames } from '../../lib/format'
+import { jellyfin } from '../../services/jellyfin'
+import { Trash2, Play, HardDrive, Loader2 } from 'lucide-react'
+import { artistNames } from '../../lib/format'
+import TrackRow, { TrackDuration, CoverPlayOverlay } from '../UI/TrackRow'
+import CoverArt from '../UI/CoverArt'
 
 export default function DownloadsView() {
   const { downloads, loadDownloads, removeDownload, initListeners } = useDownloadStore()
@@ -74,40 +76,22 @@ export default function DownloadsView() {
       {completed.length > 0 ? (
         <div className="bg-bg-secondary/40 rounded-xl overflow-hidden">
           {completed.map((dl, i) => {
-            const imageUrl = dl.metadata?.AlbumId
-              ? jellyfin.getImageUrl(dl.metadata.AlbumId, undefined, 80)
-              : null
-
             return (
-              <div
+              <TrackRow
                 key={dl.itemId}
-                className="flex items-center gap-4 px-5 py-3 hover:bg-white/5 transition-colors cursor-pointer group"
                 onClick={() => playItems(completed.map(d => d.metadata), i)}
+                leading={
+                  <CoverArt
+                    src={dl.metadata?.AlbumId ? jellyfin.getImageUrl(dl.metadata.AlbumId, undefined, 80) : null}
+                    className="w-10 h-10 rounded overflow-hidden bg-bg-elevated shrink-0 relative"
+                  >
+                    <CoverPlayOverlay />
+                  </CoverArt>
+                }
+                title={dl.metadata?.Name || dl.filename}
+                subtitle={<>{artistNames(dl.metadata)}{dl.metadata?.Album ? ` — ${dl.metadata.Album}` : ''}</>}
               >
-                <div className="w-10 h-10 rounded overflow-hidden bg-bg-elevated shrink-0 relative">
-                  {imageUrl ? (
-                    <img src={imageUrl} className="w-full h-full object-cover" alt="" />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center">
-                      <Music size={16} className="text-text-tertiary" />
-                    </div>
-                  )}
-                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 flex items-center justify-center transition-colors">
-                    <Play size={14} className="text-white opacity-0 group-hover:opacity-100 ml-0.5" fill="white" />
-                  </div>
-                </div>
-
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium truncate">{dl.metadata?.Name || dl.filename}</p>
-                  <p className="text-xs text-text-secondary truncate">
-                    {artistNames(dl.metadata)}
-                    {dl.metadata?.Album ? ` — ${dl.metadata.Album}` : ''}
-                  </p>
-                </div>
-
-                <span className="text-xs text-text-tertiary tabular-nums shrink-0">
-                  {formatTicks(dl.metadata?.RunTimeTicks)}
-                </span>
+                <TrackDuration ticks={dl.metadata?.RunTimeTicks} />
 
                 <button
                   onClick={(e) => {
@@ -118,7 +102,7 @@ export default function DownloadsView() {
                 >
                   <Trash2 size={14} />
                 </button>
-              </div>
+              </TrackRow>
             )
           })}
         </div>

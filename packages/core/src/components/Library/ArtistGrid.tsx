@@ -1,8 +1,8 @@
 import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useLibraryStore } from '../../stores/library'
-import { jellyfin, JellyfinItem } from '../../services/jellyfin'
 import { Loader2 } from 'lucide-react'
+import { ArtistCard } from '../UI/MediaCard'
 
 export default function ArtistGrid() {
   const { artists, totalArtists, isLoading, fetchArtists } = useLibraryStore()
@@ -27,6 +27,7 @@ export default function ArtistGrid() {
             key={artist.Id}
             item={artist}
             onClick={() => navigate(`/artist/${artist.Id}`)}
+            subtitle={(artist.AlbumCount || artist.SongCount) ? (artist.AlbumCount ? `${artist.AlbumCount} albums` : '') : undefined}
           />
         ))}
       </div>
@@ -35,33 +36,6 @@ export default function ArtistGrid() {
         <div className="py-8 flex justify-center">
           <Loader2 size={24} className="animate-spin text-text-tertiary" />
         </div>
-      )}
-    </div>
-  )
-}
-
-function ArtistCard({ item, onClick }: { item: JellyfinItem; onClick: () => void }) {
-  const imageUrl = item.ImageTags?.Primary
-    ? jellyfin.getImageUrl(item.Id, item.ImageTags.Primary)
-    : null
-
-  return (
-    <div className="group cursor-pointer text-center" onClick={onClick}>
-      <div className="relative aspect-square rounded-full overflow-hidden bg-bg-elevated mb-3 mx-auto shadow-lg shadow-black/20">
-        {imageUrl ? (
-          <img src={imageUrl} className="w-full h-full object-cover" alt="" loading="lazy" />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-bg-elevated to-bg-tertiary">
-            <span className="text-4xl">🎤</span>
-          </div>
-        )}
-        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors rounded-full" />
-      </div>
-      <p className="text-sm font-medium truncate">{item.Name}</p>
-      {(item.AlbumCount || item.SongCount) && (
-        <p className="text-xs text-text-secondary">
-          {item.AlbumCount ? `${item.AlbumCount} albums` : ''}
-        </p>
       )}
     </div>
   )
