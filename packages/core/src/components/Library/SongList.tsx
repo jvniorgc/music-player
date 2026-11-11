@@ -11,8 +11,10 @@ import { ArtistLinks, AlbumLink } from '../UI/Links'
 import TrackRow, { TrackIndex, TrackDuration } from '../UI/TrackRow'
 import CoverArt from '../UI/CoverArt'
 import { useShallow } from 'zustand/react/shallow'
+import { useT } from '../../i18n'
 
 export default function SongList() {
+  const { t, tn } = useT()
   const { songs, totalSongs, playlists, isLoading, fetchSongs, loadMoreSongs, fetchPlaylists } = useLibraryStore(useShallow(s => ({
     songs: s.songs,
     totalSongs: s.totalSongs,
@@ -73,9 +75,9 @@ export default function SongList() {
   return (
     <div className="fade-in">
       <div className="mb-6">
-        <h1 className="text-title font-semibold">Songs</h1>
+        <h1 className="text-title font-semibold">{t('nav.songs')}</h1>
         {totalSongs > 0 && (
-          <p className="text-sm text-text-secondary mt-1">{totalSongs} songs</p>
+          <p className="text-sm text-text-secondary mt-1">{tn('common.songCount', totalSongs)}</p>
         )}
       </div>
 
@@ -83,9 +85,9 @@ export default function SongList() {
       <div className="flex items-center gap-4 px-5 py-2 text-xs text-text-tertiary border-b border-border mb-1">
         <span className="w-8 text-right">#</span>
         <span className="w-10" />
-        <span className="flex-1">Title</span>
-        <span className="w-40 hidden md:block">Album</span>
-        <span className="w-12 text-right">⏱</span>
+        <span className="flex-1">{t('library.title')}</span>
+        <span className="w-40 hidden md:block">{t('library.album')}</span>
+        <span className="w-12 text-right" aria-label={t('library.duration')}>⏱</span>
         <span className="w-20" />
       </div>
 
@@ -111,7 +113,7 @@ export default function SongList() {
               <TrackRow
                 className="px-5 py-2.5"
                 isCurrent={isCurrent}
-                onClick={() => playItems(songs, i, { type: 'songs', name: 'Songs' })}
+                onClick={() => playItems(songs, i, { type: 'songs', name: t('nav.songs') })}
                 leading={
                   <>
                     <TrackIndex number={i + 1} isCurrent={isCurrent} isPlaying={isPlaying} />
@@ -122,7 +124,7 @@ export default function SongList() {
                   </>
                 }
                 title={song.Name}
-                subtitle={<ArtistLinks item={song} fallback="Unknown artist" />}
+                subtitle={<ArtistLinks item={song} fallback={t('player.unknownArtist')} />}
               >
                 <span className="w-40 text-sm text-text-secondary truncate hidden md:block">
                   <AlbumLink item={song} />
@@ -137,6 +139,8 @@ export default function SongList() {
                       e.stopPropagation()
                       if (!downloaded) startDownload(song)
                     }}
+                    aria-label={downloaded ? t('player.downloaded') : t('player.download')}
+                    title={downloaded ? t('player.downloaded') : t('player.download')}
                     className={`p-1 ${
                       downloaded ? 'text-accent' : 'text-text-tertiary opacity-0 group-hover:opacity-100'
                     } transition-all`}

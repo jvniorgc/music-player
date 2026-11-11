@@ -98,7 +98,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   }
 }))
 
-export const SESSION_EXPIRED_MESSAGE = 'Session expired. Please sign in again.'
+export const SESSION_EXPIRED_MESSAGE = 'login.error.sessionExpired'
 
 // Central 401 handling: any authenticated request that comes back 401 drops
 // the session and sends the user back to the login screen with a message.

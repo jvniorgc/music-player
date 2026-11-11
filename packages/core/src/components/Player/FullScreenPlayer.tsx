@@ -11,6 +11,7 @@ import {
 import ArtworkBackground from './ArtworkBackground'
 import { ArtistLinks, AlbumLink, PlayingFrom } from '../UI/Links'
 import { formatTime, TICKS_PER_SECOND } from '../../lib/format'
+import { useT } from '../../i18n'
 
 interface LyricLine {
   Text: string
@@ -19,6 +20,7 @@ interface LyricLine {
 
 export default function FullScreenPlayer() {
   const navigate = useNavigate()
+  const { t } = useT()
   const {
     currentTrack, isPlaying, volume, shuffle, repeat,
     togglePlay, next, previous, setVolume, toggleShuffle, toggleRepeat,
@@ -124,6 +126,8 @@ export default function FullScreenPlayer() {
       {/* Close button */}
       <button
         onClick={() => setShowFullScreen(false)}
+        aria-label={t('player.close')}
+        title={t('player.close')}
         className="absolute top-6 left-1/2 -translate-x-1/2 p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors z-10 no-drag"
       >
         <ChevronDown size={20} />
@@ -133,8 +137,8 @@ export default function FullScreenPlayer() {
       {hasLyrics && (
         <button
           onClick={() => setShowLyrics(v => !v)}
-          aria-label="Toggle lyrics"
-          title={showLyrics ? 'Hide lyrics' : 'Show lyrics'}
+          aria-label={t('player.toggleLyrics')}
+          title={showLyrics ? t('player.hideLyrics') : t('player.showLyrics')}
           className={`absolute top-6 right-6 p-2 rounded-full transition-colors z-10 no-drag ${
             showLyrics ? 'bg-white/20 text-white' : 'bg-white/10 text-text-tertiary hover:bg-white/20'
           }`}
@@ -163,7 +167,7 @@ export default function FullScreenPlayer() {
             <PlayingFrom className="mb-2" />
             <h2 className="text-xl font-semibold truncate">{item.Name}</h2>
             <p className="text-base text-accent mt-1 truncate">
-              <ArtistLinks item={item} fallback="Unknown artist" />
+              <ArtistLinks item={item} fallback={t('player.unknownArtist')} />
             </p>
             {item.Album && (
               <p className="text-sm text-text-secondary mt-1 truncate">
@@ -178,15 +182,19 @@ export default function FullScreenPlayer() {
           <div className="flex items-center justify-center gap-6 mb-3 md:mb-6">
             <button
               onClick={toggleShuffle}
+              aria-label={t('player.shuffle')}
+              title={t('player.shuffle')}
+              aria-pressed={shuffle}
               className={`p-2 transition-colors ${shuffle ? 'text-accent' : 'text-text-tertiary hover:text-text-secondary'}`}
             >
               <Shuffle size={18} />
             </button>
-            <button onClick={previous} className="text-white hover:opacity-80 active:opacity-60 transition-opacity p-2">
+            <button onClick={previous} aria-label={t('player.previous')} title={t('player.previous')} className="text-white hover:opacity-80 active:opacity-60 transition-opacity p-2">
               <SkipBack size={24} fill="currentColor" />
             </button>
             <button
               onClick={togglePlay}
+              aria-label={isPlaying ? t('player.pause') : t('player.play')}
               className="w-14 h-14 bg-white rounded-full flex items-center justify-center hover:opacity-80 active:opacity-60 transition-opacity"
             >
               {isPlaying ? (
@@ -195,11 +203,13 @@ export default function FullScreenPlayer() {
                 <Play size={26} className="text-black ml-1" fill="currentColor" />
               )}
             </button>
-            <button onClick={next} className="text-white hover:opacity-80 active:opacity-60 transition-opacity p-2">
+            <button onClick={next} aria-label={t('player.next')} title={t('player.next')} className="text-white hover:opacity-80 active:opacity-60 transition-opacity p-2">
               <SkipForward size={24} fill="currentColor" />
             </button>
             <button
               onClick={toggleRepeat}
+              aria-label={t('player.repeat')}
+              title={t('player.repeat')}
               className={`p-2 transition-colors ${repeat !== 'none' ? 'text-accent' : 'text-text-tertiary hover:text-text-secondary'}`}
             >
               {repeat === 'one' ? <Repeat1 size={18} /> : <Repeat size={18} />}
@@ -210,6 +220,7 @@ export default function FullScreenPlayer() {
           <div className="flex items-center gap-3 w-56 max-w-full">
             <button
               onClick={() => setVolume(volume > 0 ? 0 : 1)}
+              aria-label={volume === 0 ? t('player.unmute') : t('player.mute')}
               className="text-text-tertiary hover:text-text-secondary"
             >
               {volume === 0 ? <VolumeX size={16} /> : <Volume2 size={16} />}
@@ -221,6 +232,7 @@ export default function FullScreenPlayer() {
               step={0.01}
               value={volume}
               onChange={e => setVolume(parseFloat(e.target.value))}
+              aria-label={t('player.volume')}
               className="flex-1 accent-white"
               style={{
                 background: `linear-gradient(to right, rgba(255,255,255,0.8) ${volume * 100}%, rgba(255,255,255,0.2) ${volume * 100}%)`
@@ -268,6 +280,7 @@ export default function FullScreenPlayer() {
 
 /** Seek slider + elapsed/remaining time; isolated so playback ticks only re-render this. */
 function SeekBar() {
+  const { t } = useT()
   const currentTime = usePlayerStore(s => s.currentTime)
   const duration = usePlayerStore(s => s.duration)
   const seek = usePlayerStore(s => s.seek)
@@ -282,6 +295,7 @@ function SeekBar() {
         step={0.1}
         value={currentTime}
         onChange={e => seek(parseFloat(e.target.value))}
+        aria-label={t('player.seek')}
         className="w-full h-1 accent-white cursor-pointer"
         style={{
           background: `linear-gradient(to right, rgba(255,255,255,0.9) ${progress}%, rgba(255,255,255,0.2) ${progress}%)`

@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { jellyfin, JellyfinItem } from '../../services/jellyfin'
 import { Loader2 } from 'lucide-react'
 import { AlbumCard } from '../UI/MediaCard'
+import { useT } from '../../i18n'
 
 type SortOption = 'alphabetical' | 'recent'
 
@@ -17,6 +18,7 @@ function getSortParams(sort: SortOption): { sortBy: string; sortOrder: string } 
 }
 
 export default function AlbumGrid() {
+  const { t, tn } = useT()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const initialSort = searchParams.get('sort') === 'recent' ? 'recent' : 'alphabetical'
@@ -110,18 +112,19 @@ export default function AlbumGrid() {
     <div className="fade-in" ref={containerRef}>
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-title font-semibold">Albums</h1>
+          <h1 className="text-title font-semibold">{t('nav.albums')}</h1>
           {totalAlbums > 0 && (
-            <p className="text-sm text-text-secondary mt-1">{totalAlbums} albums</p>
+            <p className="text-sm text-text-secondary mt-1">{tn('common.albumCount', totalAlbums)}</p>
           )}
         </div>
         <select
           value={sort}
           onChange={e => setSort(e.target.value as SortOption)}
+          aria-label={t('library.sort')}
           className="bg-surface-2 border border-border rounded-sm px-3 h-8 text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent"
         >
-          <option value="alphabetical">A–Z</option>
-          <option value="recent">Recently added</option>
+          <option value="alphabetical">{t('library.sortAZ')}</option>
+          <option value="recent">{t('library.sortRecent')}</option>
         </select>
       </div>
 

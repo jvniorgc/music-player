@@ -13,8 +13,10 @@ import AddToPlaylist from '../UI/AddToPlaylist'
 import CoverArt from '../UI/CoverArt'
 import { formatTime } from '../../lib/format'
 import { ArtistLinks, AlbumLink } from '../UI/Links'
+import { useT } from '../../i18n'
 
 export default function NowPlayingBar() {
+  const { t } = useT()
   const {
     currentTrack, isPlaying, volume, shuffle, repeat,
     showQueue, togglePlay, next, previous, setVolume, toggleShuffle,
@@ -35,7 +37,7 @@ export default function NowPlayingBar() {
   if (!currentTrack) {
     return (
       <div className="h-14 bg-surface-1 border-b border-border flex items-center justify-center shrink-0">
-        <p className="text-text-tertiary text-sm">No song playing</p>
+        <p className="text-text-tertiary text-sm">{t('player.nothingPlaying')}</p>
       </div>
     )
   }
@@ -68,7 +70,7 @@ export default function NowPlayingBar() {
               {item.AlbumId ? <AlbumLink item={item}>{item.Name}</AlbumLink> : item.Name}
             </p>
             <p className="text-[11px] text-text-secondary truncate">
-              <ArtistLinks item={item} fallback="Unknown artist" />
+              <ArtistLinks item={item} fallback={t('player.unknownArtist')} />
             </p>
           </div>
           <ChevronUp size={14} className="text-text-tertiary shrink-0 ml-1" />
@@ -78,18 +80,25 @@ export default function NowPlayingBar() {
         <div className="flex items-center justify-center gap-5 shrink-0">
           <button
             onClick={toggleShuffle}
+            aria-label={t('player.shuffle')}
+            title={t('player.shuffle')}
+            aria-pressed={shuffle}
             className={`p-1 transition-colors ${shuffle ? 'text-accent' : 'text-text-tertiary hover:text-text-secondary'}`}
           >
             <Shuffle size={16} />
           </button>
           <button
             onClick={previous}
+            aria-label={t('player.previous')}
+            title={t('player.previous')}
             className="text-text-primary hover:text-white transition-colors p-1"
           >
             <SkipBack size={20} fill="currentColor" />
           </button>
           <button
             onClick={togglePlay}
+            aria-label={isPlaying ? t('player.pause') : t('player.play')}
+            title={isPlaying ? t('player.pause') : t('player.play')}
             className="w-9 h-9 bg-white rounded-full flex items-center justify-center hover:opacity-80 active:opacity-60 transition-opacity"
           >
             {isPlaying ? (
@@ -100,12 +109,16 @@ export default function NowPlayingBar() {
           </button>
           <button
             onClick={next}
+            aria-label={t('player.next')}
+            title={t('player.next')}
             className="text-text-primary hover:text-white transition-colors p-1"
           >
             <SkipForward size={20} fill="currentColor" />
           </button>
           <button
             onClick={toggleRepeat}
+            aria-label={t('player.repeat')}
+            title={t('player.repeat')}
             className={`p-1 transition-colors ${repeat !== 'none' ? 'text-accent' : 'text-text-tertiary hover:text-text-secondary'}`}
           >
             {repeat === 'one' ? <Repeat1 size={16} /> : <Repeat size={16} />}
@@ -119,7 +132,8 @@ export default function NowPlayingBar() {
           <button
             onClick={() => { fetchPlaylists(); setPickerSong(item) }}
             className="p-1.5 transition-colors text-text-tertiary hover:text-text-secondary"
-            title="Add to playlist"
+            title={t('player.addToPlaylist')}
+            aria-label={t('player.addToPlaylist')}
           >
             <ListPlus size={15} />
           </button>
@@ -127,7 +141,8 @@ export default function NowPlayingBar() {
           <button
             onClick={() => !downloaded && startDownload(item)}
             className={`p-1.5 transition-colors ${downloaded ? 'text-accent' : 'text-text-tertiary hover:text-text-secondary'}`}
-            title={downloaded ? 'Downloaded' : 'Download'}
+            title={downloaded ? t('player.downloaded') : t('player.download')}
+            aria-label={downloaded ? t('player.downloaded') : t('player.download')}
           >
             {downloaded ? <Check size={15} /> : <Download size={15} />}
           </button>
@@ -135,6 +150,8 @@ export default function NowPlayingBar() {
           <div className="flex items-center gap-1.5 group/vol">
             <button
               onClick={() => setVolume(volume > 0 ? 0 : 1)}
+              aria-label={volume === 0 ? t('player.unmute') : t('player.mute')}
+              title={volume === 0 ? t('player.unmute') : t('player.mute')}
               className="text-text-tertiary hover:text-text-secondary transition-colors p-0.5"
             >
               {volume === 0 ? <VolumeX size={15} /> : <Volume2 size={15} />}
@@ -146,6 +163,7 @@ export default function NowPlayingBar() {
               step={0.01}
               value={volume}
               onChange={e => setVolume(parseFloat(e.target.value))}
+              aria-label={t('player.volume')}
               className="w-20 accent-white"
               style={{
                 background: `linear-gradient(to right, rgba(255,255,255,0.8) ${volume * 100}%, rgba(255,255,255,0.2) ${volume * 100}%)`
@@ -155,6 +173,9 @@ export default function NowPlayingBar() {
 
           <button
             onClick={() => setShowQueue(!showQueue)}
+            aria-label={t('player.queue')}
+            title={t('player.queue')}
+            aria-pressed={showQueue}
             className={`p-1.5 transition-colors ${showQueue ? 'text-accent' : 'text-text-tertiary hover:text-text-secondary'}`}
           >
             <ListMusic size={16} />

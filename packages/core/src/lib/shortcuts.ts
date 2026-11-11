@@ -1,3 +1,4 @@
+import { t } from '../i18n'
 /** True when the event target is a text field where typing must not trigger shortcuts. */
 export function isEditableTarget(target: EventTarget | null): boolean {
   if (!target || typeof (target as HTMLElement).tagName !== 'string') return false
@@ -72,16 +73,16 @@ export function resolveShortcut(e: ShortcutEvent): ShortcutAction | null {
 export function shortcutList(isMac: boolean): { keys: string; action: string }[] {
   const mod = isMac ? '⌘' : 'Ctrl'
   return [
-    { keys: 'Space', action: 'Play / pause' },
-    { keys: `${mod} + →`, action: 'Next track' },
-    { keys: `${mod} + ←`, action: 'Previous track' },
-    { keys: 'Shift + → / ←', action: `Seek forward / back ${SEEK_STEP} seconds` },
-    { keys: `${mod} + ↑ / ↓`, action: 'Volume up / down' },
-    { keys: 'M', action: 'Mute / unmute' },
-    { keys: 'S', action: 'Toggle shuffle' },
-    { keys: 'R', action: 'Cycle repeat' },
-    { keys: `${mod} + F or /`, action: 'Search' },
-    { keys: 'Alt + ← / →', action: 'Go back / forward' },
+    { keys: t('shortcut.space'), action: t('shortcut.playPause') },
+    { keys: `${mod} + →`, action: t('shortcut.next') },
+    { keys: `${mod} + ←`, action: t('shortcut.previous') },
+    { keys: 'Shift + → / ←', action: t('shortcut.seek', { seconds: SEEK_STEP }) },
+    { keys: `${mod} + ↑ / ↓`, action: t('shortcut.volume') },
+    { keys: 'M', action: t('shortcut.mute') },
+    { keys: 'S', action: t('shortcut.shuffle') },
+    { keys: 'R', action: t('shortcut.repeat') },
+    { keys: `${mod} + F ${t('shortcut.or')} /`, action: t('shortcut.search') },
+    { keys: 'Alt + ← / →', action: t('shortcut.history') },
   ]
 }
 

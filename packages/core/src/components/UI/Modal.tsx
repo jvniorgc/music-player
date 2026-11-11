@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { X } from 'lucide-react'
 import { Button, Input } from './Button'
+import { useT } from '../../i18n'
 
 interface ModalProps {
   open: boolean
@@ -11,6 +12,7 @@ interface ModalProps {
 }
 
 export function Modal({ open, title, onClose, children }: ModalProps) {
+  const { t } = useT()
   useEffect(() => {
     if (!open) return
     const handleKey = (e: KeyboardEvent) => {
@@ -31,7 +33,7 @@ export function Modal({ open, title, onClose, children }: ModalProps) {
       >
         <div className="flex items-center justify-between px-6 py-4 border-b border-border">
           <h2 className="text-lg font-semibold">{title}</h2>
-          <Button variant="icon" onClick={onClose}>
+          <Button variant="icon" onClick={onClose} aria-label={t('common.close')} title={t('common.close')}>
             <X size={18} />
           </Button>
         </div>
@@ -52,7 +54,8 @@ interface InputModalProps {
   onConfirm: (value: string) => void
 }
 
-export function InputModal({ open, title, placeholder, initialValue = '', confirmLabel = 'Confirm', onClose, onConfirm }: InputModalProps) {
+export function InputModal({ open, title, placeholder, initialValue = '', confirmLabel, onClose, onConfirm }: InputModalProps) {
+  const { t } = useT()
   const [value, setValue] = useState(initialValue)
   const inputRef = useRef<HTMLInputElement>(null)
 
@@ -86,13 +89,13 @@ export function InputModal({ open, title, placeholder, initialValue = '', confir
           variant="secondary"
           onClick={onClose}
         >
-          Cancel
+          {t('common.cancel')}
         </Button>
         <Button
           onClick={handleSubmit}
           disabled={!value.trim()}
         >
-          {confirmLabel}
+          {confirmLabel ?? t('common.confirm')}
         </Button>
       </div>
     </Modal>
@@ -109,7 +112,8 @@ interface ConfirmModalProps {
   onConfirm: () => void
 }
 
-export function ConfirmModal({ open, title, message, confirmLabel = 'Confirm', destructive, onClose, onConfirm }: ConfirmModalProps) {
+export function ConfirmModal({ open, title, message, confirmLabel, destructive, onClose, onConfirm }: ConfirmModalProps) {
+  const { t } = useT()
   return (
     <Modal open={open} title={title} onClose={onClose}>
       <p className="text-sm text-text-secondary">{message}</p>
@@ -118,13 +122,13 @@ export function ConfirmModal({ open, title, message, confirmLabel = 'Confirm', d
           variant="secondary"
           onClick={onClose}
         >
-          Cancel
+          {t('common.cancel')}
         </Button>
         <Button
           variant={destructive ? 'danger' : 'primary'}
           onClick={() => { onConfirm(); onClose() }}
         >
-          {confirmLabel}
+          {confirmLabel ?? t('common.confirm')}
         </Button>
       </div>
     </Modal>
@@ -140,8 +144,9 @@ interface PlaylistPickerProps {
 }
 
 export function PlaylistPicker({ open, playlists, onClose, onSelect, onCreate }: PlaylistPickerProps) {
+  const { t } = useT()
   return (
-    <Modal open={open} title="Add to Playlist" onClose={onClose}>
+    <Modal open={open} title={t('menu.addToPlaylist')} onClose={onClose}>
       <div className="space-y-1 max-h-64 overflow-y-auto -mx-1">
         {playlists.map(pl => (
           <button
@@ -157,7 +162,7 @@ export function PlaylistPicker({ open, playlists, onClose, onSelect, onCreate }:
         onClick={() => { onCreate(); onClose() }}
         className="w-full mt-3 px-4 h-8 rounded-sm text-sm font-medium text-accent border border-border hover:bg-white/5 transition-colors"
       >
-        New playlist
+        {t('playlist.new')}
       </button>
     </Modal>
   )

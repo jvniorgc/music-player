@@ -13,10 +13,12 @@ import {
   User, HardDrive, Zap, Check, X, Music, AlertCircle, RefreshCw, Settings, Filter
 } from 'lucide-react'
 import { Input, buttonClass } from '../UI/Button'
+import { useT } from '../../i18n'
 
 type Tab = 'search' | 'transfers'
 
 export default function SoulseekView() {
+  const { t, tn } = useT()
   const toast = useToastStore(s => s.show)
 
   // Auto-configure on mount
@@ -141,7 +143,7 @@ export default function SoulseekView() {
       }, 2000)
     } catch (err) {
       console.error('Search error:', err)
-      toast('Error searching Soulseek', 'error')
+      toast(t('slsk.searchError'), 'error')
       setSearching(false)
     }
   }
@@ -149,10 +151,10 @@ export default function SoulseekView() {
   const handleDownloadFile = async (username: string, file: SlskdFile) => {
     try {
       await downloadFiles(username, [{ filename: file.filename, size: file.size }])
-      toast(`Download started: ${getFileName(file.filename)}`, 'success')
+      toast(t('slsk.started', { name: getFileName(file.filename) }), 'success')
     } catch (err) {
       console.error('Download error:', err)
-      toast('Error starting download', 'error')
+      toast(t('slsk.startError'), 'error')
     }
   }
 
@@ -160,24 +162,24 @@ export default function SoulseekView() {
     try {
       const audioFiles = files.filter(f => isAudioFile(f.filename))
       await downloadFiles(username, audioFiles.map(f => ({ filename: f.filename, size: f.size })))
-      toast(`Download of ${audioFiles.length} files started`, 'success')
+      toast(tn('slsk.startedMany', audioFiles.length), 'success')
     } catch (err) {
       console.error('Folder download error:', err)
-      toast('Error starting downloads', 'error')
+      toast(t('slsk.startManyError'), 'error')
     }
   }
 
   const handleRefreshLibrary = async () => {
     try {
       await jellyfin.refreshItem(jellyfin.userId!)
-      toast('Jellyfin library scan started', 'success')
+      toast(t('slsk.scanStarted'), 'success')
     } catch {
       // Try alternative endpoint
       try {
-        if (await jellyfin.refreshLibrary()) toast('Jellyfin library scan started', 'success')
-        else toast('No permission to scan the library', 'error')
+        if (await jellyfin.refreshLibrary()) toast(t('slsk.scanStarted'), 'success')
+        else toast(t('slsk.scanNoPermission'), 'error')
       } catch {
-        toast('Error updating library', 'error')
+        toast(t('slsk.scanError'), 'error')
       }
     }
   }
@@ -240,7 +242,8 @@ export default function SoulseekView() {
         <Link
           to="/settings#soulseek"
           className="p-2 rounded-sm transition-colors text-text-tertiary hover:text-text-primary hover:bg-white/5"
-          title="slskd settings"
+          title={t('slsk.settings')}
+          aria-label={t('slsk.settings')}
         >
           <Settings size={18} />
         </Link>
@@ -256,7 +259,7 @@ export default function SoulseekView() {
           }`}
         >
           <Search size={14} className="inline mr-2 -mt-0.5" />
-          Search
+          {t('slsk.search')}
         </button>
         <button
           onClick={() => setTab('transfers')}
@@ -265,7 +268,7 @@ export default function SoulseekView() {
           }`}
         >
           <Download size={14} className="inline mr-2 -mt-0.5" />
-          Transfers
+          {t('slsk.transfers')}
         </button>
       </div>
 
@@ -281,7 +284,7 @@ export default function SoulseekView() {
                 value={query}
                 onChange={e => setQuery(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && handleSearch()}
-                placeholder="Search songs, albums, artists..."
+                placeholder={t('slsk.placeholder')}
                 className="w-full bg-surface-2 border border-border rounded-sm pl-11 pr-4 h-10 text-sm text-text-primary placeholder:text-text-tertiary focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition"
               />
             </div>
@@ -291,7 +294,7 @@ export default function SoulseekView() {
               className={buttonClass('primary', 'h-10')}
             >
               {searching ? <Loader2 size={16} className="animate-spin" /> : <Search size={16} />}
-              Search
+              {t('slsk.search')}
             </button>
           </div>
 
@@ -300,8 +303,8 @@ export default function SoulseekView() {
             <div className="flex items-center gap-3 mb-4 text-sm text-text-secondary">
               {searching && <Loader2 size={14} className="animate-spin text-accent" />}
               <span>
-                {searchState.responseCount} users · {searchState.fileCount} files
-                {searchState.isComplete && ' · Complete'}
+                {tn('slsk.users', searchState.responseCount)} · {tn('slsk.files', searchState.fileCount)}
+                {searchState.isComplete && ` · ${t('slsk.complete')}`}
               </span>
             </div>
           )}
@@ -316,7 +319,7 @@ export default function SoulseekView() {
                   activeFormats.size === 0 ? 'bg-accent text-white' : 'bg-white/5 text-text-secondary hover:bg-white/10'
                 }`}
               >
-                All
+                {t('slsk.all')}
               </button>
               {availableFormats.map(([fmt, count]) => (
                 <button
@@ -351,7 +354,7 @@ export default function SoulseekView() {
           {!searching && filteredResponses.length === 0 && searchState && (
             <div className="text-center py-16 text-text-tertiary">
               <Search size={32} className="mx-auto mb-3 opacity-50" />
-              <p className="text-sm">No results with audio files</p>
+              <p className="text-sm">{t('slsk.noResults')}</p>
             </div>
           )}
         </div>
@@ -362,7 +365,7 @@ export default function SoulseekView() {
         <div>
           <div className="flex items-center justify-between mb-4">
             <p className="text-sm text-text-secondary">
-              {transfers.length > 0 ? `${transfers.length} download group(s)` : 'No active transfers'}
+              {transfers.length > 0 ? tn('slsk.groups', transfers.length) : t('slsk.noTransfers')}
             </p>
             <div className="flex items-center gap-2">
               <button
@@ -373,14 +376,14 @@ export default function SoulseekView() {
                 className="flex items-center gap-2 px-4 py-2 rounded-sm text-sm text-text-secondary hover:bg-white/5 transition-colors"
               >
                 <X size={14} />
-                Clear completed
+                {t('slsk.clearCompleted')}
               </button>
               <button
                 onClick={handleRefreshLibrary}
                 className="flex items-center gap-2 px-4 py-2 rounded-sm text-sm text-accent hover:bg-accent/10 transition-colors"
               >
                 <RefreshCw size={14} />
-                Update Jellyfin
+                {t('slsk.updateJellyfin')}
               </button>
             </div>
           </div>
@@ -407,6 +410,7 @@ function UserResult({ response, expanded, expandedDirs, onToggle, onToggleDir, o
   onDownloadFile: (f: SlskdFile) => void
   onDownloadFolder: (files: SlskdFile[]) => void
 }) {
+  const { t, tn } = useT()
   const audioFiles = response.files.filter(f => isAudioFile(f.filename))
   const dirs = groupFilesByDirectory(audioFiles)
 
@@ -422,10 +426,10 @@ function UserResult({ response, expanded, expandedDirs, onToggle, onToggleDir, o
         <div className="flex items-center gap-3 text-xs text-text-tertiary shrink-0">
           {response.hasFreeUploadSlot && (
             <span className="flex items-center gap-1 text-success">
-              <Zap size={11} /> Free
+              <Zap size={11} /> {t('slsk.free')}
             </span>
           )}
-          <span>{audioFiles.length} audio{audioFiles.length !== 1 ? 's' : ''}</span>
+          <span>{tn('slsk.audios', audioFiles.length)}</span>
           {response.uploadSpeed > 0 && (
             <span>{formatSpeed(response.uploadSpeed)}</span>
           )}
@@ -454,7 +458,8 @@ function UserResult({ response, expanded, expandedDirs, onToggle, onToggleDir, o
                   <button
                     onClick={() => onDownloadFolder(files)}
                     className="p-1.5 rounded-sm hover:bg-white/10 text-text-tertiary hover:text-accent transition-colors shrink-0"
-                    title="Download folder"
+                    title={t('slsk.downloadFolder')}
+                    aria-label={t('slsk.downloadFolder')}
                   >
                     <FolderDown size={14} />
                   </button>
@@ -477,6 +482,7 @@ function UserResult({ response, expanded, expandedDirs, onToggle, onToggleDir, o
 }
 
 function FileRow({ file, onDownload }: { file: SlskdFile; onDownload: () => void }) {
+  const { t } = useT()
   const ext = getFileExtension(file.filename).toUpperCase()
   const name = getFileName(file.filename)
 
@@ -495,7 +501,8 @@ function FileRow({ file, onDownload }: { file: SlskdFile; onDownload: () => void
       <button
         onClick={onDownload}
         className="p-1.5 rounded-sm opacity-0 group-hover:opacity-100 hover:bg-white/10 text-text-tertiary hover:text-accent transition-all shrink-0"
-        title="Download"
+        title={t('slsk.download')}
+        aria-label={t('slsk.download')}
       >
         <Download size={14} />
       </button>
@@ -527,6 +534,7 @@ function TransferGroup({ group, onRemove }: { group: SlskdTransferGroup; onRemov
 }
 
 function TransferRow({ file, onRemove }: { file: { id: string; filename: string; size: number; state: string; percentComplete: number; averageSpeed: number; bytesTransferred: number }; onRemove: () => void }) {
+  const { t } = useT()
   const name = getFileName(file.filename)
   const isComplete = file.state.includes('Succeeded')
   const isFailed = file.state.includes('Errored') || file.state.includes('Rejected') || file.state.includes('Cancelled')
@@ -558,13 +566,14 @@ function TransferRow({ file, onRemove }: { file: { id: string; filename: string;
         )}
       </div>
       <span className="text-xs text-text-tertiary shrink-0">
-        {isComplete ? formatFileSize(file.size) : isQueued ? 'Queued' : ''}
+        {isComplete ? formatFileSize(file.size) : isQueued ? t('slsk.queued') : ''}
       </span>
       {(isComplete || isFailed) && (
         <button
           onClick={onRemove}
           className="shrink-0 p-1 rounded hover:bg-white/10 text-text-tertiary hover:text-danger transition-colors"
-          title="Remove"
+          title={t('slsk.remove')}
+          aria-label={t('slsk.remove')}
         >
           <X size={13} />
         </button>

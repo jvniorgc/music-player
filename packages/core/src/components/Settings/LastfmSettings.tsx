@@ -4,10 +4,12 @@ import * as lastfm from '../../services/lastfm'
 import type { LastfmStatus } from '../../platform'
 import { buttonClass } from '../UI/Button'
 import { useToastStore } from '../../stores/toast'
+import { useT } from '../../i18n'
 
 const EMPTY_STATUS: LastfmStatus = { configured: false, connected: false, enabled: false, username: null }
 
 export function LastfmSettings() {
+  const { t } = useT()
   const toast = useToastStore(s => s.show)
 
   const [status, setStatus] = useState<LastfmStatus>(EMPTY_STATUS)
@@ -35,9 +37,9 @@ export function LastfmSettings() {
       await lastfm.setCredentials(apiKey.trim(), apiSecret.trim())
       setApiSecret('')
       await refresh()
-      toast('Last.fm credentials saved', 'success')
+      toast(t('lastfm.saved'), 'success')
     } catch (err: any) {
-      toast(err?.message || 'Failed to save credentials', 'error')
+      toast(err?.message || t('lastfm.saveFailed'), 'error')
     } finally {
       setBusy(false)
     }
@@ -48,9 +50,9 @@ export function LastfmSettings() {
     try {
       const { token } = await lastfm.startAuth()
       setPendingToken(token)
-      toast('Authorize the app in your browser, then click "Finish"', 'info')
+      toast(t('lastfm.authorizeHint'), 'info')
     } catch (err: any) {
-      toast(err?.message || 'Failed to start Last.fm auth', 'error')
+      toast(err?.message || t('lastfm.startFailed'), 'error')
     } finally {
       setBusy(false)
     }
@@ -63,9 +65,9 @@ export function LastfmSettings() {
       const { username } = await lastfm.finishAuth(pendingToken)
       setPendingToken(null)
       await refresh()
-      toast(`Connected to Last.fm as ${username}`, 'success')
+      toast(t('lastfm.connected', { username }), 'success')
     } catch (err: any) {
-      toast(err?.message || 'Failed to finish Last.fm auth', 'error')
+      toast(err?.message || t('lastfm.finishFailed'), 'error')
     } finally {
       setBusy(false)
     }
@@ -77,7 +79,7 @@ export function LastfmSettings() {
       await lastfm.setEnabled(!status.enabled)
       await refresh()
     } catch (err: any) {
-      toast(err?.message || 'Failed to update scrobbling', 'error')
+      toast(err?.message || t('lastfm.toggleFailed'), 'error')
     } finally {
       setBusy(false)
     }
@@ -89,9 +91,9 @@ export function LastfmSettings() {
       await lastfm.disconnect()
       setPendingToken(null)
       await refresh()
-      toast('Disconnected from Last.fm', 'success')
+      toast(t('lastfm.disconnected'), 'success')
     } catch (err: any) {
-      toast(err?.message || 'Failed to disconnect', 'error')
+      toast(err?.message || t('lastfm.disconnectFailed'), 'error')
     } finally {
       setBusy(false)
     }
@@ -101,26 +103,28 @@ export function LastfmSettings() {
     <div className="w-full border-t border-border pt-5">
       <div className="flex items-center gap-2 mb-3">
         <Radio size={16} className="text-accent" />
-        <h3 className="text-xs font-semibold text-text-secondary">Last.fm Scrobbling</h3>
+        <h3 className="text-xs font-semibold text-text-secondary">{t('lastfm.title')}</h3>
       </div>
 
       {!status.configured ? (
         <div className="space-y-3">
           <p className="text-xs text-text-tertiary">
-            Create an API account at last.fm/api, then paste your API key and shared secret.
+            {t('lastfm.setupHint')}
           </p>
           <input
             type="text"
             value={apiKey}
             onChange={e => setApiKey(e.target.value)}
-            placeholder="API key"
+            placeholder={t('lastfm.apiKey')}
+            aria-label={t('lastfm.apiKey')}
             className="w-full bg-surface-2 border border-border rounded-sm px-3 h-9 text-sm text-text-primary placeholder:text-text-tertiary focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition"
           />
           <input
             type="password"
             value={apiSecret}
             onChange={e => setApiSecret(e.target.value)}
-            placeholder="Shared secret"
+            placeholder={t('lastfm.secret')}
+            aria-label={t('lastfm.secret')}
             className="w-full bg-surface-2 border border-border rounded-sm px-3 h-9 text-sm text-text-primary placeholder:text-text-tertiary focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition"
           />
           <button
@@ -129,12 +133,12 @@ export function LastfmSettings() {
             className={buttonClass('primary')}
           >
             {busy && <Loader2 size={14} className="animate-spin" />}
-            Save credentials
+            {t('lastfm.saveCredentials')}
           </button>
         </div>
       ) : !status.connected ? (
         <div className="space-y-3">
-          <p className="text-xs text-text-tertiary">Link your Last.fm account to start scrobbling.</p>
+          <p className="text-xs text-text-tertiary">{t('lastfm.linkHint')}</p>
           <div className="flex gap-2">
             <button
               onClick={handleConnect}
@@ -142,7 +146,7 @@ export function LastfmSettings() {
               className={buttonClass('primary')}
             >
               {busy ? <Loader2 size={14} className="animate-spin" /> : <ExternalLink size={14} />}
-              {pendingToken ? 'Re-open authorize page' : 'Connect account'}
+              {pendingToken ? t('lastfm.reopen') : t('lastfm.connect')}
             </button>
             {pendingToken && (
               <button
@@ -151,7 +155,7 @@ export function LastfmSettings() {
                 className={buttonClass('secondary')}
               >
                 <Check size={14} />
-                Finish
+                {t('lastfm.finish')}
               </button>
             )}
           </div>
@@ -161,21 +165,22 @@ export function LastfmSettings() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 text-sm text-text-primary">
               <Check size={14} className="text-success" />
-              Connected as <span className="font-semibold">{status.username}</span>
+              {t('lastfm.connectedAs')} <span className="font-semibold">{status.username}</span>
             </div>
             <button
               onClick={handleDisconnect}
               disabled={busy}
               className="text-xs text-text-tertiary hover:text-danger transition-colors disabled:opacity-40"
             >
-              Disconnect
+              {t('lastfm.disconnect')}
             </button>
           </div>
           <label className="flex items-center justify-between cursor-pointer">
-            <span className="text-sm text-text-secondary">Scrobble played tracks</span>
+            <span className="text-sm text-text-secondary">{t('lastfm.scrobble')}</span>
             <button
               role="switch"
               aria-checked={status.enabled}
+              aria-label={t('lastfm.scrobble')}
               onClick={handleToggleEnabled}
               disabled={busy}
               className={`relative w-10 h-6 rounded-full transition-colors disabled:opacity-40 ${status.enabled ? 'bg-accent' : 'bg-white/15'}`}

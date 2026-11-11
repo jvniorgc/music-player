@@ -8,6 +8,7 @@ import { useToastStore } from '../../stores/toast'
 import { Modal } from '../UI/Modal'
 import { Search, Loader2, Check, User, ArrowLeft, Image, MapPin, Calendar, Upload, ChevronRight } from 'lucide-react'
 import { Button, buttonClass } from '../UI/Button'
+import { useT } from '../../i18n'
 
 interface ArtistMetadataEditorProps {
   artist: JellyfinItem
@@ -19,6 +20,7 @@ interface ArtistMetadataEditorProps {
 type Step = 'search' | 'results' | 'preview'
 
 export default function ArtistMetadataEditor({ artist, open, onClose, onApplied }: ArtistMetadataEditorProps) {
+  const { t, tn } = useT()
   const toast = useToastStore(s => s.show)
 
   const [step, setStep] = useState<Step>('search')
@@ -54,7 +56,7 @@ export default function ArtistMetadataEditor({ artist, open, onClose, onApplied 
       setStep('results')
     } catch (err) {
       console.error('MusicBrainz artist search error:', err)
-      toast('Error searching MusicBrainz', 'error')
+      toast(t('meta.searchError'), 'error')
     }
     setSearching(false)
   }
@@ -78,7 +80,7 @@ export default function ArtistMetadataEditor({ artist, open, onClose, onApplied 
       setImageUrl(img)
     } catch (err) {
       console.error('Failed to get artist details:', err)
-      toast('Error loading details', 'error')
+      toast(t('meta.detailsError'), 'error')
     }
     setLoadingDetails(false)
     setLoadingImage(false)
@@ -93,20 +95,20 @@ export default function ArtistMetadataEditor({ artist, open, onClose, onApplied 
       if (imageUrl) {
         try {
           await jellyfin.uploadImage(artist.Id, imageUrl)
-          toast('Artist image updated', 'success')
+          toast(t('artistMeta.imageUpdated'), 'success')
         } catch (err) {
           console.warn('Artist image upload failed:', err)
-          toast('Could not upload artist image', 'error')
+          toast(t('artistMeta.uploadFailed'), 'error')
         }
       } else {
-        toast('No image found for this artist', 'error')
+        toast(t('artistMeta.noImage'), 'error')
       }
 
       onApplied()
       onClose()
     } catch (err) {
       console.error('Failed to apply artist metadata:', err)
-      toast('Error applying metadata', 'error')
+      toast(t('meta.applyError'), 'error')
     }
 
     setApplying(false)
@@ -116,19 +118,19 @@ export default function ArtistMetadataEditor({ artist, open, onClose, onApplied 
     const file = e.target.files?.[0]
     if (!file) return
     if (!file.type.startsWith('image/')) {
-      toast('Please select an image file', 'error')
+      toast(t('artistMeta.notImage'), 'error')
       return
     }
 
     setUploading(true)
     try {
       await jellyfin.uploadImageBlob(artist.Id, file)
-      toast('Artist image updated', 'success')
+      toast(t('artistMeta.imageUpdated'), 'success')
       onApplied()
       onClose()
     } catch (err) {
       console.error('File upload failed:', err)
-      toast('Could not upload image', 'error')
+      toast(t('artistMeta.fileUploadFailed'), 'error')
     }
     setUploading(false)
     // Reset input so the same file can be re-selected
@@ -138,7 +140,7 @@ export default function ArtistMetadataEditor({ artist, open, onClose, onApplied 
   const renderSearch = () => (
     <div className="space-y-4">
       <p className="text-sm text-text-secondary">
-        Search MusicBrainz for artist image or upload a file
+        {t('artistMeta.intro')}
       </p>
       <div className="flex gap-2">
         <input
@@ -146,12 +148,13 @@ export default function ArtistMetadataEditor({ artist, open, onClose, onApplied 
           value={query}
           onChange={e => setQuery(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && handleSearch()}
-          placeholder="Artist name..."
+          placeholder={t('artistMeta.placeholder')}
           className="flex-1 bg-surface-2 border border-border rounded-sm px-3 h-9 text-sm text-text-primary placeholder:text-text-tertiary focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition"
           autoFocus
         />
         <button
           onClick={handleSearch}
+          aria-label={t('meta.search')}
           disabled={searching || !query.trim()}
           className={buttonClass('primary', 'h-9')}
         >
@@ -164,7 +167,7 @@ export default function ArtistMetadataEditor({ artist, open, onClose, onApplied 
           <div className="w-full border-t border-border" />
         </div>
         <div className="relative flex justify-center">
-          <span className="bg-surface-1 px-3 text-xs text-text-tertiary">or</span>
+          <span className="bg-surface-1 px-3 text-xs text-text-tertiary">{t('artistMeta.or')}</span>
         </div>
       </div>
 
@@ -185,7 +188,7 @@ export default function ArtistMetadataEditor({ artist, open, onClose, onApplied 
         ) : (
           <Upload size={16} />
         )}
-        {uploading ? 'Uploading...' : 'Upload image file'}
+        {uploading ? t('artistMeta.uploading') : t('artistMeta.upload')}
       </button>
     </div>
   )
@@ -196,10 +199,11 @@ export default function ArtistMetadataEditor({ artist, open, onClose, onApplied 
         <Button
           variant="icon"
           onClick={() => setStep('search')}
+          aria-label={t('nav.back')}
         >
           <ArrowLeft size={16} />
         </Button>
-        <span className="text-sm text-text-secondary">{results.length} results</span>
+        <span className="text-sm text-text-secondary">{tn('artistMeta.results', results.length)}</span>
       </div>
       <div className="max-h-80 overflow-y-auto space-y-1 -mx-1">
         {results.map(mbArtist => (
@@ -238,7 +242,7 @@ export default function ArtistMetadataEditor({ artist, open, onClose, onApplied 
           </button>
         ))}
         {results.length === 0 && (
-          <p className="text-center text-sm text-text-tertiary py-6">No artists found</p>
+          <p className="text-center text-sm text-text-tertiary py-6">{t('artistMeta.noArtists')}</p>
         )}
       </div>
     </div>
@@ -250,10 +254,11 @@ export default function ArtistMetadataEditor({ artist, open, onClose, onApplied 
         <Button
           variant="icon"
           onClick={() => setStep('results')}
+          aria-label={t('nav.back')}
         >
           <ArrowLeft size={16} />
         </Button>
-        <span className="text-sm text-text-secondary">Preview</span>
+        <span className="text-sm text-text-secondary">{t('meta.preview')}</span>
       </div>
 
       {loadingDetails ? (
@@ -312,7 +317,7 @@ export default function ArtistMetadataEditor({ artist, open, onClose, onApplied 
           <div className="flex items-center gap-2 p-3 rounded-md bg-surface-2">
             <Image size={16} className={imageUrl ? 'text-success' : 'text-text-tertiary'} />
             <span className="text-sm text-text-secondary">
-              {loadingImage ? 'Searching for image...' : imageUrl ? 'Image found' : 'No image available'}
+              {loadingImage ? t('artistMeta.searchingImage') : imageUrl ? t('artistMeta.imageFound') : t('artistMeta.noImageAvailable')}
             </span>
           </div>
 
@@ -322,7 +327,7 @@ export default function ArtistMetadataEditor({ artist, open, onClose, onApplied 
               variant="secondary"
               onClick={onClose}
             >
-              Cancel
+              {t('common.cancel')}
             </Button>
             <button
               onClick={handleApply}
@@ -334,7 +339,7 @@ export default function ArtistMetadataEditor({ artist, open, onClose, onApplied 
               ) : (
                 <Check size={14} />
               )}
-              Apply Image
+              {t('artistMeta.apply')}
             </button>
           </div>
         </>
@@ -343,7 +348,7 @@ export default function ArtistMetadataEditor({ artist, open, onClose, onApplied 
   )
 
   return (
-    <Modal open={open} title="Artist image lookup" onClose={onClose}>
+    <Modal open={open} title={t('artistMeta.title')} onClose={onClose}>
       {step === 'search' && renderSearch()}
       {step === 'results' && renderResults()}
       {step === 'preview' && renderPreview()}

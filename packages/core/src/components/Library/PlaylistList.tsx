@@ -8,8 +8,10 @@ import { InputModal, ConfirmModal } from '../UI/Modal'
 import { useToastStore } from '../../stores/toast'
 import { buttonClass } from '../UI/Button'
 import { useShallow } from 'zustand/react/shallow'
+import { useT } from '../../i18n'
 
 export default function PlaylistList() {
+  const { t, tn } = useT()
   const { playlists, fetchPlaylists } = useLibraryStore(useShallow(s => ({ playlists: s.playlists, fetchPlaylists: s.fetchPlaylists })))
   const navigate = useNavigate()
   const toast = useToastStore(s => s.show)
@@ -34,11 +36,11 @@ export default function PlaylistList() {
     try {
       const res = await jellyfin.createPlaylist(name)
       await fetchPlaylists()
-      toast('Playlist created', 'success')
+      toast(t('playlist.created'), 'success')
       navigate(`/playlist/${res.Id}`)
     } catch (err) {
       console.error('Failed to create playlist:', err)
-      toast('Error creating playlist', 'error')
+      toast(t('playlist.createFailed'), 'error')
     }
   }
 
@@ -47,10 +49,10 @@ export default function PlaylistList() {
     try {
       await jellyfin.renameItem(renameTarget.Id, name)
       await fetchPlaylists()
-      toast('Playlist renamed', 'success')
+      toast(t('playlist.renamed'), 'success')
     } catch (err) {
       console.error('Failed to rename playlist:', err)
-      toast('Could not rename. The playlist may be read-only.', 'error')
+      toast(t('playlist.renameFailed'), 'error')
     }
   }
 
@@ -59,10 +61,10 @@ export default function PlaylistList() {
     try {
       await jellyfin.deleteItem(deleteTarget.Id)
       await fetchPlaylists()
-      toast('Playlist deleted', 'success')
+      toast(t('playlist.deleted'), 'success')
     } catch (err) {
       console.error('Failed to delete playlist:', err)
-      toast('Could not delete. File-based playlists (.m3u) cannot be deleted by the app.', 'error')
+      toast(t('playlist.deleteFailed'), 'error')
     }
   }
 
@@ -70,9 +72,9 @@ export default function PlaylistList() {
     <div className="fade-in">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-title font-semibold">Playlists</h1>
+          <h1 className="text-title font-semibold">{t('nav.playlists')}</h1>
           {playlists.length > 0 && (
-            <p className="text-sm text-text-secondary mt-1">{playlists.length} playlists</p>
+            <p className="text-sm text-text-secondary mt-1">{tn('common.playlistCount', playlists.length)}</p>
           )}
         </div>
         <button
@@ -80,7 +82,7 @@ export default function PlaylistList() {
           className={buttonClass('primary')}
         >
           <Plus size={16} />
-          New playlist
+          {t('playlist.new')}
         </button>
       </div>
 
@@ -103,7 +105,7 @@ export default function PlaylistList() {
                     <div className="min-w-0 flex-1">
                       <p className="text-sm font-medium truncate">{pl.Name}</p>
                       <p className="text-xs text-text-secondary">
-                        {pl.ChildCount ? `${pl.ChildCount} songs` : 'Playlist'}
+                        {pl.ChildCount ? tn('common.songCount', pl.ChildCount) : t('playlist.label')}
                       </p>
                     </div>
                     <button
@@ -111,6 +113,8 @@ export default function PlaylistList() {
                         e.stopPropagation()
                         setContextMenu({ id: pl.Id, x: e.clientX, y: e.clientY })
                       }}
+                      aria-label={t('menu.more')}
+                      title={t('menu.more')}
                       className="p-1.5 rounded-full opacity-0 group-hover:opacity-100 hover:bg-white/10 text-text-tertiary transition-all shrink-0"
                     >
                       <MoreHorizontal size={16} />
@@ -129,14 +133,14 @@ export default function PlaylistList() {
                         className="flex items-center gap-3 w-full px-4 py-2 text-sm hover:bg-white/10 transition-colors"
                       >
                         <Pencil size={14} />
-                        Rename
+                        {t('playlist.rename')}
                       </button>
                       <button
                         onClick={() => { setContextMenu(null); setDeleteTarget(pl) }}
                         className="flex items-center gap-3 w-full px-4 py-2 text-sm text-danger hover:bg-white/10 transition-colors"
                       >
                         <Trash2 size={14} />
-                        Delete
+                        {t('playlist.delete')}
                       </button>
                     </div>
                   )}
@@ -148,42 +152,42 @@ export default function PlaylistList() {
       ) : (
         <div className="flex flex-col items-center justify-center py-24 text-text-tertiary">
           <ListMusic size={48} className="mb-4 opacity-50" />
-          <h3 className="text-lg font-medium text-text-secondary mb-1">No playlists</h3>
-          <p className="text-sm mb-4">Create your first playlist</p>
+          <h3 className="text-lg font-medium text-text-secondary mb-1">{t('playlist.empty')}</h3>
+          <p className="text-sm mb-4">{t('playlist.emptyHint')}</p>
           <button
             onClick={() => setShowCreate(true)}
             className={buttonClass('primary')}
           >
             <Plus size={16} />
-            Create Playlist
+            {t('playlist.create')}
           </button>
         </div>
       )}
 
       <InputModal
         open={showCreate}
-        title="New playlist"
-        placeholder="Playlist name"
-        confirmLabel="Create"
+        title={t('playlist.new')}
+        placeholder={t('playlist.namePlaceholder')}
+        confirmLabel={t('common.create')}
         onClose={() => setShowCreate(false)}
         onConfirm={handleCreate}
       />
 
       <InputModal
         open={!!renameTarget}
-        title="Rename playlist"
-        placeholder="New name"
+        title={t('playlist.renameTitle')}
+        placeholder={t('playlist.newNamePlaceholder')}
         initialValue={renameTarget?.Name || ''}
-        confirmLabel="Rename"
+        confirmLabel={t('playlist.rename')}
         onClose={() => setRenameTarget(null)}
         onConfirm={handleRename}
       />
 
       <ConfirmModal
         open={!!deleteTarget}
-        title="Delete playlist"
-        message={`Are you sure you want to delete "${deleteTarget?.Name}"? This action cannot be undone.`}
-        confirmLabel="Delete"
+        title={t('playlist.deleteTitle')}
+        message={t('playlist.deleteConfirm', { name: deleteTarget?.Name ?? '' })}
+        confirmLabel={t('playlist.delete')}
         destructive
         onClose={() => setDeleteTarget(null)}
         onConfirm={handleDelete}

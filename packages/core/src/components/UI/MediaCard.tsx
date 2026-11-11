@@ -5,6 +5,7 @@ import { jellyfin, type JellyfinItem } from '../../services/jellyfin'
 import { usePlayerStore } from '../../stores/player'
 import { ArtistLinks } from './Links'
 import AlbumMenu from './AlbumMenu'
+import { useT } from '../../i18n'
 
 export const CARD_FALLBACK_CLASS =
   'w-full h-full flex items-center justify-center bg-surface-2'
@@ -34,6 +35,7 @@ export default function MediaCard({
   imageUrl, kind = 'album', fallback, fallbackClassName = CARD_FALLBACK_CLASS, shape = 'square',
   title, subtitle, caption, onClick, onContextMenu, onPlay, menu,
 }: MediaCardProps) {
+  const { t } = useT()
   const circle = shape === 'circle'
   return (
     <div
@@ -55,7 +57,7 @@ export default function MediaCard({
         {onPlay && (
           <button
             onClick={(e) => { e.stopPropagation(); onPlay(e) }}
-            aria-label="Play"
+            aria-label={t('common.play')}
             className="absolute bottom-2 right-2 w-9 h-9 bg-accent hover:bg-accent-hover rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity shadow-md"
           >
             <Play size={16} className="text-white ml-0.5" fill="white" />

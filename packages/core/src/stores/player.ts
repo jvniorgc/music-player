@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { useToastStore } from './toast'
 import { playback, QueueTrack, RepeatMode, PlaybackContext } from '../services/playback'
 import { JellyfinItem, jellyfin } from '../services/jellyfin'
+import { t } from '../i18n'
 import { getRecommendations } from '../services/recommendations'
 
 interface PlayerState {
@@ -81,14 +82,14 @@ export const usePlayerStore = create<PlayerState>((set) => ({
   shuffleAllSongs: async () => {
     const res = await jellyfin.getRandomSongs()
     if (res.Items.length > 0) {
-      playback.setQueue(res.Items, 0, { type: 'library', name: 'Your library' })
+      playback.setQueue(res.Items, 0, { type: 'library', name: t('player.yourLibrary') })
     }
   },
 
   startRadio: async () => {
     const items = await getRecommendations()
     if (items.length > 0) {
-      playback.setQueue(items, 0, { type: 'mix', name: 'Instant mix' })
+      playback.setQueue(items, 0, { type: 'mix', name: t('home.instantMix') })
     }
     return items.length
   },
@@ -196,7 +197,7 @@ export const usePlayerStore = create<PlayerState>((set) => ({
           syncQueue()
           break
         case 'error':
-          useToastStore.getState().show(String(data || 'Playback error'), 'error')
+          useToastStore.getState().show(String(data || t('playback.error')), 'error')
           break
         case 'volumechange':
           set({ volume: data })

@@ -15,8 +15,10 @@ import CoverArt from '../UI/CoverArt'
 import { buttonClass } from '../UI/Button'
 import { CoverFallbackIcon } from '../UI/CoverArt'
 import { useShallow } from 'zustand/react/shallow'
+import { useT } from '../../i18n'
 
 export default function PlaylistView() {
+  const { t, tn } = useT()
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const [playlist, setPlaylist] = useState<JellyfinItem | null>(null)
@@ -59,10 +61,10 @@ export default function PlaylistView() {
       await jellyfin.renameItem(id, name)
       setPlaylist(prev => prev ? { ...prev, Name: name } : prev)
       fetchPlaylists()
-      toast('Playlist renamed', 'success')
+      toast(t('playlist.renamed'), 'success')
     } catch (err) {
       console.error('Failed to rename playlist:', err)
-      toast('Could not rename this playlist', 'error')
+      toast(t('playlist.renameThisFailed'), 'error')
     }
   }
 
@@ -71,11 +73,11 @@ export default function PlaylistView() {
     try {
       await jellyfin.deleteItem(id)
       fetchPlaylists()
-      toast('Playlist deleted', 'success')
+      toast(t('playlist.deleted'), 'success')
       navigate('/playlists')
     } catch (err) {
       console.error('Failed to delete playlist:', err)
-      toast('Could not delete. File-based playlists cannot be deleted.', 'error')
+      toast(t('playlist.deleteFileFailed'), 'error')
     }
   }
 
@@ -84,22 +86,22 @@ export default function PlaylistView() {
     try {
       await jellyfin.removeFromPlaylist(id, [track.PlaylistItemId])
       setTracks(prev => prev.filter(t => t.PlaylistItemId !== track.PlaylistItemId))
-      toast('Song removed from playlist', 'success')
+      toast(t('playlist.trackRemoved'), 'success')
     } catch (err) {
       console.error('Failed to remove track:', err)
-      toast('Could not remove. The playlist may be read-only.', 'error')
+      toast(t('playlist.removeFailed'), 'error')
     }
   }
 
   if (loading) {
-    return <div className="flex items-center justify-center py-24 text-text-tertiary">Loading...</div>
+    return <div className="flex items-center justify-center py-24 text-text-tertiary">{t('common.loading')}</div>
   }
 
   const imageUrl = playlist?.ImageTags?.Primary
     ? jellyfin.getImageUrl(playlist.Id, playlist.ImageTags.Primary, 600)
     : null
 
-  const playlistContext: PlaybackContext = { type: 'playlist', id: id || '', name: playlist?.Name || 'Playlist' }
+  const playlistContext: PlaybackContext = { type: 'playlist', id: id || '', name: playlist?.Name || t('playlist.label') }
   const isCurrentPlaylist = currentTrack && tracks.some(t => t.Id === currentTrack.id)
 
   return (
@@ -117,9 +119,9 @@ export default function PlaylistView() {
         </div>
 
         <div className="flex flex-col justify-end min-w-0">
-          <p className="text-xs font-medium text-text-tertiary mb-2">Playlist</p>
+          <p className="text-xs font-medium text-text-tertiary mb-2">{t('playlist.label')}</p>
           <h1 className="text-title font-semibold truncate">{playlist?.Name}</h1>
-          <p className="text-sm text-text-secondary mt-2">{tracks.length} songs</p>
+          <p className="text-sm text-text-secondary mt-2">{tn('common.songCount', tracks.length)}</p>
 
           <div className="flex items-center gap-3 mt-5">
             <button
@@ -130,7 +132,7 @@ export default function PlaylistView() {
               className={buttonClass('primary')}
             >
               {isCurrentPlaylist && isPlaying ? <Pause size={16} fill="white" /> : <Play size={16} fill="white" className="ml-0.5" />}
-              {isCurrentPlaylist && isPlaying ? 'Pause' : 'Play'}
+              {isCurrentPlaylist && isPlaying ? t('common.pause') : t('common.play')}
             </button>
             <button
               onClick={() => {
@@ -139,19 +141,21 @@ export default function PlaylistView() {
               className={buttonClass('secondary')}
             >
               <Shuffle size={15} />
-              Shuffle
+              {t('common.shuffle')}
             </button>
             <button
               onClick={() => setShowRename(true)}
               className="w-8 h-8 inline-flex items-center justify-center rounded-full border border-border text-text-secondary hover:text-text-primary hover:bg-white/10 transition-colors"
-              title="Rename"
+              title={t('playlist.rename')}
+              aria-label={t('playlist.rename')}
             >
               <Pencil size={15} />
             </button>
             <button
               onClick={() => setShowDelete(true)}
               className="w-8 h-8 inline-flex items-center justify-center rounded-full border border-border text-text-secondary hover:text-danger hover:bg-white/10 transition-colors"
-              title="Delete"
+              title={t('playlist.delete')}
+              aria-label={t('playlist.delete')}
             >
               <Trash2 size={15} />
             </button>
@@ -192,25 +196,25 @@ export default function PlaylistView() {
       ) : (
         <div className="flex flex-col items-center justify-center py-16 text-text-tertiary">
           <ListMusic size={40} className="mb-3 opacity-50" />
-          <p className="text-sm">Empty playlist</p>
+          <p className="text-sm">{t('playlist.emptyPlaylist')}</p>
         </div>
       )}
 
       <InputModal
         open={showRename}
-        title="Rename playlist"
-        placeholder="New name"
+        title={t('playlist.renameTitle')}
+        placeholder={t('playlist.newNamePlaceholder')}
         initialValue={playlist?.Name || ''}
-        confirmLabel="Rename"
+        confirmLabel={t('playlist.rename')}
         onClose={() => setShowRename(false)}
         onConfirm={handleRename}
       />
 
       <ConfirmModal
         open={showDelete}
-        title="Delete playlist"
-        message={`Are you sure you want to delete "${playlist?.Name}"? This action cannot be undone.`}
-        confirmLabel="Delete"
+        title={t('playlist.deleteTitle')}
+        message={t('playlist.deleteConfirm', { name: playlist?.Name ?? '' })}
+        confirmLabel={t('playlist.delete')}
         destructive
         onClose={() => setShowDelete(false)}
         onConfirm={handleDelete}

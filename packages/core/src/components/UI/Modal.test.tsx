@@ -121,7 +121,7 @@ describe('PlaylistPicker', () => {
 
   it('renders an empty list without a create-implied selection', () => {
     render(<PlaylistPicker open playlists={[]} onClose={() => {}} onSelect={() => {}} onCreate={() => {}} />)
-    const dialog = screen.getByText('Add to Playlist').closest('div')!
+    const dialog = screen.getByText('Add to playlist').closest('div')!
     expect(within(dialog.parentElement!).getByRole('button', { name: 'New playlist' })).toBeInTheDocument()
   })
 })

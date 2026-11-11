@@ -1,11 +1,13 @@
 import type { ReactNode } from 'react'
 import { Play } from 'lucide-react'
 import { formatTicks } from '../../lib/format'
+import { useT } from '../../i18n'
 
 /** Animated equalizer bars shown for the currently playing track. */
 export function PlayingBars() {
+  const { t } = useT()
   return (
-    <div className="flex items-end justify-end gap-[2px] h-3" aria-label="Playing">
+    <div className="flex items-end justify-end gap-[2px] h-3" aria-label={t('player.playing')}>
       <div className="eq-bar w-[3px] h-3 bg-accent rounded-[1px]" />
       <div className="eq-bar w-[3px] h-3 bg-accent rounded-[1px]" style={{ animationDelay: '-0.4s' }} />
       <div className="eq-bar w-[3px] h-3 bg-accent rounded-[1px]" style={{ animationDelay: '-0.7s' }} />

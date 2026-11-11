@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import type { JellyfinItem } from '../../services/jellyfin'
 import { usePlayerStore } from '../../stores/player'
 import { contextPath } from '../../lib/playbackContext'
+import { useT } from '../../i18n'
 
 const LINK_CLASS = 'hover:underline hover:text-text-primary cursor-pointer'
 
@@ -62,14 +63,15 @@ export function AlbumLink({ item, className = '', children }: {
 }
 
 /** "Artist A, Artist B — Album" with every part linked. */
-export function TrackSubtitle({ item, showAlbum = true, fallback = 'Unknown artist' }: {
+export function TrackSubtitle({ item, showAlbum = true, fallback }: {
   item: JellyfinItem
   showAlbum?: boolean
   fallback?: string
 }) {
+  const { t } = useT()
   return (
     <>
-      <ArtistLinks item={item} fallback={fallback} />
+      <ArtistLinks item={item} fallback={fallback ?? t('player.unknownArtist')} />
       {showAlbum && item.Album && <> — <AlbumLink item={item} /></>}
     </>
   )
@@ -77,13 +79,14 @@ export function TrackSubtitle({ item, showAlbum = true, fallback = 'Unknown arti
 
 /** "Playing from <context>", linking to the context's page when it has one. */
 export function PlayingFrom({ className = '' }: { className?: string }) {
+  const { t } = useT()
   const context = usePlayerStore(s => s.context)
   const go = useLinkNavigate()
   if (!context?.name) return null
   const to = contextPath(context)
   return (
     <p className={`text-xs text-text-tertiary truncate ${className}`}>
-      Playing from{' '}
+      {t('player.playingFrom')}{' '}
       {to ? (
         <a href={`#${to}`} className={`${LINK_CLASS} text-text-secondary font-medium`} onClick={e => go(e, to)}>
           {context.name}

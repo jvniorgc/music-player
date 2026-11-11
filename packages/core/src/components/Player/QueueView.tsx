@@ -7,6 +7,7 @@ import TrackMenu, { MENU_TEXT } from '../UI/TrackMenu'
 import { formatTicks } from '../../lib/format'
 import { ArtistLinks, TrackSubtitle, PlayingFrom } from '../UI/Links'
 import { useShallow } from 'zustand/react/shallow'
+import { useT } from '../../i18n'
 
 function TrackRow({ track, index, onPlay, onRemove }: {
   track: QueueTrack
@@ -42,6 +43,7 @@ function TrackRow({ track, index, onPlay, onRemove }: {
 }
 
 export default function QueueView() {
+  const { t, tn } = useT()
   const { currentTrack, userQueue, contextUpNext, contextName, setShowQueue, playUserQueueAt, playContextAt, removeFromUserQueue, removeFromContext } = usePlayerStore(useShallow(s => ({
     currentTrack: s.currentTrack,
     userQueue: s.userQueue,
@@ -59,9 +61,11 @@ export default function QueueView() {
   return (
     <div className="w-80 bg-surface-1 border-l border-border flex flex-col h-full">
       <div className="flex items-center justify-between px-5 pt-14 pb-3">
-        <h2 className="text-lg font-semibold">Queue</h2>
+        <h2 className="text-lg font-semibold">{t('queue.title')}</h2>
         <button
           onClick={() => setShowQueue(false)}
+          aria-label={t('queue.close')}
+          title={t('queue.close')}
           className="p-1.5 rounded-sm hover:bg-white/10 transition-colors text-text-secondary"
         >
           <X size={16} />
@@ -73,7 +77,7 @@ export default function QueueView() {
       {/* Now Playing */}
       {currentTrack && (
         <div className="px-4 mb-4">
-          <p className="text-xs font-medium text-text-tertiary px-2 mb-2">Now playing</p>
+          <p className="text-xs font-medium text-text-tertiary px-2 mb-2">{t('queue.nowPlaying')}</p>
           <div className="flex items-center gap-3 px-2 py-2 rounded-sm bg-white/5">
             <CoverArt
               src={currentTrack.item.AlbumId ? jellyfin.getImageUrl(currentTrack.item.AlbumId, undefined, 80) : null}
@@ -97,7 +101,7 @@ export default function QueueView() {
         {userQueue.length > 0 && (
           <div className="mb-4">
             <p className="text-xs font-medium text-text-tertiary px-2 mb-2">
-              Next in Queue · {userQueue.length} {userQueue.length === 1 ? 'song' : 'songs'}
+              {tn('queue.nextInQueue', userQueue.length)}
             </p>
             <div className="space-y-0.5">
               {userQueue.map((track, i) => (
@@ -117,7 +121,7 @@ export default function QueueView() {
         {contextUpNext.length > 0 && (
           <div>
             <p className="text-xs font-medium text-text-tertiary px-2 mb-2">
-              {contextName ? `Next from ${contextName}` : 'Next up'}
+              {contextName ? t('queue.nextFrom', { name: contextName }) : t('queue.nextUp')}
             </p>
             <div className="space-y-0.5">
               {contextUpNext.map((track, i) => (
@@ -136,7 +140,7 @@ export default function QueueView() {
         {isEmpty && (
           <div className="flex flex-col items-center justify-center py-12 text-text-tertiary">
             <Music size={32} className="mb-3 opacity-50" />
-            <p className="text-sm">Empty queue</p>
+            <p className="text-sm">{t('queue.empty')}</p>
           </div>
         )}
       </div>

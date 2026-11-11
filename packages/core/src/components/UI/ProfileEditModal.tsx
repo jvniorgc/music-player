@@ -8,6 +8,7 @@ import { useToastStore } from '../../stores/toast'
 import { Button, Input, buttonClass } from './Button'
 import { CoverFallbackIcon } from './CoverArt'
 import { useShallow } from 'zustand/react/shallow'
+import { useT } from '../../i18n'
 
 interface ProfileEditModalProps {
   open: boolean
@@ -17,6 +18,7 @@ interface ProfileEditModalProps {
 export function ProfileEditModal({ open, onClose }: ProfileEditModalProps) {
   const { auth, primaryImageTag, updateProfile } = useAuthStore(useShallow(s => ({ auth: s.auth, primaryImageTag: s.primaryImageTag, updateProfile: s.updateProfile })))
   const toast = useToastStore(s => s.show)
+  const { t } = useT()
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const [name, setName] = useState(auth?.username || '')
@@ -65,12 +67,12 @@ export function ProfileEditModal({ open, onClose }: ProfileEditModalProps) {
         trimmedName !== auth?.username ? trimmedName : undefined,
         pendingBlob ?? undefined
       )
-      toast('Profile updated', 'success')
+      toast(t('profile.updated'), 'success')
       setPendingBlob(null)
       setPreviewUrl(null)
       onClose()
     } catch (err: any) {
-      toast(err.message || 'Failed to update profile', 'error')
+      toast(err.message || t('profile.updateFailed'), 'error')
     } finally {
       setSaving(false)
     }
@@ -87,7 +89,7 @@ export function ProfileEditModal({ open, onClose }: ProfileEditModalProps) {
   }
 
   return (
-    <Modal open={open} title="Edit profile" onClose={handleClose}>
+    <Modal open={open} title={t('profile.title')} onClose={handleClose}>
       {cropping && rawImageUrl ? (
         <ImageCropper
           imageUrl={rawImageUrl}
@@ -100,10 +102,11 @@ export function ProfileEditModal({ open, onClose }: ProfileEditModalProps) {
           <button
             onClick={() => fileInputRef.current?.click()}
             className="relative w-24 h-24 rounded-full overflow-hidden group shrink-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-            title="Change profile photo"
+            title={t('profile.changePhoto')}
+            aria-label={t('profile.changePhoto')}
           >
             {displayImage ? (
-              <img src={displayImage} className="w-full h-full object-cover" alt="Avatar" />
+              <img src={displayImage} className="w-full h-full object-cover" alt={t('profile.avatar')} />
             ) : (
               <div className="w-full h-full flex items-center justify-center bg-surface-2">
                 <CoverFallbackIcon kind="artist" size={36} />
@@ -111,7 +114,7 @@ export function ProfileEditModal({ open, onClose }: ProfileEditModalProps) {
             )}
             <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity">
               <Camera size={20} className="text-white" />
-              <span className="text-[10px] text-white mt-1">Change</span>
+              <span className="text-[10px] text-white mt-1">{t('profile.change')}</span>
             </div>
           </button>
           <input
@@ -125,7 +128,7 @@ export function ProfileEditModal({ open, onClose }: ProfileEditModalProps) {
           {/* Name input */}
           <div className="w-full">
             <label className="block text-xs font-medium text-text-secondary mb-1.5">
-              Display Name
+              {t('profile.displayName')}
             </label>
             <Input
               type="text"
@@ -133,7 +136,7 @@ export function ProfileEditModal({ open, onClose }: ProfileEditModalProps) {
               onChange={e => setName(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && handleSave()}
 
-              placeholder="Your name"
+              placeholder={t('profile.namePlaceholder')}
             />
           </div>
 
@@ -144,7 +147,7 @@ export function ProfileEditModal({ open, onClose }: ProfileEditModalProps) {
               onClick={handleClose}
               disabled={saving}
             >
-              Cancel
+              {t('common.cancel')}
             </Button>
             <button
               onClick={handleSave}
@@ -152,7 +155,7 @@ export function ProfileEditModal({ open, onClose }: ProfileEditModalProps) {
               className={buttonClass('primary')}
             >
               {saving && <Loader2 size={14} className="animate-spin" />}
-              Save
+              {t('common.save')}
             </button>
           </div>
         </div>

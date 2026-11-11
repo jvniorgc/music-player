@@ -7,24 +7,25 @@ import { useLibraryStore } from '../../stores/library'
 import { useToastStore } from '../../stores/toast'
 import { MoreMenu, type MenuEntry } from './Menu'
 import AddToPlaylist from './AddToPlaylist'
+import { t, useT } from '../../i18n'
 
-/** Menu strings, kept together for later extraction (i18n). */
+/** Menu strings, resolved in the current language on each access. */
 export const MENU_TEXT = {
-  play: 'Play',
-  shuffle: 'Shuffle',
-  playNext: 'Play next',
-  addToQueue: 'Add to queue',
-  startRadio: 'Start radio',
-  goToArtist: 'Go to artist',
-  goToNamedArtist: (name: string) => `Go to ${name}`,
-  goToAlbum: 'Go to album',
-  addToPlaylist: 'Add to playlist',
-  removeFromPlaylist: 'Remove from playlist',
-  removeFromQueue: 'Remove from queue',
-  willPlayNext: 'Will play next',
-  addedToQueue: 'Added to queue',
-  radioFailed: 'Could not start radio',
-} as const
+  get play() { return t('menu.play') },
+  get shuffle() { return t('menu.shuffle') },
+  get playNext() { return t('menu.playNext') },
+  get addToQueue() { return t('menu.addToQueue') },
+  get startRadio() { return t('menu.startRadio') },
+  get goToArtist() { return t('menu.goToArtist') },
+  goToNamedArtist: (name: string) => t('menu.goToNamedArtist', { name }),
+  get goToAlbum() { return t('menu.goToAlbum') },
+  get addToPlaylist() { return t('menu.addToPlaylist') },
+  get removeFromPlaylist() { return t('menu.removeFromPlaylist') },
+  get removeFromQueue() { return t('menu.removeFromQueue') },
+  get willPlayNext() { return t('menu.willPlayNext') },
+  get addedToQueue() { return t('menu.addedToQueue') },
+  get radioFailed() { return t('menu.radioFailed') },
+}
 
 export function useGoTo() {
   const navigate = useNavigate()
@@ -56,7 +57,8 @@ export interface TrackMenuProps {
 }
 
 /** Standard track context menu: "..." button plus right-click on the surrounding row. */
-export default function TrackMenu({ track, onRemove, removeLabel = MENU_TEXT.removeFromPlaylist, hideAlbum, className }: TrackMenuProps) {
+export default function TrackMenu({ track, onRemove, removeLabel, hideAlbum, className }: TrackMenuProps) {
+  useT()
   const [pickerSong, setPickerSong] = useState<JellyfinItem | null>(null)
   const toast = useToastStore(s => s.show)
   const goTo = useGoTo()
@@ -79,7 +81,7 @@ export default function TrackMenu({ track, onRemove, removeLabel = MENU_TEXT.rem
         },
       },
       onRemove && 'separator',
-      onRemove && { label: removeLabel, icon: X, danger: true, onSelect: onRemove },
+      onRemove && { label: removeLabel ?? MENU_TEXT.removeFromPlaylist, icon: X, danger: true, onSelect: onRemove },
     ]
   }
 

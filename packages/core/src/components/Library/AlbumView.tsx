@@ -16,8 +16,10 @@ import { CoverFallbackIcon } from '../UI/CoverArt'
 import { ArtistLinks } from '../UI/Links'
 import { buttonClass } from '../UI/Button'
 import { useShallow } from 'zustand/react/shallow'
+import { useT } from '../../i18n'
 
 export default function AlbumView() {
+  const { t, tn } = useT()
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const [album, setAlbum] = useState<JellyfinItem | null>(null)
@@ -57,7 +59,7 @@ export default function AlbumView() {
   }, [])
 
   if (loading || !album) {
-    return <div className="flex items-center justify-center py-24 text-text-tertiary">Loading...</div>
+    return <div className="flex items-center justify-center py-24 text-text-tertiary">{t('common.loading')}</div>
   }
 
   const imageUrl = jellyfin.getImageUrl(album.Id, album.ImageTags?.Primary, 600)
@@ -100,7 +102,7 @@ export default function AlbumView() {
         </div>
 
         <div className="flex flex-col justify-end min-w-0">
-          <p className="text-xs font-medium text-text-tertiary mb-2">Album</p>
+          <p className="text-xs font-medium text-text-tertiary mb-2">{t('album.label')}</p>
           <h1 className="text-title font-semibold mb-2 truncate">{album.Name}</h1>
           <p className="text-lg text-accent font-medium mb-1 truncate">
             {album.ArtistItems && album.ArtistItems.length > 0 ? (
@@ -122,7 +124,7 @@ export default function AlbumView() {
           <div className="flex items-center gap-2 text-sm text-text-secondary">
             {album.ProductionYear && <span>{album.ProductionYear}</span>}
             {album.ProductionYear && tracks.length > 0 && <span>·</span>}
-            {tracks.length > 0 && <span>{tracks.length} songs</span>}
+            {tracks.length > 0 && <span>{tn('common.songCount', tracks.length)}</span>}
             {tracks.length > 0 && <span>·</span>}
             <span>{formatTotalDuration(tracks)}</span>
           </div>
@@ -133,19 +135,20 @@ export default function AlbumView() {
               className={buttonClass('primary')}
             >
               {isCurrentAlbum && isPlaying ? <Pause size={16} fill="white" /> : <Play size={16} fill="white" className="ml-0.5" />}
-              {isCurrentAlbum && isPlaying ? 'Pause' : 'Play'}
+              {isCurrentAlbum && isPlaying ? t('common.pause') : t('common.play')}
             </button>
             <button
               onClick={handleShuffle}
               className={buttonClass('secondary')}
             >
               <Shuffle size={15} />
-              Shuffle
+              {t('common.shuffle')}
             </button>
             <button
               onClick={handleDownloadAll}
               className="w-8 h-8 inline-flex items-center justify-center rounded-full border border-border text-text-secondary hover:text-text-primary hover:bg-white/10 transition-colors"
-              title="Download album"
+              title={t('album.download')}
+              aria-label={t('album.download')}
             >
               <Download size={16} />
             </button>
@@ -153,7 +156,8 @@ export default function AlbumView() {
             <button
               onClick={() => setShowMetadata(true)}
               className="w-8 h-8 inline-flex items-center justify-center rounded-full border border-border text-text-secondary hover:text-text-primary hover:bg-white/10 transition-colors"
-              title="Edit metadata"
+              title={t('common.editMetadata')}
+              aria-label={t('common.editMetadata')}
             >
               <Pencil size={16} />
             </button>

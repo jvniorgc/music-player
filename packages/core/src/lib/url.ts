@@ -1,3 +1,5 @@
+import type { MessageKey } from '../i18n'
+
 /**
  * Normalizes a user-typed server address:
  * trims whitespace and trailing slashes, keeps an explicit http(s) scheme,
@@ -18,19 +20,19 @@ export function normalizeServerUrl(input: string): string {
   return url
 }
 
-/** Login error messages, kept together for later extraction (i18n). */
+/** Login error message keys (translated by the login screen). */
 export const LOGIN_ERRORS = {
-  invalidCredentials: 'Incorrect username or password.',
-  badRequest: 'The server rejected the request. Check the server address and try again.',
-  notFound: 'No Jellyfin server was found at this address.',
-  server: 'The server had a problem. Try again in a moment.',
-  timeout: 'The server took too long to respond.',
-  unreachable: "Can't reach the server. Check the address and your connection.",
-  invalidUrl: 'Enter a valid server address.',
-  unknown: 'Something went wrong while signing in.',
-} as const
+  invalidCredentials: 'login.error.invalidCredentials',
+  badRequest: 'login.error.badRequest',
+  notFound: 'login.error.notFound',
+  server: 'login.error.server',
+  timeout: 'login.error.timeout',
+  unreachable: 'login.error.unreachable',
+  invalidUrl: 'login.error.invalidUrl',
+  unknown: 'login.error.unknown',
+} as const satisfies Record<string, MessageKey>
 
-/** Maps an authentication failure to a friendly message. */
+/** Maps an authentication failure to a friendly message key. */
 export function friendlyLoginError(err: unknown): string {
   const e = err as { name?: string; message?: string; status?: number } | null
   const status = e?.status ?? Number(e?.message?.match(/\b([45]\d\d)\b/)?.[1])

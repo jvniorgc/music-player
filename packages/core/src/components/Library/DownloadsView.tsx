@@ -8,8 +8,10 @@ import TrackRow, { TrackDuration, CoverPlayOverlay } from '../UI/TrackRow'
 import CoverArt from '../UI/CoverArt'
 import { buttonClass } from '../UI/Button'
 import { useShallow } from 'zustand/react/shallow'
+import { useT } from '../../i18n'
 
 export default function DownloadsView() {
+  const { t, tn } = useT()
   const { downloads, loadDownloads, removeDownload, initListeners } = useDownloadStore(useShallow(s => ({ downloads: s.downloads, loadDownloads: s.loadDownloads, removeDownload: s.removeDownload, initListeners: s.initListeners })))
   const playItems = usePlayerStore(s => s.playItems)
 
@@ -25,16 +27,16 @@ export default function DownloadsView() {
 
   const handlePlayAll = () => {
     const items = completed.map(d => d.metadata).filter(Boolean)
-    if (items.length > 0) playItems(items, 0, { type: 'downloads', name: 'Downloads' })
+    if (items.length > 0) playItems(items, 0, { type: 'downloads', name: t('nav.downloads') })
   }
 
   return (
     <div className="fade-in">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-title font-semibold">Downloads</h1>
+          <h1 className="text-title font-semibold">{t('nav.downloads')}</h1>
           <p className="text-sm text-text-secondary mt-1">
-            {completed.length} {completed.length === 1 ? 'downloaded song' : 'downloaded songs'}
+            {tn('downloads.count', completed.length)}
           </p>
         </div>
         {completed.length > 0 && (
@@ -43,7 +45,7 @@ export default function DownloadsView() {
             className={buttonClass('primary')}
           >
             <Play size={15} fill="white" className="ml-0.5" />
-            Play
+            {t('common.play')}
           </button>
         )}
       </div>
@@ -51,7 +53,7 @@ export default function DownloadsView() {
       {/* In progress */}
       {inProgress.length > 0 && (
         <div className="mb-8">
-          <h3 className="text-sm font-semibold text-text-tertiary mb-3">Downloading</h3>
+          <h3 className="text-sm font-semibold text-text-tertiary mb-3">{t('downloads.inProgress')}</h3>
           <div className="space-y-0.5">
             {inProgress.map(dl => (
               <div key={dl.itemId} className="flex items-center gap-4 px-5 py-3">
@@ -81,7 +83,7 @@ export default function DownloadsView() {
             return (
               <TrackRow
                 key={dl.itemId}
-                onClick={() => playItems(completed.map(d => d.metadata), i, { type: 'downloads', name: 'Downloads' })}
+                onClick={() => playItems(completed.map(d => d.metadata), i, { type: 'downloads', name: t('nav.downloads') })}
                 leading={
                   <CoverArt
                     src={dl.metadata?.AlbumId ? jellyfin.getImageUrl(dl.metadata.AlbumId, undefined, 80) : null}
@@ -100,6 +102,8 @@ export default function DownloadsView() {
                     e.stopPropagation()
                     removeDownload(dl.itemId)
                   }}
+                  aria-label={t('downloads.remove')}
+                  title={t('downloads.remove')}
                   className="p-1.5 rounded-sm text-text-tertiary opacity-0 group-hover:opacity-100 hover:text-danger hover:bg-danger/10 transition-all"
                 >
                   <Trash2 size={14} />
@@ -111,8 +115,8 @@ export default function DownloadsView() {
       ) : inProgress.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-24 text-text-tertiary">
           <HardDrive size={48} className="mb-4 opacity-50" />
-          <h3 className="text-lg font-medium text-text-secondary mb-1">No downloads</h3>
-          <p className="text-sm">Download songs to listen offline</p>
+          <h3 className="text-lg font-medium text-text-secondary mb-1">{t('downloads.empty')}</h3>
+          <p className="text-sm">{t('downloads.emptyHint')}</p>
         </div>
       ) : null}
     </div>

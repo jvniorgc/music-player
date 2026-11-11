@@ -1,5 +1,6 @@
 import { JellyfinItem, jellyfin } from './jellyfin'
 import * as lastfm from './lastfm'
+import { t } from '../i18n'
 import { secondsToTicks, ticksToSeconds } from '../lib/format'
 
 export type RepeatMode = 'none' | 'all' | 'one'
@@ -138,19 +139,19 @@ class PlaybackService {
    */
   private handlePlaybackFailure(track: QueueTrack, message: string, position = 0) {
     if (this._current !== track) return // user already moved on
-    const name = track.item.Name || 'track'
+    const name = track.item.Name || t('playback.trackFallback')
     if (this.isOffline() && track.source === 'stream') {
       this._resumeOnOnline = { trackId: track.id, position }
-      this.emit('error', `Connection lost. "${name}" will resume when you're back online.`)
+      this.emit('error', t('playback.connectionLost', { name }))
       return
     }
     this._consecutiveFailures++
     if (this._consecutiveFailures >= PlaybackService.MAX_CONSECUTIVE_FAILURES) {
       this._consecutiveFailures = 0
-      this.emit('error', `Playback stopped: several tracks failed to play (${message})`)
+      this.emit('error', t('playback.stopped', { message }))
       return
     }
-    this.emit('error', `Couldn't play "${name}". Skipping.`)
+    this.emit('error', t('playback.skipping', { name }))
     if (this.peekNext() && this.peekNext() !== track) this.next()
   }
 
@@ -192,7 +193,7 @@ class PlaybackService {
       console.error('[Playback] Audio error:', err?.code, err?.message, 'src:', audio.src?.substring(0, 100))
       // Errors during the initial load are handled by loadAndPlayCurrent.
       if (this._loading || !this._current) return
-      this.handlePlaybackFailure(this._current, err?.message || 'Playback error', audio.currentTime)
+      this.handlePlaybackFailure(this._current, err?.message || t('playback.error'), audio.currentTime)
     })
   }
 

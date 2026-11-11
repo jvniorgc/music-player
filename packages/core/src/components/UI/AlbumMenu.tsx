@@ -7,6 +7,7 @@ import { useToastStore } from '../../stores/toast'
 import { MoreMenu, type MenuEntry } from './Menu'
 import AddToPlaylist from './AddToPlaylist'
 import { MENU_TEXT, artistEntries, useGoTo } from './TrackMenu'
+import { t } from '../../i18n'
 
 /** Album actions for cards and headers. Pass `tracks` when already loaded to skip the fetch. */
 export function useAlbumEntries(album: JellyfinItem, tracks?: JellyfinItem[]) {
@@ -21,7 +22,7 @@ export function useAlbumEntries(album: JellyfinItem, tracks?: JellyfinItem[]) {
       if (items.length > 0) fn(items)
     } catch (err) {
       console.error('[AlbumMenu] failed to load album tracks', err)
-      toast('Could not load this album', 'error')
+      toast(t('menu.albumLoadFailed'), 'error')
     }
   }
 

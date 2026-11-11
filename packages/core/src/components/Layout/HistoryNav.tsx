@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useLocation, useNavigate, useNavigationType } from 'react-router-dom'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { isEditableTarget } from '../../lib/shortcuts'
+import { useT } from '../../i18n'
 
 /** react-router stores the history position in `history.state.idx`. */
 function currentIdx(): number {
@@ -38,6 +39,7 @@ const BTN = 'w-7 h-7 inline-flex items-center justify-center rounded-full bg-bla
 
 /** App-wide back/forward buttons; also handles mouse buttons 3/4. */
 export default function HistoryNav() {
+  const { t } = useT()
   const { canBack, canForward, back, forward } = useHistoryNav()
   const backRef = useRef(back)
   const forwardRef = useRef(forward)
@@ -64,10 +66,10 @@ export default function HistoryNav() {
 
   return (
     <div className="flex items-center gap-2">
-      <button className={BTN} onClick={back} disabled={!canBack} aria-label="Go back" title="Go back">
+      <button className={BTN} onClick={back} disabled={!canBack} aria-label={t('nav.back')} title={t('nav.back')}>
         <ChevronLeft size={18} />
       </button>
-      <button className={BTN} onClick={forward} disabled={!canForward} aria-label="Go forward" title="Go forward">
+      <button className={BTN} onClick={forward} disabled={!canForward} aria-label={t('nav.forward')} title={t('nav.forward')}>
         <ChevronRight size={18} />
       </button>
     </div>

@@ -4,6 +4,7 @@ import { useToastStore } from '../../stores/toast'
 import { TimePeriod, TIME_LABELS, getMinDate } from './UserProfileView'
 import { X, Download, Loader2, Grid3x3 } from 'lucide-react'
 import { artistNames } from '../../lib/format'
+import { useT } from '../../i18n'
 
 type CollageType = 'albums' | 'songs'
 
@@ -146,6 +147,7 @@ function drawTitleSidebar(
 }
 
 export default function CollageModal({ userId, onClose }: { userId: string; onClose: () => void }) {
+  const { t, tn } = useT()
   const showToast = useToastStore(s => s.show)
   const [grid, setGrid] = useState(3)
   const [type, setType] = useState<CollageType>('albums')
@@ -261,13 +263,13 @@ export default function CollageModal({ userId, onClose }: { userId: string; onCl
       const filename = `collage-${type}-${period}-${grid}x${grid}-${Date.now()}.png`
       const result = await window.api.saveCollage({ bytes, filename })
       if (result?.success) {
-        showToast('Collage saved to Downloads', 'success')
+        showToast(t('collage.saved'), 'success')
       } else {
-        showToast(result?.error || 'Failed to save collage', 'error')
+        showToast(result?.error || t('collage.saveFailed'), 'error')
       }
     } catch (err: any) {
       console.error('Collage download failed:', err)
-      showToast(err?.message || 'Failed to save collage', 'error')
+      showToast(err?.message || t('collage.saveFailed'), 'error')
     } finally {
       setDownloading(false)
     }
@@ -289,10 +291,12 @@ export default function CollageModal({ userId, onClose }: { userId: string; onCl
         <div className="flex items-center justify-between px-6 py-4 border-b border-border">
           <div className="flex items-center gap-2">
             <Grid3x3 size={18} className="text-accent" />
-            <h2 className="text-lg font-semibold">Create collage</h2>
+            <h2 className="text-lg font-semibold">{t('collage.title')}</h2>
           </div>
           <button
             onClick={onClose}
+            aria-label={t('common.close')}
+            title={t('common.close')}
             className="p-1.5 rounded-sm hover:bg-white/10 transition-colors text-text-secondary hover:text-text-primary"
           >
             <X size={18} />
@@ -305,12 +309,12 @@ export default function CollageModal({ userId, onClose }: { userId: string; onCl
             {previewUrl ? (
               <img
                 src={previewUrl}
-                alt="Collage preview"
+                alt={t('collage.preview')}
                 className="max-w-full max-h-[60vh] rounded-md"
                 style={{ imageRendering: 'auto' }}
               />
             ) : (
-              <div className="text-text-tertiary text-sm">No preview</div>
+              <div className="text-text-tertiary text-sm">{t('collage.noPreview')}</div>
             )}
             {busy && (
               <div className="absolute inset-0 flex items-center justify-center bg-black/40 rounded-md">
@@ -321,30 +325,30 @@ export default function CollageModal({ userId, onClose }: { userId: string; onCl
 
           {/* Controls */}
           <div className="space-y-4">
-            <Field label="Type">
+            <Field label={t('collage.type')}>
               <select
                 value={type}
                 onChange={e => setType(e.target.value as CollageType)}
                 className="collage-select"
               >
-                <option value="albums">Albums</option>
-                <option value="songs">Songs</option>
+                <option value="albums">{t('nav.albums')}</option>
+                <option value="songs">{t('nav.songs')}</option>
               </select>
             </Field>
 
-            <Field label="Time period">
+            <Field label={t('social.period')}>
               <select
                 value={period}
                 onChange={e => setPeriod(e.target.value as TimePeriod)}
                 className="collage-select"
               >
                 {(Object.keys(TIME_LABELS) as TimePeriod[]).map(key => (
-                  <option key={key} value={key}>{TIME_LABELS[key]}</option>
+                  <option key={key} value={key}>{t(TIME_LABELS[key])}</option>
                 ))}
               </select>
             </Field>
 
-            <Field label="Grid size">
+            <Field label={t('social.gridSize')}>
               <select
                 value={grid}
                 onChange={e => setGrid(Number(e.target.value))}
@@ -363,7 +367,7 @@ export default function CollageModal({ userId, onClose }: { userId: string; onCl
                 onChange={e => setShowTitles(e.target.checked)}
                 className="accent-accent w-4 h-4"
               />
-              <span className="text-sm text-text-primary">Show titles</span>
+              <span className="text-sm text-text-primary">{t('collage.showTitles')}</span>
             </label>
 
             <button
@@ -372,20 +376,20 @@ export default function CollageModal({ userId, onClose }: { userId: string; onCl
               className="w-full flex items-center justify-center gap-2 bg-accent text-black font-semibold rounded-sm px-4 py-2.5 text-sm hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
             >
               {downloading ? (
-                <><Loader2 size={16} className="animate-spin" /> Saving…</>
+                <><Loader2 size={16} className="animate-spin" /> {t('collage.saving')}</>
               ) : (
-                <><Download size={16} /> Download</>
+                <><Download size={16} /> {t('collage.download')}</>
               )}
             </button>
 
             {!busy && !hasData && (
               <p className="text-xs text-text-tertiary">
-                No listening data for this period.
+                {t('collage.noData')}
               </p>
             )}
             {!busy && hasData && items.length < count && (
               <p className="text-xs text-text-tertiary">
-                Only {items.length} item{items.length === 1 ? '' : 's'} available — empty cells will be blank.
+                {tn('collage.partial', items.length)}
               </p>
             )}
           </div>

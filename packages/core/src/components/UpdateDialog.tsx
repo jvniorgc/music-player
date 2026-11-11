@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react'
 import { Download, RefreshCw, X, CheckCircle2 } from 'lucide-react'
+import { useT } from '../i18n'
 
 type UpdateState = 'idle' | 'available' | 'downloading' | 'ready'
 
 export default function UpdateDialog() {
+  const { t } = useT()
   const [state, setState] = useState<UpdateState>('idle')
   const [version, setVersion] = useState('')
   const [progress, setProgress] = useState(0)
@@ -51,12 +53,14 @@ export default function UpdateDialog() {
             <div className="flex items-center gap-2">
               <RefreshCw size={18} className="text-accent shrink-0" />
               <div>
-                <p className="text-sm font-medium text-text-primary">Atualização disponível</p>
-                <p className="text-xs text-text-secondary mt-0.5">Versão {version}</p>
+                <p className="text-sm font-medium text-text-primary">{t('update.available')}</p>
+                <p className="text-xs text-text-secondary mt-0.5">{t('update.version', { version })}</p>
               </div>
             </div>
             <button
               onClick={() => setDismissed(true)}
+              aria-label={t('update.dismiss')}
+              title={t('update.dismiss')}
               className="text-text-tertiary hover:text-text-primary transition-colors p-1"
             >
               <X size={14} />
@@ -71,13 +75,13 @@ export default function UpdateDialog() {
               className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 bg-accent hover:bg-accent-hover text-white text-xs font-medium rounded-sm transition-colors"
             >
               <Download size={13} />
-              Atualizar
+              {t('update.install')}
             </button>
             <button
               onClick={() => setDismissed(true)}
               className="px-3 py-1.5 text-text-secondary hover:text-text-primary text-xs rounded-sm border border-border hover:border-text-tertiary transition-colors"
             >
-              Depois
+              {t('update.later')}
             </button>
           </div>
         </>
@@ -87,7 +91,7 @@ export default function UpdateDialog() {
         <div>
           <div className="flex items-center gap-2 mb-2">
             <Download size={18} className="text-accent" />
-            <p className="text-sm font-medium text-text-primary">Baixando atualização...</p>
+            <p className="text-sm font-medium text-text-primary">{t('update.downloading')}</p>
           </div>
           <div className="w-full h-1.5 bg-surface-3 rounded-full overflow-hidden">
             <div
@@ -103,17 +107,17 @@ export default function UpdateDialog() {
         <div>
           <div className="flex items-center gap-2 mb-2">
             <CheckCircle2 size={18} className="text-success" />
-            <p className="text-sm font-medium text-text-primary">Pronto para instalar</p>
+            <p className="text-sm font-medium text-text-primary">{t('update.ready')}</p>
           </div>
           <p className="text-xs text-text-secondary mb-3">
-            Reinicie o app para aplicar a atualização.
+            {t('update.restartHint')}
           </p>
           <button
             onClick={() => window.api.installUpdate()}
             className="w-full flex items-center justify-center gap-1.5 px-3 py-1.5 bg-accent hover:bg-accent-hover text-white text-xs font-medium rounded-sm transition-colors"
           >
             <RefreshCw size={13} />
-            Reiniciar e atualizar
+            {t('update.restart')}
           </button>
         </div>
       )}

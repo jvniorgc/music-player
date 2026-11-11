@@ -1,6 +1,7 @@
 import { useRef, useState, useCallback, useEffect } from 'react'
 import { ZoomIn, ZoomOut } from 'lucide-react'
 import { Button } from './Button'
+import { useT } from '../../i18n'
 
 interface ImageCropperProps {
   imageUrl: string
@@ -10,6 +11,7 @@ interface ImageCropperProps {
 }
 
 export function ImageCropper({ imageUrl, onCrop, onCancel, size = 240 }: ImageCropperProps) {
+  const { t } = useT()
   const containerRef = useRef<HTMLDivElement>(null)
   const imgRef = useRef<HTMLImageElement | null>(null)
 
@@ -133,12 +135,13 @@ export function ImageCropper({ imageUrl, onCrop, onCancel, size = 240 }: ImageCr
           step="0.01"
           value={scale}
           onChange={e => setScale(parseFloat(e.target.value))}
+          aria-label={t('cropper.zoom')}
           className="flex-1 accent-accent h-1"
         />
         <ZoomIn size={16} className="text-text-tertiary shrink-0" />
       </div>
 
-      <p className="text-xs text-text-tertiary">Drag to reposition • Scroll to zoom</p>
+      <p className="text-xs text-text-tertiary">{t('cropper.hint')}</p>
 
       {/* Actions */}
       <div className="flex gap-3 w-full justify-end">
@@ -146,12 +149,12 @@ export function ImageCropper({ imageUrl, onCrop, onCancel, size = 240 }: ImageCr
           variant="secondary"
           onClick={onCancel}
         >
-          Back
+          {t('common.back')}
         </Button>
         <Button
           onClick={handleCrop}
         >
-          Apply
+          {t('common.apply')}
         </Button>
       </div>
     </div>

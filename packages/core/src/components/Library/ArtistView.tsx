@@ -12,8 +12,10 @@ import { AlbumLink } from '../UI/Links'
 import { buttonClass } from '../UI/Button'
 import ArtistMetadataEditor from '../Metadata/ArtistMetadataEditor'
 import { AlbumCard } from '../UI/MediaCard'
+import { useT } from '../../i18n'
 
 export default function ArtistView() {
+  const { t, tn } = useT()
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const [artist, setArtist] = useState<JellyfinItem | null>(null)
@@ -50,7 +52,7 @@ export default function ArtistView() {
   }, [id])
 
   if (loading) {
-    return <div className="flex items-center justify-center py-24 text-text-tertiary">Loading...</div>
+    return <div className="flex items-center justify-center py-24 text-text-tertiary">{t('common.loading')}</div>
   }
 
   const imageUrl = artist?.ImageTags?.Primary
@@ -61,7 +63,7 @@ export default function ArtistView() {
     ? `${jellyfin.serverUrl}/Items/${artist?.Id}/Images/Backdrop?tag=${artist.BackdropImageTags[0]}&quality=80&ApiKey=${jellyfin.token}`
     : null
 
-  const artistContext: PlaybackContext = { type: 'artist', id: id || '', name: artist?.Name || 'Artist' }
+  const artistContext: PlaybackContext = { type: 'artist', id: id || '', name: artist?.Name || t('artist.label') }
 
   return (
     <div className="fade-in -mx-8 -mt-14">
@@ -85,36 +87,37 @@ export default function ArtistView() {
               <button
                 onClick={() => setShowMetadataEditor(true)}
                 className="w-32 h-32 rounded-full bg-surface-2 border-2 border-dashed border-border flex flex-col items-center justify-center gap-1 hover:border-accent/50 hover:bg-white/5 transition-colors"
-                title="Find artist image"
+                title={t('artist.findImageTitle')}
+                aria-label={t('artist.findImageTitle')}
               >
                 <ImagePlus size={24} className="text-text-tertiary" />
-                <span className="text-[10px] text-text-tertiary">Find image</span>
+                <span className="text-[10px] text-text-tertiary">{t('artist.findImage')}</span>
               </button>
             )}
             <div>
-              <p className="text-xs font-medium text-text-tertiary mb-1">Artist</p>
+              <p className="text-xs font-medium text-text-tertiary mb-1">{t('artist.label')}</p>
               <h1 className="text-display font-semibold">{artist?.Name}</h1>
               <div className="flex items-center gap-3 mt-1">
                 {albums.length > 0 && (
-                  <p className="text-sm text-text-secondary">{albums.length} albums</p>
+                  <p className="text-sm text-text-secondary">{tn('common.albumCount', albums.length)}</p>
                 )}
                 <button
                   onClick={() => setShowMetadataEditor(true)}
                   className="text-xs text-accent hover:text-accent-hover transition-colors flex items-center gap-1"
                 >
                   <ImagePlus size={12} />
-                  {imageUrl ? 'Change image' : 'Find image'}
+                  {imageUrl ? t('artist.changeImage') : t('artist.findImage')}
                 </button>
               </div>
               {topSongs.length > 0 && (
                 <div className="flex items-center gap-3 mt-4">
                   <button onClick={() => playItems(topSongs, 0, artistContext)} className={buttonClass('primary')}>
                     <Play size={16} fill="white" className="ml-0.5" />
-                    Play
+                    {t('common.play')}
                   </button>
                   <button onClick={() => shuffleItems(topSongs, artistContext)} className={buttonClass('secondary')}>
                     <Shuffle size={15} />
-                    Shuffle
+                    {t('common.shuffle')}
                   </button>
                 </div>
               )}
@@ -125,7 +128,7 @@ export default function ArtistView() {
 
       {topSongs.length > 0 && (
         <div className="px-8 mt-8">
-          <h2 className="text-heading font-semibold mb-4">Popular</h2>
+          <h2 className="text-heading font-semibold mb-4">{t('artist.popular')}</h2>
           <div className="-mx-4">
             {topSongs.slice(0, 5).map((song, i) => {
               const isCurrent = currentId === song.Id
@@ -158,7 +161,7 @@ export default function ArtistView() {
 
       {/* Albums */}
       <div className="px-8 mt-8">
-        <h2 className="text-heading font-semibold mb-4">Discography</h2>
+        <h2 className="text-heading font-semibold mb-4">{t('artist.discography')}</h2>
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-5">
           {albums.map(album => (
             <AlbumCard

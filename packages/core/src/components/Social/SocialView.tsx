@@ -3,8 +3,10 @@ import { useNavigate } from 'react-router-dom'
 import { jellyfin, JellyfinUser } from '../../services/jellyfin'
 import MediaCard from '../UI/MediaCard'
 import { Loader2, Users } from 'lucide-react'
+import { useT } from '../../i18n'
 
 export default function SocialView() {
+  const { t } = useT()
   const [users, setUsers] = useState<JellyfinUser[]>([])
   const [loading, setLoading] = useState(true)
   const navigate = useNavigate()
@@ -26,8 +28,8 @@ export default function SocialView() {
   return (
     <div className="fade-in">
       <div className="mb-6">
-        <h1 className="text-title font-semibold">Social</h1>
-        <p className="text-sm text-text-secondary mt-1">Server users</p>
+        <h1 className="text-title font-semibold">{t('nav.social')}</h1>
+        <p className="text-sm text-text-secondary mt-1">{t('social.serverUsers')}</p>
       </div>
 
       {loading ? (
@@ -37,7 +39,7 @@ export default function SocialView() {
       ) : users.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-24 text-text-tertiary">
           <Users size={48} className="mb-4 opacity-50" />
-          <h3 className="text-lg font-medium text-text-secondary mb-1">No users found</h3>
+          <h3 className="text-lg font-medium text-text-secondary mb-1">{t('social.noUsers')}</h3>
         </div>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-5">

@@ -14,25 +14,12 @@ import TrackRow, { TrackDuration, CoverPlayOverlay } from '../UI/TrackRow'
 import CoverArt from '../UI/CoverArt'
 import { AlbumCard, ArtistCard } from '../UI/MediaCard'
 import { useShallow } from 'zustand/react/shallow'
-
-/** Page strings, kept together for later extraction (i18n). */
-const TEXT = {
-  placeholder: 'Search songs, albums, artists...',
-  clear: 'Clear search',
-  recent: 'Recent searches',
-  clearRecent: 'Clear',
-  removeRecent: 'Remove from recent searches',
-  idle: 'Type to search your library',
-  error: 'Search failed. Check your connection.',
-  retry: 'Try again',
-  noResults: (q: string) => `No results for "${q}"`,
-  noResultsHint: 'Check the spelling or try another term',
-  context: (q: string) => `Search "${q}"`,
-}
+import { useT } from '../../i18n'
 
 type Results = { albums: JellyfinItem[]; artists: JellyfinItem[]; songs: JellyfinItem[] }
 
 export default function SearchView() {
+  const { t } = useT()
   const [params, setParams] = useSearchParams()
   const [query, setQuery] = useState(() => params.get('q') ?? '')
   const [results, setResults] = useState<Results | null>(null)
@@ -104,15 +91,15 @@ export default function SearchView() {
             if (e.key === 'Escape' && query) { e.preventDefault(); e.stopPropagation(); clear() }
             if (e.key === 'Enter' && trimmed) remember()
           }}
-          placeholder={TEXT.placeholder}
-          aria-label={TEXT.placeholder}
+          placeholder={t('search.placeholder')}
+          aria-label={t('search.placeholder')}
           className="w-full bg-surface-2 border border-border rounded-sm pl-11 pr-10 h-10 text-sm text-text-primary placeholder:text-text-tertiary focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition"
         />
         {query && (
           <button
             onClick={clear}
-            title={TEXT.clear}
-            aria-label={TEXT.clear}
+            title={t('search.clear')}
+            aria-label={t('search.clear')}
             className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-full hover:bg-white/10 text-text-tertiary"
           >
             <X size={16} />
@@ -129,9 +116,9 @@ export default function SearchView() {
       {error && !loading && (
         <div className="flex flex-col items-center justify-center py-16 text-text-tertiary">
           <AlertCircle size={40} className="mb-4 opacity-50" />
-          <p className="text-sm text-text-secondary">{TEXT.error}</p>
+          <p className="text-sm text-text-secondary">{t('search.error')}</p>
           <button onClick={() => setAttempt(a => a + 1)} className={`${buttonClass('secondary')} mt-4`}>
-            <RefreshCw size={14} /> {TEXT.retry}
+            <RefreshCw size={14} /> {t('search.retry')}
           </button>
         </div>
       )}
@@ -143,14 +130,14 @@ export default function SearchView() {
             <section>
               <div className="flex items-center gap-2 mb-3">
                 <Music size={18} className="text-accent" />
-                <h2 className="text-heading font-semibold">Songs</h2>
+                <h2 className="text-heading font-semibold">{t('nav.songs')}</h2>
               </div>
               <div>
                 {results.songs.map((song, i) => (
                   <TrackRow
                     key={song.Id}
                     className="px-5 py-2.5"
-                    onClick={() => { remember(); playItems(results.songs, i, { type: 'search', id: trimmed, name: TEXT.context(trimmed) }) }}
+                    onClick={() => { remember(); playItems(results.songs, i, { type: 'search', id: trimmed, name: t('search.context', { query: trimmed }) }) }}
                     leading={
                       <CoverArt
                         src={song.AlbumId ? jellyfin.getImageUrl(song.AlbumId, undefined, 80) : null}
@@ -175,7 +162,7 @@ export default function SearchView() {
             <section>
               <div className="flex items-center gap-2 mb-3">
                 <Disc3 size={18} className="text-accent" />
-                <h2 className="text-heading font-semibold">Albums</h2>
+                <h2 className="text-heading font-semibold">{t('nav.albums')}</h2>
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-5">
                 {results.albums.map(album => (
@@ -194,7 +181,7 @@ export default function SearchView() {
             <section>
               <div className="flex items-center gap-2 mb-3">
                 <Users size={18} className="text-accent" />
-                <h2 className="text-heading font-semibold">Artists</h2>
+                <h2 className="text-heading font-semibold">{t('nav.artists')}</h2>
               </div>
               <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-5">
                 {results.artists.map(artist => (
@@ -211,8 +198,8 @@ export default function SearchView() {
           {results.songs.length === 0 && results.albums.length === 0 && results.artists.length === 0 && (
             <div className="flex flex-col items-center justify-center py-16 text-text-tertiary">
               <Search size={40} className="mb-4 opacity-50" />
-              <h3 className="text-lg font-medium text-text-secondary">{TEXT.noResults(trimmed)}</h3>
-              <p className="text-sm mt-1">{TEXT.noResultsHint}</p>
+              <h3 className="text-lg font-medium text-text-secondary">{t('search.noResults', { query: trimmed })}</h3>
+              <p className="text-sm mt-1">{t('search.noResultsHint')}</p>
             </div>
           )}
         </div>
@@ -221,9 +208,9 @@ export default function SearchView() {
       {!trimmed && recent.length > 0 && (
         <section className="max-w-xl">
           <div className="flex items-center justify-between mb-2">
-            <h2 className="text-heading font-semibold">{TEXT.recent}</h2>
+            <h2 className="text-heading font-semibold">{t('search.recent')}</h2>
             <button onClick={() => setRecent(clearRecentSearches())} className="text-sm text-text-secondary hover:text-text-primary">
-              {TEXT.clearRecent}
+              {t('search.clearRecent')}
             </button>
           </div>
           <ul>
@@ -236,8 +223,8 @@ export default function SearchView() {
                 <button
                   onClick={() => setRecent(removeRecentSearch(q))}
                   className="p-1 mr-2 rounded-full text-text-tertiary hover:text-text-primary hover:bg-white/10 opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
-                  title={TEXT.removeRecent}
-                  aria-label={TEXT.removeRecent}
+                  title={t('search.removeRecent')}
+                  aria-label={t('search.removeRecent')}
                 >
                   <X size={14} />
                 </button>
@@ -250,7 +237,7 @@ export default function SearchView() {
       {!trimmed && recent.length === 0 && (
         <div className="flex flex-col items-center justify-center py-24 text-text-tertiary">
           <Search size={48} className="mb-4 opacity-30" />
-          <p className="text-sm">{TEXT.idle}</p>
+          <p className="text-sm">{t('search.idle')}</p>
         </div>
       )}
 

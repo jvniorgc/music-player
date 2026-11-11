@@ -7,6 +7,7 @@ import {
 import { useToastStore } from '../../stores/toast'
 import { Search, Loader2, X, Disc3, Calendar, Tag, Music, ArrowLeft, ChevronRight, Download, Trash2 } from 'lucide-react'
 import { Button, Input, buttonClass } from '../UI/Button'
+import { useT } from '../../i18n'
 
 interface MetadataEditorProps {
   album: JellyfinItem
@@ -19,6 +20,7 @@ interface MetadataEditorProps {
 type Step = 'search' | 'results' | 'preview'
 
 export default function MetadataEditor({ album, tracks, open, onClose, onApplied }: MetadataEditorProps) {
+  const { t, tn } = useT()
   const toast = useToastStore(s => s.show)
 
   const [step, setStep] = useState<Step>('search')
@@ -59,7 +61,7 @@ export default function MetadataEditor({ album, tracks, open, onClose, onApplied
       setStep('results')
     } catch (err) {
       console.error('MusicBrainz search error:', err)
-      toast('Error searching MusicBrainz', 'error')
+      toast(t('meta.searchError'), 'error')
     }
     setSearching(false)
   }
@@ -75,7 +77,7 @@ export default function MetadataEditor({ album, tracks, open, onClose, onApplied
       setCoverAvailable(await hasCoverArt(release.id))
     } catch (err) {
       console.error('Failed to get release details:', err)
-      toast('Error loading details', 'error')
+      toast(t('meta.detailsError'), 'error')
     }
     setLoadingDetails(false)
   }
@@ -113,7 +115,7 @@ export default function MetadataEditor({ album, tracks, open, onClose, onApplied
           await jellyfin.uploadImage(album.Id, coverUrl)
         } catch (err) {
           console.warn('Cover art upload failed:', err)
-          toast('Cover art could not be updated', 'error')
+          toast(t('meta.coverFailed'), 'error')
         }
       }
 
@@ -156,12 +158,12 @@ export default function MetadataEditor({ album, tracks, open, onClose, onApplied
         // Non-critical, ignore
       }
 
-      toast('Metadata updated', 'success')
+      toast(t('meta.updated'), 'success')
       onApplied()
       onClose()
     } catch (err) {
       console.error('Failed to apply metadata:', err)
-      toast('Error applying metadata', 'error')
+      toast(t('meta.applyError'), 'error')
     }
 
     setApplying(false)
@@ -203,12 +205,12 @@ export default function MetadataEditor({ album, tracks, open, onClose, onApplied
         }
       }
 
-      toast('Metadata removed', 'success')
+      toast(t('meta.removed'), 'success')
       onApplied()
       onClose()
     } catch (err) {
       console.error('Failed to clear metadata:', err)
-      toast('Error clearing metadata', 'error')
+      toast(t('meta.clearError'), 'error')
     }
     setClearing(false)
     setShowClearConfirm(false)
@@ -231,18 +233,19 @@ export default function MetadataEditor({ album, tracks, open, onClose, onApplied
             {step !== 'search' && (
               <button
                 onClick={() => setStep(step === 'preview' ? 'results' : 'search')}
+                aria-label={t('nav.back')}
                 className="p-1 rounded-full hover:bg-white/10 text-text-tertiary transition-colors"
               >
                 <ArrowLeft size={18} />
               </button>
             )}
             <h2 className="text-lg font-semibold">
-              {step === 'search' && 'Search metadata'}
-              {step === 'results' && 'Results'}
-              {step === 'preview' && 'Preview'}
+              {step === 'search' && t('meta.searchTitle')}
+              {step === 'results' && t('meta.results')}
+              {step === 'preview' && t('meta.preview')}
             </h2>
           </div>
-          <Button variant="icon" onClick={onClose}>
+          <Button variant="icon" onClick={onClose} aria-label={t('common.close')}>
             <X size={18} />
           </Button>
         </div>
@@ -253,28 +256,28 @@ export default function MetadataEditor({ album, tracks, open, onClose, onApplied
           {step === 'search' && (
             <div className="space-y-4">
               <p className="text-sm text-text-secondary">
-                Search MusicBrainz metadata to update this album.
+                {t('meta.intro')}
               </p>
               <div>
-                <label className="text-xs text-text-tertiary mb-1.5 block">Album</label>
+                <label className="text-xs text-text-tertiary mb-1.5 block">{t('meta.album')}</label>
                 <Input
                   type="text"
                   value={query}
                   onChange={e => setQuery(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && handleSearch()}
-                  placeholder="Album name"
+                  placeholder={t('meta.albumName')}
 
                   autoFocus
                 />
               </div>
               <div>
-                <label className="text-xs text-text-tertiary mb-1.5 block">Artist (optional)</label>
+                <label className="text-xs text-text-tertiary mb-1.5 block">{t('meta.artistOptional')}</label>
                 <Input
                   type="text"
                   value={artistQuery}
                   onChange={e => setArtistQuery(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && handleSearch()}
-                  placeholder="Artist name"
+                  placeholder={t('meta.artistName')}
                 />
               </div>
               <button
@@ -283,24 +286,24 @@ export default function MetadataEditor({ album, tracks, open, onClose, onApplied
                 className={buttonClass('primary')}
               >
                 {searching ? <Loader2 size={16} className="animate-spin" /> : <Search size={16} />}
-                Search
+                {t('meta.search')}
               </button>
 
               {/* Separator */}
               <div className="border-t border-border pt-4 mt-2">
-                <h4 className="text-xs text-text-tertiary mb-2">Actions</h4>
+                <h4 className="text-xs text-text-tertiary mb-2">{t('meta.actions')}</h4>
                 {!showClearConfirm ? (
                   <button
                     onClick={() => setShowClearConfirm(true)}
                     className="flex items-center gap-2 text-danger hover:text-danger text-sm transition-colors"
                   >
                     <Trash2 size={15} />
-                    Clear all metadata
+                    {t('meta.clearAll')}
                   </button>
                 ) : (
                   <div className="bg-danger/10 border border-danger/30 rounded-md p-4">
                     <p className="text-sm text-danger mb-3">
-                      This will delete the title, artist, year, cover art, and track names. Do you want to continue?
+                      {t('meta.clearWarning')}
                     </p>
                     <div className="flex gap-2">
                       <button
@@ -309,13 +312,13 @@ export default function MetadataEditor({ album, tracks, open, onClose, onApplied
                         className={buttonClass('danger')}
                       >
                         {clearing ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
-                        {clearing ? 'Clearing...' : 'Confirm'}
+                        {clearing ? t('meta.clearing') : t('common.confirm')}
                       </button>
                       <button
                         onClick={() => setShowClearConfirm(false)}
                         className={buttonClass('secondary')}
                       >
-                        Cancel
+                        {t('common.cancel')}
                       </button>
                     </div>
                   </div>
@@ -330,7 +333,7 @@ export default function MetadataEditor({ album, tracks, open, onClose, onApplied
               {results.length === 0 ? (
                 <div className="text-center py-12 text-text-tertiary">
                   <Search size={32} className="mx-auto mb-3 opacity-50" />
-                  <p className="text-sm">No results found</p>
+                  <p className="text-sm">{t('meta.noResults')}</p>
                 </div>
               ) : (
                 results.map(release => (
@@ -346,7 +349,7 @@ export default function MetadataEditor({ album, tracks, open, onClose, onApplied
                         {getArtistName(release)}
                         {release.date ? ` · ${formatMBDate(release.date)}` : ''}
                         {release.country ? ` · ${release.country}` : ''}
-                        {release.media?.[0]?.['track-count'] ? ` · ${release.media[0]['track-count']} tracks` : ''}
+                        {release.media?.[0]?.['track-count'] ? ` · ${tn('meta.tracks', release.media[0]['track-count'])}` : ''}
                       </p>
                     </div>
                     <ChevronRight size={16} className="text-text-tertiary shrink-0" />
@@ -385,29 +388,29 @@ export default function MetadataEditor({ album, tracks, open, onClose, onApplied
                       <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-xs text-text-secondary">
                         {detailed.date && <span className="flex items-center gap-1"><Calendar size={12} /> {detailed.date}</span>}
                         {getLabel(detailed) && <span className="flex items-center gap-1"><Tag size={12} /> {getLabel(detailed)}</span>}
-                        {detailed.media && <span className="flex items-center gap-1"><Music size={12} /> {allTracks.length} tracks</span>}
+                        {detailed.media && <span className="flex items-center gap-1"><Music size={12} /> {tn('meta.tracks', allTracks.length)}</span>}
                       </div>
                     </div>
                   </div>
 
                   {/* Options */}
                   <div className="space-y-2">
-                    <h4 className="text-xs text-text-tertiary">What to update</h4>
-                    <ToggleOption checked={applyTitle} onChange={setApplyTitle} label="Album title" value={detailed.title} />
-                    <ToggleOption checked={applyArtist} onChange={setApplyArtist} label="Artist" value={getArtistName(detailed)} />
-                    <ToggleOption checked={applyYear} onChange={setApplyYear} label="Year" value={formatMBDate(detailed.date)} />
-                    <ToggleOption checked={applyCover} onChange={setApplyCover} label="Cover art" value={coverAvailable ? 'Available' : 'Unavailable'} disabled={!coverAvailable} />
-                    <ToggleOption checked={applyTracks} onChange={setApplyTracks} label="Track names" value={`${Math.min(tracks.length, allTracks.length)} tracks`} />
+                    <h4 className="text-xs text-text-tertiary">{t('meta.whatToUpdate')}</h4>
+                    <ToggleOption checked={applyTitle} onChange={setApplyTitle} label={t('meta.albumTitle')} value={detailed.title} />
+                    <ToggleOption checked={applyArtist} onChange={setApplyArtist} label={t('meta.artist')} value={getArtistName(detailed)} />
+                    <ToggleOption checked={applyYear} onChange={setApplyYear} label={t('meta.year')} value={formatMBDate(detailed.date)} />
+                    <ToggleOption checked={applyCover} onChange={setApplyCover} label={t('meta.cover')} value={coverAvailable ? t('meta.available') : t('meta.unavailable')} disabled={!coverAvailable} />
+                    <ToggleOption checked={applyTracks} onChange={setApplyTracks} label={t('meta.trackNames')} value={tn('meta.tracks', Math.min(tracks.length, allTracks.length))} />
                   </div>
 
                   {/* Track comparison */}
                   {applyTracks && allTracks.length > 0 && (
                     <div>
-                      <h4 className="text-xs text-text-tertiary mb-2">Tracks</h4>
+                      <h4 className="text-xs text-text-tertiary mb-2">{t('meta.tracksHeading')}</h4>
                       <div className="bg-surface-2/50 rounded-md overflow-hidden text-xs">
                         <div className="flex px-4 py-2 border-b border-border text-text-tertiary">
                           <span className="w-8">#</span>
-                          <span className="flex-1">Current</span>
+                          <span className="flex-1">{t('meta.current')}</span>
                           <span className="flex-1">MusicBrainz</span>
                         </div>
                         {allTracks.slice(0, tracks.length).map((mbTrack, i) => {
@@ -439,7 +442,7 @@ export default function MetadataEditor({ album, tracks, open, onClose, onApplied
               variant="secondary"
               onClick={onClose}
             >
-              Cancel
+              {t('common.cancel')}
             </Button>
             <button
               onClick={handleApply}
@@ -447,7 +450,7 @@ export default function MetadataEditor({ album, tracks, open, onClose, onApplied
               className={buttonClass('primary')}
             >
               {applying ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
-              {applying ? 'Applying...' : 'Apply metadata'}
+              {applying ? t('meta.applying') : t('meta.apply')}
             </button>
           </div>
         )}

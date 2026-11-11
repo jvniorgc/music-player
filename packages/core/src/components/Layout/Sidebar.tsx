@@ -9,23 +9,25 @@ import { jellyfin } from '../../services/jellyfin'
 import { usePlayerStore } from '../../stores/player'
 import { ProfileEditModal } from '../UI/ProfileEditModal'
 import { useShallow } from 'zustand/react/shallow'
+import { useT } from '../../i18n'
 
 const navItems = [
-  { to: '/', icon: Home, label: 'Home' },
-  { to: '/search', icon: Search, label: 'Search' },
+  { to: '/', icon: Home, label: 'nav.home' as const },
+  { to: '/search', icon: Search, label: 'nav.search' as const },
 ]
 
 const libraryItems = [
-  { to: '/songs', icon: Music, label: 'Songs' },
-  { to: '/albums', icon: Disc3, label: 'Albums' },
-  { to: '/artists', icon: Users, label: 'Artists' },
-  { to: '/playlists', icon: ListMusic, label: 'Playlists' },
-  { to: '/downloads', icon: Download, label: 'Downloads' },
-  { to: '/soulseek', icon: Share2, label: 'Soulseek' },
-  { to: '/social', icon: Globe, label: 'Social' },
+  { to: '/songs', icon: Music, label: 'nav.songs' as const },
+  { to: '/albums', icon: Disc3, label: 'nav.albums' as const },
+  { to: '/artists', icon: Users, label: 'nav.artists' as const },
+  { to: '/playlists', icon: ListMusic, label: 'nav.playlists' as const },
+  { to: '/downloads', icon: Download, label: 'nav.downloads' as const },
+  { to: '/soulseek', icon: Share2, label: 'nav.soulseek' as const },
+  { to: '/social', icon: Globe, label: 'nav.social' as const },
 ]
 
 export default function Sidebar() {
+  const { t } = useT()
   const isMac = window.api.platform === 'darwin'
   const { auth, primaryImageTag } = useAuthStore(useShallow(s => ({ auth: s.auth, primaryImageTag: s.primaryImageTag })))
   const { playlists, fetchPlaylists, refreshAll } = useLibraryStore(useShallow(s => ({ playlists: s.playlists, fetchPlaylists: s.fetchPlaylists, refreshAll: s.refreshAll })))
@@ -45,14 +47,14 @@ export default function Sidebar() {
     await refreshAll()
     await loadDownloads()
     setRefreshing(false)
-    toast('Library synced', 'success')
+    toast(t('nav.librarySynced'), 'success')
   }
 
   const handleShuffleAll = async () => {
     try {
       await shuffleAllSongs()
     } catch {
-      toast('Could not start shuffle', 'error')
+      toast(t('nav.shuffleFailed'), 'error')
     }
   }
 
@@ -82,7 +84,7 @@ export default function Sidebar() {
             }
           >
             <item.icon size={18} />
-            {item.label}
+            {t(item.label)}
           </NavLink>
         ))}
       </nav>
@@ -92,10 +94,10 @@ export default function Sidebar() {
         <button
           onClick={handleShuffleAll}
           className="flex items-center gap-3 px-3 py-2 rounded-sm text-sm font-medium text-text-secondary hover:text-text-primary hover:bg-white/5 transition-colors w-full no-drag"
-          title="Play a shuffle of your whole library"
+          title={t('nav.shuffleAllHint')}
         >
           <Shuffle size={18} />
-          Shuffle all
+          {t('nav.shuffleAll')}
         </button>
       </div>
 
@@ -103,13 +105,14 @@ export default function Sidebar() {
       <div className="mt-6 px-3">
         <div className="flex items-center justify-between px-3 mb-2">
           <h3 className="text-xs font-medium text-text-tertiary">
-            Library
+            {t('nav.library')}
           </h3>
           <button
             onClick={handleRefresh}
             disabled={refreshing}
             className="p-1 rounded-sm text-text-tertiary hover:text-text-primary hover:bg-white/10 transition-colors no-drag disabled:opacity-40"
-            title="Sync library"
+            title={t('nav.syncLibrary')}
+            aria-label={t('nav.syncLibrary')}
           >
             <RefreshCw size={13} className={refreshing ? 'animate-spin' : ''} />
           </button>
@@ -128,7 +131,7 @@ export default function Sidebar() {
               }
             >
               <item.icon size={18} />
-              {item.label}
+              {t(item.label)}
             </NavLink>
           ))}
         </nav>
@@ -138,7 +141,7 @@ export default function Sidebar() {
       {playlists.length > 0 && (
         <div className="mt-6 px-3 flex-1 min-h-0 overflow-y-auto">
           <h3 className="text-xs font-medium text-text-tertiary px-3 mb-2">
-            Playlists
+            {t('nav.playlists')}
           </h3>
           <nav className="space-y-0.5">
             {playlists.map(pl => (
@@ -166,7 +169,7 @@ export default function Sidebar() {
         <button
           onClick={() => setProfileOpen(true)}
           className="flex items-center gap-3 px-3 py-2 rounded-sm text-sm text-text-secondary hover:text-text-primary hover:bg-white/5 transition-colors w-full no-drag"
-          title="Edit profile"
+          title={t('nav.editProfile')}
         >
           <div className="w-6 h-6 rounded-full overflow-hidden shrink-0 bg-surface-2 flex items-center justify-center">
             {avatarUrl ? (
@@ -175,7 +178,7 @@ export default function Sidebar() {
               <User size={14} className="text-text-tertiary" />
             )}
           </div>
-          <span className="truncate">{auth?.username || 'Profile'}</span>
+          <span className="truncate">{auth?.username || t('nav.profile')}</span>
         </button>
         <NavLink
           to="/settings"
@@ -186,7 +189,7 @@ export default function Sidebar() {
           }
         >
           <Settings size={16} />
-          <span>Settings</span>
+          <span>{t('nav.settings')}</span>
         </NavLink>
       </div>
 

@@ -1,6 +1,7 @@
 import { useToastStore } from '../../stores/toast'
 import { CheckCircle2, XCircle, Info, X } from 'lucide-react'
 import { useShallow } from 'zustand/react/shallow'
+import { useT } from '../../i18n'
 
 const icons = {
   success: CheckCircle2,
@@ -15,6 +16,7 @@ const colors = {
 }
 
 export default function ToastContainer() {
+  const { t } = useT()
   const { toasts, dismiss } = useToastStore(useShallow(s => ({ toasts: s.toasts, dismiss: s.dismiss })))
 
   if (toasts.length === 0) return null
@@ -32,6 +34,7 @@ export default function ToastContainer() {
             <span className="text-sm text-text-primary flex-1">{toast.message}</span>
             <button
               onClick={() => dismiss(toast.id)}
+              aria-label={t('common.dismiss')}
               className="p-0.5 rounded-full hover:bg-white/10 text-text-tertiary hover:text-text-primary shrink-0"
             >
               <X size={14} />

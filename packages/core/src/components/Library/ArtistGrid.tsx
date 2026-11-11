@@ -7,12 +7,14 @@ import { gridColumns } from '../../lib/grid'
 import { Loader2 } from 'lucide-react'
 import { ArtistCard } from '../UI/MediaCard'
 import { useShallow } from 'zustand/react/shallow'
+import { useT } from '../../i18n'
 
 const GAP = 20
 const MIN_CARD = 160
 const CAPTION_HEIGHT = 56
 
 export default function ArtistGrid() {
+  const { t, tn } = useT()
   const { artists, totalArtists, isLoading, fetchArtists } = useLibraryStore(useShallow(s => ({ artists: s.artists, totalArtists: s.totalArtists, isLoading: s.isLoading, fetchArtists: s.fetchArtists })))
   const navigate = useNavigate()
   const gridRef = useRef<HTMLDivElement>(null)
@@ -60,9 +62,9 @@ export default function ArtistGrid() {
   return (
     <div className="fade-in">
       <div className="mb-6">
-        <h1 className="text-title font-semibold">Artists</h1>
+        <h1 className="text-title font-semibold">{t('nav.artists')}</h1>
         {totalArtists > 0 && (
-          <p className="text-sm text-text-secondary mt-1">{totalArtists} artists</p>
+          <p className="text-sm text-text-secondary mt-1">{tn('common.artistCount', totalArtists)}</p>
         )}
       </div>
 
@@ -87,7 +89,7 @@ export default function ArtistGrid() {
                   key={artist.Id}
                   item={artist}
                   onClick={() => navigate(`/artist/${artist.Id}`)}
-                  subtitle={artist.AlbumCount ? `${artist.AlbumCount} albums` : undefined}
+                  subtitle={artist.AlbumCount ? tn('common.albumCount', artist.AlbumCount) : undefined}
                 />
               ))}
             </div>

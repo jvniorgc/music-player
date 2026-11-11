@@ -7,17 +7,18 @@ import CollageModal from './CollageModal'
 import { CoverFallbackIcon } from '../UI/CoverArt'
 import MediaCard from '../UI/MediaCard'
 import { artistNames } from '../../lib/format'
+import { useT, type MessageKey } from '../../i18n'
 
 type ViewMode = 'artists' | 'albums' | 'songs'
 export type TimePeriod = '7d' | '30d' | '3m' | '1y' | 'all'
 type GridSize = '4x2' | '5x3'
 
-export const TIME_LABELS: Record<TimePeriod, string> = {
-  '7d': '7 days',
-  '30d': '30 days',
-  '3m': '3 months',
-  '1y': '1 year',
-  'all': 'All time',
+export const TIME_LABELS: Record<TimePeriod, MessageKey> = {
+  '7d': 'period.7d',
+  '30d': 'period.30d',
+  '3m': 'period.3m',
+  '1y': 'period.1y',
+  'all': 'period.all',
 }
 
 const GRID_COLS: Record<GridSize, number> = { '4x2': 4, '5x3': 5 }
@@ -44,6 +45,7 @@ export function getMinDate(period: TimePeriod): string | undefined {
 }
 
 export default function UserProfileView() {
+  const { t, tn } = useT()
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const [user, setUser] = useState<JellyfinUser | null>(null)
@@ -112,7 +114,7 @@ export default function UserProfileView() {
   if (!user) {
     return (
       <div className="fade-in text-center py-24 text-text-tertiary">
-        <p>User not found</p>
+        <p>{t('social.userNotFound')}</p>
       </div>
     )
   }
@@ -129,6 +131,8 @@ export default function UserProfileView() {
       <div className="flex items-center gap-6">
         <button
           onClick={() => navigate('/social')}
+          aria-label={t('nav.back')}
+          title={t('nav.back')}
           className="p-2 rounded-sm hover:bg-white/10 transition-colors text-text-secondary hover:text-text-primary"
         >
           <ArrowLeft size={20} />
@@ -144,14 +148,14 @@ export default function UserProfileView() {
         </div>
         <div>
           <h1 className="text-title font-semibold">{user.Name}</h1>
-          <p className="text-sm text-text-secondary mt-1">User profile</p>
+          <p className="text-sm text-text-secondary mt-1">{t('social.userProfile')}</p>
         </div>
       </div>
 
       {/* Playlists */}
       {playlists.length > 0 && (
         <section>
-          <h2 className="text-heading font-semibold mb-4">Playlists</h2>
+          <h2 className="text-heading font-semibold mb-4">{t('nav.playlists')}</h2>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-5">
             {playlists.map(pl => (
               <PlaylistCard key={pl.Id} item={pl} onClick={() => navigate(`/playlist/${pl.Id}`)} />
@@ -163,37 +167,40 @@ export default function UserProfileView() {
       {/* Top Chart Section */}
       <section className="max-w-[720px]">
         <div className="flex items-center justify-between mb-5 flex-wrap gap-3">
-          <h2 className="text-heading font-semibold">Top</h2>
+          <h2 className="text-heading font-semibold">{t('social.top')}</h2>
           <div className="flex items-center gap-2">
             <button
               onClick={() => setCollageOpen(true)}
               className="flex items-center gap-1.5 bg-surface-2 border border-border rounded-sm px-3 py-1.5 text-sm text-text-primary hover:bg-white/10 transition-colors cursor-pointer"
-              title="Create a downloadable collage"
+              title={t('social.collageHint')}
             >
               <Grid3x3 size={14} />
-              Collage
+              {t('social.collage')}
             </button>
             <select
               value={viewMode}
               onChange={e => setViewMode(e.target.value as ViewMode)}
+              aria-label={t('social.view')}
               className="bg-surface-2 border border-border rounded-sm px-3 h-8 text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
             >
-              <option value="artists">Artists</option>
-              <option value="albums">Albums</option>
-              <option value="songs">Songs</option>
+              <option value="artists">{t('nav.artists')}</option>
+              <option value="albums">{t('nav.albums')}</option>
+              <option value="songs">{t('nav.songs')}</option>
             </select>
             <select
               value={timePeriod}
               onChange={e => setTimePeriod(e.target.value as TimePeriod)}
+              aria-label={t('social.period')}
               className="bg-surface-2 border border-border rounded-sm px-3 h-8 text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
             >
               {(Object.keys(TIME_LABELS) as TimePeriod[]).map(key => (
-                <option key={key} value={key}>{TIME_LABELS[key]}</option>
+                <option key={key} value={key}>{t(TIME_LABELS[key])}</option>
               ))}
             </select>
             <select
               value={gridSize}
               onChange={e => setGridSize(e.target.value as GridSize)}
+              aria-label={t('social.gridSize')}
               className="bg-surface-2 border border-border rounded-sm px-3 h-8 text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
             >
               <option value="4x2">4×2</option>
@@ -208,7 +215,7 @@ export default function UserProfileView() {
           </div>
         ) : topItems.length === 0 ? (
           <div className="py-12 text-center text-text-tertiary text-sm">
-            No data for this period
+            {t('social.noData')}
           </div>
         ) : (
           <div
@@ -245,6 +252,7 @@ function ChartCell({ item, rank, viewMode, onClick }: {
   viewMode: ViewMode
   onClick: () => void
 }) {
+  const { tn } = useT()
   const plays = item.periodPlayCount ?? item.UserData?.PlayCount
 
   let imageUrl: string | null = null
@@ -257,7 +265,7 @@ function ChartCell({ item, rank, viewMode, onClick }: {
   }
 
   const subtitle = viewMode === 'artists'
-    ? (plays != null ? `${plays} plays` : '')
+    ? (plays != null ? tn('social.plays', plays) : '')
     : viewMode === 'albums'
       ? (item.AlbumArtist || '')
       : artistNames(item)
@@ -280,7 +288,7 @@ function ChartCell({ item, rank, viewMode, onClick }: {
       {/* Play count badge */}
       {plays != null && viewMode !== 'artists' && (
         <div className="absolute top-1.5 right-1.5 px-1.5 h-5 rounded bg-black/70 flex items-center justify-center">
-          <span className="text-[10px] text-white/90 leading-none">{plays} plays</span>
+          <span className="text-[10px] text-white/90 leading-none">{tn('social.plays', plays)}</span>
         </div>
       )}
       {/* Bottom text overlay */}
@@ -295,12 +303,13 @@ function ChartCell({ item, rank, viewMode, onClick }: {
 }
 
 function PlaylistCard({ item, onClick }: { item: JellyfinItem; onClick: () => void }) {
+  const { tn } = useT()
   return (
     <MediaCard
       kind="playlist"
       imageUrl={item.ImageTags?.Primary ? jellyfin.getImageUrl(item.Id, item.ImageTags.Primary) : null}
       title={item.Name}
-      subtitle={item.ChildCount != null ? `${item.ChildCount} tracks` : undefined}
+      subtitle={item.ChildCount != null ? tn('social.tracks', item.ChildCount) : undefined}
       onClick={onClick}
     />
   )

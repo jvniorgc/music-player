@@ -12,28 +12,12 @@ import CoverArt from '../UI/CoverArt'
 import { AlbumCard } from '../UI/MediaCard'
 import { buttonClass } from '../UI/Button'
 import { useShallow } from 'zustand/react/shallow'
-
-/** Page strings, kept together for later extraction (i18n). */
-const TEXT = {
-  title: 'Listen now',
-  instantMix: 'Instant mix',
-  instantMixLoading: 'Creating mix…',
-  instantMixHint: 'Play a mix based on what you have been listening to, with popular tracks mixed in',
-  mixEmpty: 'Not enough listening history for a mix yet. Play some music and try again.',
-  mixFailed: 'Could not start the mix',
-  recentlyAdded: 'Recently added',
-  seeAll: 'See all',
-  recentlyPlayed: 'Recently played',
-  error: "Couldn't load your library",
-  errorHint: 'Check your connection to the server.',
-  retry: 'Try again',
-  empty: 'Your library is empty',
-  emptyHint: 'Add music to your Jellyfin server to get started',
-}
+import { useT } from '../../i18n'
 
 function HomeSkeleton() {
+  const { t } = useT()
   return (
-    <div className="space-y-10" aria-busy="true">
+    <div className="space-y-10" aria-busy="true" aria-label={t('home.loading')}>
       <section>
         <div className="skeleton h-6 w-40 mb-4 rounded-sm" />
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-5">
@@ -63,6 +47,7 @@ function HomeSkeleton() {
 }
 
 export default function HomePage() {
+  const { t } = useT()
   const { recentlyAdded, recentlyPlayed, homeStatus, fetchHome } = useLibraryStore(useShallow(s => ({ recentlyAdded: s.recentlyAdded, recentlyPlayed: s.recentlyPlayed, homeStatus: s.homeStatus, fetchHome: s.fetchHome })))
   const hasContent = recentlyAdded.length > 0 || recentlyPlayed.length > 0
   const startRadio = usePlayerStore(s => s.startRadio)
@@ -81,10 +66,10 @@ export default function HomePage() {
     try {
       const count = await startRadio()
       if (count === 0) {
-        showToast(TEXT.mixEmpty, 'error')
+        showToast(t('home.mixEmpty'), 'error')
       }
     } catch {
-      showToast(TEXT.mixFailed, 'error')
+      showToast(t('home.mixFailed'), 'error')
     } finally {
       setRadioLoading(false)
     }
@@ -93,15 +78,15 @@ export default function HomePage() {
   return (
     <div className="space-y-10">
       <div className="flex items-center justify-between gap-4">
-        <h1 className="text-title font-semibold">{TEXT.title}</h1>
+        <h1 className="text-title font-semibold">{t('home.title')}</h1>
         <button
           onClick={handleRadio}
           disabled={radioLoading}
           className={buttonClass('primary')}
-          title={TEXT.instantMixHint}
+          title={t('home.instantMixHint')}
         >
           {radioLoading ? <Loader2 size={16} className="animate-spin" /> : <Radio size={16} />}
-          {radioLoading ? TEXT.instantMixLoading : TEXT.instantMix}
+          {radioLoading ? t('home.instantMixLoading') : t('home.instantMix')}
         </button>
       </div>
 
@@ -110,10 +95,10 @@ export default function HomePage() {
       {!hasContent && homeStatus === 'error' && (
         <div className="flex flex-col items-center justify-center py-24 text-text-tertiary">
           <AlertCircle size={40} strokeWidth={1.5} className="mb-4" />
-          <h3 className="text-lg font-medium text-text-secondary mb-1">{TEXT.error}</h3>
-          <p className="text-sm">{TEXT.errorHint}</p>
+          <h3 className="text-lg font-medium text-text-secondary mb-1">{t('home.error')}</h3>
+          <p className="text-sm">{t('home.errorHint')}</p>
           <button onClick={() => fetchHome()} className={`${buttonClass('secondary')} mt-4`}>
-            <RefreshCw size={14} /> {TEXT.retry}
+            <RefreshCw size={14} /> {t('home.retry')}
           </button>
         </div>
       )}
@@ -122,12 +107,12 @@ export default function HomePage() {
       {recentlyAdded.length > 0 && (
         <section>
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-heading font-semibold">{TEXT.recentlyAdded}</h2>
+            <h2 className="text-heading font-semibold">{t('home.recentlyAdded')}</h2>
             <button
               onClick={() => navigate('/albums?sort=recent')}
               className="text-sm text-accent hover:text-accent-hover transition-colors"
             >
-              {TEXT.seeAll}
+              {t('home.seeAll')}
             </button>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-5">
@@ -153,14 +138,14 @@ export default function HomePage() {
       {recentlyPlayed.length > 0 && (
         <section>
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-heading font-semibold">{TEXT.recentlyPlayed}</h2>
+            <h2 className="text-heading font-semibold">{t('home.recentlyPlayed')}</h2>
           </div>
           <div className="-mx-4">
             {recentlyPlayed.slice(0, 10).map((item, i) => (
               <TrackRow
                 key={item.Id}
                 className="px-4 py-2 rounded-sm"
-                onClick={() => playItems(recentlyPlayed, i, { type: 'home', name: TEXT.recentlyPlayed })}
+                onClick={() => playItems(recentlyPlayed, i, { type: 'home', name: t('home.recentlyPlayed') })}
                 leading={
                   <CoverArt
                     src={item.AlbumId ? jellyfin.getImageUrl(item.AlbumId, undefined, 80) : null}
@@ -184,8 +169,8 @@ export default function HomePage() {
       {homeStatus === 'ready' && !hasContent && (
         <div className="flex flex-col items-center justify-center py-24 text-text-tertiary">
           <Clock size={40} strokeWidth={1.5} className="mb-4" />
-          <h3 className="text-lg font-medium text-text-secondary mb-1">{TEXT.empty}</h3>
-          <p className="text-sm">{TEXT.emptyHint}</p>
+          <h3 className="text-lg font-medium text-text-secondary mb-1">{t('home.empty')}</h3>
+          <p className="text-sm">{t('home.emptyHint')}</p>
         </div>
       )}
     </div>

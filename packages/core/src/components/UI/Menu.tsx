@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react'
 import { createPortal } from 'react-dom'
 import { MoreHorizontal, type LucideIcon } from 'lucide-react'
+import { useT } from '../../i18n'
 
 export interface MenuItem {
   label: string
@@ -119,7 +120,7 @@ export function MenuPopover({ entries, x, y, onClose }: {
  * "..." button that opens a menu. With `bindRow`, right-clicking the closest
  * `[data-menu-row]` ancestor (a track row or card) opens it at the cursor.
  */
-export function MoreMenu({ entries, bindRow = true, className, label = 'More options', size = 14 }: {
+export function MoreMenu({ entries, bindRow = true, className, label, size = 14 }: {
   /** Built lazily so menus don't compute their items for every row render. */
   entries: () => MenuEntry[]
   bindRow?: boolean
@@ -127,6 +128,7 @@ export function MoreMenu({ entries, bindRow = true, className, label = 'More opt
   label?: string
   size?: number
 }) {
+  const { t } = useT()
   const [at, setAt] = useState<{ x: number; y: number } | null>(null)
   const buttonRef = useRef<HTMLButtonElement>(null)
 
@@ -156,8 +158,8 @@ export function MoreMenu({ entries, bindRow = true, className, label = 'More opt
         type="button"
         aria-haspopup="menu"
         aria-expanded={!!at}
-        aria-label={label}
-        title={label}
+        aria-label={label ?? t('menu.more')}
+        title={label ?? t('menu.more')}
         onClick={(e) => {
           e.stopPropagation()
           if (at) { setAt(null); return }

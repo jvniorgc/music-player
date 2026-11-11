@@ -4,8 +4,10 @@ import { configure, getConfig, deriveDefaultUrl, isConfigured, testConnection as
 import { jellyfin } from '../../services/jellyfin'
 import { useToastStore } from '../../stores/toast'
 import { Input } from '../UI/Button'
+import { useT } from '../../i18n'
 
 export function SlskdSettings() {
+  const { t } = useT()
   const toast = useToastStore(s => s.show)
   const [settingsUrl, setSettingsUrl] = useState('')
   const [settingsUser, setSettingsUser] = useState('')
@@ -26,7 +28,7 @@ export function SlskdSettings() {
   const handleSaveSettings = () => {
     configure({ url: settingsUrl, username: settingsUser, password: settingsPass })
     setConnected(null)
-    toast('slskd settings saved', 'success')
+    toast(t('slskd.saved'), 'success')
   }
 
   const handleTestConnection = async () => {
@@ -47,7 +49,7 @@ export function SlskdSettings() {
     <div>
                 <div className="space-y-3">
         <div>
-          <label className="block text-xs font-medium text-text-secondary mb-1 ml-1">Server address</label>
+          <label className="block text-xs font-medium text-text-secondary mb-1 ml-1">{t('slskd.serverAddress')}</label>
           <Input
             variant="subtle"
             type="text"
@@ -58,7 +60,7 @@ export function SlskdSettings() {
         </div>
         <div className="flex gap-3">
           <div className="flex-1">
-            <label className="block text-xs font-medium text-text-secondary mb-1 ml-1">User</label>
+            <label className="block text-xs font-medium text-text-secondary mb-1 ml-1">{t('login.user')}</label>
             <Input
               variant="subtle"
               type="text"
@@ -68,13 +70,13 @@ export function SlskdSettings() {
             />
           </div>
           <div className="flex-1">
-            <label className="block text-xs font-medium text-text-secondary mb-1 ml-1">Password</label>
+            <label className="block text-xs font-medium text-text-secondary mb-1 ml-1">{t('login.password')}</label>
             <Input
               variant="subtle"
               type="password"
               value={settingsPass}
               onChange={e => setSettingsPass(e.target.value)}
-              placeholder="password"
+              placeholder={t('login.passwordPlaceholder')}
             />
           </div>
         </div>
@@ -85,7 +87,7 @@ export function SlskdSettings() {
             className="flex items-center gap-2 bg-white/10 hover:bg-white/15 text-white px-4 py-2 rounded-sm text-sm font-medium transition-colors disabled:opacity-40"
           >
             {testingConnection ? <Loader2 size={14} className="animate-spin" /> : <Zap size={14} />}
-            Test connection
+            {t('slskd.test')}
           </button>
           <button
             onClick={handleSaveSettings}
@@ -93,16 +95,16 @@ export function SlskdSettings() {
             className="flex items-center gap-2 bg-accent hover:bg-accent-hover text-white px-4 py-2 rounded-sm text-sm font-medium transition-colors disabled:opacity-40"
           >
             <Check size={14} />
-            Save
+            {t('common.save')}
           </button>
           {connected === true && (
             <span className="flex items-center gap-1 text-sm text-success">
-              <Check size={14} /> Connected
+              <Check size={14} /> {t('slskd.connected')}
             </span>
           )}
           {connected === false && (
             <span className="flex items-center gap-1 text-sm text-danger">
-              <X size={14} /> Connection failed
+              <X size={14} /> {t('slskd.connectionFailed')}
             </span>
           )}
         </div>

@@ -3,6 +3,7 @@ import { jellyfin, type JellyfinItem } from '../../services/jellyfin'
 import { useLibraryStore } from '../../stores/library'
 import { useToastStore } from '../../stores/toast'
 import { PlaylistPicker, InputModal } from './Modal'
+import { useT } from '../../i18n'
 
 export interface AddToPlaylistProps {
   /** Song(s) to add; the picker is open while non-null. */
@@ -12,6 +13,7 @@ export interface AddToPlaylistProps {
 
 /** Playlist picker plus "new playlist" prompt for adding a single song. */
 export default function AddToPlaylist({ song, onClose }: AddToPlaylistProps) {
+  const { t } = useT()
   const playlists = useLibraryStore(s => s.playlists)
   const fetchPlaylists = useLibraryStore(s => s.fetchPlaylists)
   const toast = useToastStore(s => s.show)
@@ -22,10 +24,10 @@ export default function AddToPlaylist({ song, onClose }: AddToPlaylistProps) {
     if (!song) return
     try {
       await jellyfin.addToPlaylist(playlistId, ids(song))
-      toast('Added to playlist', 'success')
+      toast(t('playlist.added'), 'success')
     } catch (err) {
       console.error('Failed to add to playlist:', err)
-      toast('Could not add to playlist', 'error')
+      toast(t('playlist.addFailed'), 'error')
     }
     onClose()
   }
@@ -35,10 +37,10 @@ export default function AddToPlaylist({ song, onClose }: AddToPlaylistProps) {
     try {
       await jellyfin.createPlaylist(name, ids(pendingSong))
       fetchPlaylists()
-      toast('Playlist created', 'success')
+      toast(t('playlist.created'), 'success')
     } catch (err) {
       console.error('Failed to create playlist:', err)
-      toast('Error creating playlist', 'error')
+      toast(t('playlist.createFailed'), 'error')
     }
     setPendingSong(null)
   }
@@ -57,9 +59,9 @@ export default function AddToPlaylist({ song, onClose }: AddToPlaylistProps) {
       />
       <InputModal
         open={!!pendingSong}
-        title="New playlist"
-        placeholder="Playlist name"
-        confirmLabel="Create"
+        title={t('playlist.new')}
+        placeholder={t('playlist.namePlaceholder')}
+        confirmLabel={t('common.create')}
         onClose={() => setPendingSong(null)}
         onConfirm={handleCreate}
       />
