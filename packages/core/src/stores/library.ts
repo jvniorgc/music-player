@@ -12,6 +12,8 @@ interface LibraryState {
   totalArtists: number
   totalSongs: number
   isLoading: boolean
+  /** Home feed state: 'idle' before the first fetch. */
+  homeStatus: 'idle' | 'loading' | 'ready' | 'error'
 
   fetchAlbums: (startIndex?: number) => Promise<void>
   fetchArtists: (startIndex?: number) => Promise<void>
@@ -35,6 +37,7 @@ export const useLibraryStore = create<LibraryState>((set, get) => ({
   totalArtists: 0,
   totalSongs: 0,
   isLoading: false,
+  homeStatus: 'idle',
 
   fetchAlbums: async (startIndex = 0) => {
     set({ isLoading: true })
@@ -117,7 +120,7 @@ export const useLibraryStore = create<LibraryState>((set, get) => ({
   },
 
   fetchHome: async () => {
-    set({ isLoading: true })
+    set({ isLoading: true, homeStatus: 'loading' })
     try {
       const [recent, played] = await Promise.all([
         jellyfin.getRecentlyAdded(20),
@@ -126,11 +129,12 @@ export const useLibraryStore = create<LibraryState>((set, get) => ({
       set({
         recentlyAdded: recent.Items,
         recentlyPlayed: played.Items,
-        isLoading: false
+        isLoading: false,
+        homeStatus: 'ready'
       })
     } catch (err) {
       console.error('Failed to fetch home:', err)
-      set({ isLoading: false })
+      set({ isLoading: false, homeStatus: 'error' })
     }
   },
 
@@ -174,6 +178,7 @@ export const useLibraryStore = create<LibraryState>((set, get) => ({
     recentlyPlayed: [],
     totalAlbums: 0,
     totalArtists: 0,
-    totalSongs: 0
+    totalSongs: 0,
+    homeStatus: 'idle'
   })
 }))

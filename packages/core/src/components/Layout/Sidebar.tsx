@@ -95,7 +95,7 @@ export default function Sidebar() {
           title="Play a shuffle of your whole library"
         >
           <Shuffle size={18} />
-          Shuffle All
+          Shuffle all
         </button>
       </div>
 

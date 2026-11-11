@@ -86,6 +86,7 @@ describe('home, playlists & load-more guards', () => {
     const s = useLibraryStore.getState()
     expect(s.recentlyAdded[0].Id).toBe('ra')
     expect(s.recentlyPlayed[0].Id).toBe('rp')
+    expect(s.homeStatus).toBe('ready')
   })
 
   it('fetchPlaylists stores playlists', async () => {
@@ -134,6 +135,7 @@ describe('error handling', () => {
     vi.mocked(jellyfin.getRecentlyPlayed).mockResolvedValue({ Items: [], TotalRecordCount: 0 })
     await useLibraryStore.getState().fetchHome()
     expect(useLibraryStore.getState().isLoading).toBe(false)
+    expect(useLibraryStore.getState().homeStatus).toBe('error')
     expect(console.error).toHaveBeenCalled()
   })
 })

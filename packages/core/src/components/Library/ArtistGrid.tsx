@@ -18,7 +18,7 @@ export default function ArtistGrid() {
       <div className="mb-6">
         <h1 className="text-title font-semibold">Artists</h1>
         {totalArtists > 0 && (
-          <p className="text-sm text-text-secondary mt-1">{totalArtists} artistas</p>
+          <p className="text-sm text-text-secondary mt-1">{totalArtists} artists</p>
         )}
       </div>
 
