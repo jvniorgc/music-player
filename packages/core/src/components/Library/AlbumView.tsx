@@ -8,8 +8,8 @@ import { useDownloadStore } from '../../stores/download'
 import { useLibraryStore } from '../../stores/library'
 import { Play, Pause, Shuffle, Download, Check, Pencil } from 'lucide-react'
 import MetadataEditor from '../Metadata/MetadataEditor'
+import { AlbumHeaderMenu } from '../UI/AlbumMenu'
 import TrackMenu from '../UI/TrackMenu'
-import AddToPlaylist from '../UI/AddToPlaylist'
 import { formatTotalDuration } from '../../lib/format'
 import TrackRow, { TrackIndex, TrackDuration } from '../UI/TrackRow'
 import { CoverFallbackIcon } from '../UI/CoverArt'
@@ -27,7 +27,6 @@ export default function AlbumView() {
   const { isDownloaded, startDownload } = useDownloadStore(useShallow(s => ({ isDownloaded: s.isDownloaded, startDownload: s.startDownload, downloads: s.downloads })))
   const { playlists, fetchPlaylists } = useLibraryStore(useShallow(s => ({ playlists: s.playlists, fetchPlaylists: s.fetchPlaylists })))
   const [showMetadata, setShowMetadata] = useState(false)
-  const [pickerSong, setPickerSong] = useState<JellyfinItem | null>(null)
 
   const loadData = (signal?: AbortSignal) => {
     if (!id) return
@@ -150,6 +149,7 @@ export default function AlbumView() {
             >
               <Download size={16} />
             </button>
+            <AlbumHeaderMenu album={album} tracks={tracks} />
             <button
               onClick={() => setShowMetadata(true)}
               className="w-8 h-8 inline-flex items-center justify-center rounded-full border border-border text-text-secondary hover:text-text-primary hover:bg-white/10 transition-colors"
@@ -180,7 +180,7 @@ export default function AlbumView() {
 
               <TrackDuration ticks={track.RunTimeTicks} />
 
-              <TrackMenu track={track} onPlaylistAdd={(t) => setPickerSong(t)} />
+              <TrackMenu track={track} hideAlbum />
             </TrackRow>
           )
         })}
@@ -194,7 +194,6 @@ export default function AlbumView() {
         onApplied={() => loadData()}
       />
 
-      <AddToPlaylist song={pickerSong} onClose={() => setPickerSong(null)} />
     </div>
   )
 }

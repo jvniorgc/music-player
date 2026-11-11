@@ -5,8 +5,8 @@ import { useToastStore } from '../../stores/toast'
 import { PlaylistPicker, InputModal } from './Modal'
 
 export interface AddToPlaylistProps {
-  /** Song to add; the picker is open while non-null. */
-  song: JellyfinItem | null
+  /** Song(s) to add; the picker is open while non-null. */
+  song: JellyfinItem | JellyfinItem[] | null
   onClose: () => void
 }
 
@@ -15,12 +15,13 @@ export default function AddToPlaylist({ song, onClose }: AddToPlaylistProps) {
   const playlists = useLibraryStore(s => s.playlists)
   const fetchPlaylists = useLibraryStore(s => s.fetchPlaylists)
   const toast = useToastStore(s => s.show)
-  const [pendingSong, setPendingSong] = useState<JellyfinItem | null>(null)
+  const [pendingSong, setPendingSong] = useState<JellyfinItem | JellyfinItem[] | null>(null)
+  const ids = (s: JellyfinItem | JellyfinItem[]) => (Array.isArray(s) ? s : [s]).map(i => i.Id)
 
   const handleAdd = async (playlistId: string) => {
     if (!song) return
     try {
-      await jellyfin.addToPlaylist(playlistId, [song.Id])
+      await jellyfin.addToPlaylist(playlistId, ids(song))
       toast('Added to playlist', 'success')
     } catch (err) {
       console.error('Failed to add to playlist:', err)
@@ -32,7 +33,7 @@ export default function AddToPlaylist({ song, onClose }: AddToPlaylistProps) {
   const handleCreate = async (name: string) => {
     if (!pendingSong) return
     try {
-      await jellyfin.createPlaylist(name, [pendingSong.Id])
+      await jellyfin.createPlaylist(name, ids(pendingSong))
       fetchPlaylists()
       toast('Playlist created', 'success')
     } catch (err) {

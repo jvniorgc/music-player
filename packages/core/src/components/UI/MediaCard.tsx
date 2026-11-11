@@ -4,6 +4,7 @@ import CoverArt, { type CoverKind } from './CoverArt'
 import { jellyfin, type JellyfinItem } from '../../services/jellyfin'
 import { usePlayerStore } from '../../stores/player'
 import { ArtistLinks } from './Links'
+import AlbumMenu from './AlbumMenu'
 
 export const CARD_FALLBACK_CLASS =
   'w-full h-full flex items-center justify-center bg-surface-2'
@@ -24,16 +25,19 @@ export interface MediaCardProps {
   onContextMenu?: (e: MouseEvent) => void
   /** When set, a hover play button is shown on the cover. */
   onPlay?: (e: MouseEvent) => void
+  /** "..." menu shown on the cover; right-click on the card opens it too. */
+  menu?: ReactNode
 }
 
 /** Grid card with square/round cover art, hover dimming and optional play button. */
 export default function MediaCard({
   imageUrl, kind = 'album', fallback, fallbackClassName = CARD_FALLBACK_CLASS, shape = 'square',
-  title, subtitle, caption, onClick, onContextMenu, onPlay,
+  title, subtitle, caption, onClick, onContextMenu, onPlay, menu,
 }: MediaCardProps) {
   const circle = shape === 'circle'
   return (
     <div
+      data-menu-row={menu ? '' : undefined}
       className={`group cursor-pointer${circle ? ' text-center' : ''}`}
       onClick={onClick}
       onContextMenu={onContextMenu}
@@ -47,6 +51,7 @@ export default function MediaCard({
         fallbackClassName={fallbackClassName}
       >
         <div className={`absolute inset-0 bg-black/0 group-hover:bg-black/25 transition-colors${circle ? ' rounded-full' : ''}`} />
+        {menu && <div className="absolute top-2 right-2" onClick={e => e.stopPropagation()}>{menu}</div>}
         {onPlay && (
           <button
             onClick={(e) => { e.stopPropagation(); onPlay(e) }}
@@ -99,6 +104,7 @@ export function AlbumCard({ item, onClick, subtitle, fallback }: {
       )}
       onClick={onClick}
       onPlay={() => playAlbum(item)}
+      menu={<AlbumMenu album={item} />}
     />
   )
 }

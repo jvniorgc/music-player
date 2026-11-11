@@ -72,6 +72,7 @@ export default function TrackRow({
 }: TrackRowProps) {
   return (
     <div
+      data-menu-row
       className={`flex items-center gap-4 ${className} hover:bg-white/[0.06] transition-colors cursor-pointer group${isCurrent ? ' bg-white/[0.04]' : ''}`}
       onClick={onClick}
     >

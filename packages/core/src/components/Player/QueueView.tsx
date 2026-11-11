@@ -3,6 +3,7 @@ import { jellyfin } from '../../services/jellyfin'
 import { QueueTrack } from '../../services/playback'
 import CoverArt from '../UI/CoverArt'
 import { X, Music } from 'lucide-react'
+import TrackMenu, { MENU_TEXT } from '../UI/TrackMenu'
 import { formatTicks } from '../../lib/format'
 import { ArtistLinks, TrackSubtitle, PlayingFrom } from '../UI/Links'
 import { useShallow } from 'zustand/react/shallow'
@@ -15,6 +16,7 @@ function TrackRow({ track, index, onPlay, onRemove }: {
 }) {
   return (
     <div
+      data-menu-row
       className="flex items-center gap-3 px-2 py-2 rounded-sm hover:bg-white/5 transition-colors group cursor-pointer"
       onClick={onPlay}
     >
@@ -31,13 +33,7 @@ function TrackRow({ track, index, onPlay, onRemove }: {
           <ArtistLinks item={track.item} />
         </p>
       </div>
-      <button
-        onClick={(e) => { e.stopPropagation(); onRemove() }}
-        className="p-1 rounded-full opacity-0 group-hover:opacity-100 hover:bg-white/10 text-text-tertiary transition-all shrink-0"
-        title="Remove from queue"
-      >
-        <X size={14} />
-      </button>
+      <TrackMenu track={track.item} onRemove={onRemove} removeLabel={MENU_TEXT.removeFromQueue} />
       <span className="text-[11px] text-text-tertiary tabular-nums">
         {formatTicks(track.item.RunTimeTicks)}
       </span>

@@ -6,7 +6,6 @@ import { usePlayerStore } from '../../stores/player'
 import { useLibraryStore } from '../../stores/library'
 import { Search, X, Disc3, Users, Music, Loader2 } from 'lucide-react'
 import TrackMenu from '../UI/TrackMenu'
-import AddToPlaylist from '../UI/AddToPlaylist'
 import { TrackSubtitle } from '../UI/Links'
 import { FOCUS_SEARCH_EVENT } from '../../lib/shortcuts'
 import TrackRow, { TrackDuration, CoverPlayOverlay } from '../UI/TrackRow'
@@ -24,7 +23,6 @@ export default function SearchView() {
   const { playlists, fetchPlaylists } = useLibraryStore(useShallow(s => ({ playlists: s.playlists, fetchPlaylists: s.fetchPlaylists })))
   const debounceRef = useRef<ReturnType<typeof setTimeout>>()
 
-  const [pickerSong, setPickerSong] = useState<JellyfinItem | null>(null)
 
   useEffect(() => {
     inputRef.current?.focus()
@@ -119,7 +117,7 @@ export default function SearchView() {
                     subtitle={<TrackSubtitle item={song} />}
                   >
                     <TrackDuration ticks={song.RunTimeTicks} />
-                    <TrackMenu track={song} onPlaylistAdd={(s) => setPickerSong(s)} />
+                    <TrackMenu track={song} />
                   </TrackRow>
                 ))}
               </div>
@@ -181,7 +179,6 @@ export default function SearchView() {
         </div>
       )}
 
-      <AddToPlaylist song={pickerSong} onClose={() => setPickerSong(null)} />
     </div>
   )
 }

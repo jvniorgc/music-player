@@ -7,7 +7,6 @@ import { useDownloadStore } from '../../stores/download'
 import { jellyfin, JellyfinItem } from '../../services/jellyfin'
 import { Loader2, Download, Check } from 'lucide-react'
 import TrackMenu from '../UI/TrackMenu'
-import AddToPlaylist from '../UI/AddToPlaylist'
 import { ArtistLinks, AlbumLink } from '../UI/Links'
 import TrackRow, { TrackIndex, TrackDuration } from '../UI/TrackRow'
 import CoverArt from '../UI/CoverArt'
@@ -53,7 +52,6 @@ export default function SongList() {
     return () => ro.disconnect()
   }, [])
 
-  const [pickerSong, setPickerSong] = useState<JellyfinItem | null>(null)
 
   useEffect(() => {
     if (songs.length === 0) fetchSongs()
@@ -133,7 +131,7 @@ export default function SongList() {
                 <TrackDuration ticks={song.RunTimeTicks} className="w-12 text-right" />
 
                 <div className="w-20 flex justify-end gap-1 items-center">
-                  <TrackMenu track={song} onPlaylistAdd={(s) => setPickerSong(s)} />
+                  <TrackMenu track={song} />
                   <button
                     onClick={(e) => {
                       e.stopPropagation()
@@ -156,7 +154,6 @@ export default function SongList() {
         {isLoading && <Loader2 size={24} className="animate-spin text-text-tertiary" />}
       </div>
 
-      <AddToPlaylist song={pickerSong} onClose={() => setPickerSong(null)} />
     </div>
   )
 }

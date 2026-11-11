@@ -9,7 +9,6 @@ import { useToastStore } from '../../stores/toast'
 import { Play, Pause, Shuffle, ListMusic, Pencil, Trash2, X as XIcon } from 'lucide-react'
 import { InputModal, ConfirmModal } from '../UI/Modal'
 import TrackMenu from '../UI/TrackMenu'
-import AddToPlaylist from '../UI/AddToPlaylist'
 import { TrackSubtitle } from '../UI/Links'
 import TrackRow, { TrackIndex, TrackDuration } from '../UI/TrackRow'
 import CoverArt from '../UI/CoverArt'
@@ -29,7 +28,6 @@ export default function PlaylistView() {
 
   const [showRename, setShowRename] = useState(false)
   const [showDelete, setShowDelete] = useState(false)
-  const [pickerSong, setPickerSong] = useState<JellyfinItem | null>(null)
 
   const loadData = (signal?: AbortSignal) => {
     if (!id) return
@@ -186,19 +184,7 @@ export default function PlaylistView() {
               >
                 <TrackDuration ticks={track.RunTimeTicks} />
 
-                <TrackMenu
-                  track={track}
-                  onPlaylistAdd={(t) => setPickerSong(t)}
-                  extraItems={
-                    <button
-                      onClick={() => handleRemoveTrack(track)}
-                      className="flex items-center gap-3 w-full px-4 py-2 text-sm text-danger hover:bg-white/10 transition-colors"
-                    >
-                      <XIcon size={14} />
-                      Remove from Playlist
-                    </button>
-                  }
-                />
+                <TrackMenu track={track} onRemove={track.PlaylistItemId ? () => handleRemoveTrack(track) : undefined} />
               </TrackRow>
             )
           })}
@@ -230,7 +216,6 @@ export default function PlaylistView() {
         onConfirm={handleDelete}
       />
 
-      <AddToPlaylist song={pickerSong} onClose={() => setPickerSong(null)} />
     </div>
   )
 }

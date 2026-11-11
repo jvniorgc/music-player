@@ -6,6 +6,7 @@ import { useToastStore } from '../../stores/toast'
 import { jellyfin } from '../../services/jellyfin'
 import { Clock, Radio, Loader2 } from 'lucide-react'
 import { TrackSubtitle } from '../UI/Links'
+import TrackMenu from '../UI/TrackMenu'
 import TrackRow, { TrackDuration, CoverPlayOverlay } from '../UI/TrackRow'
 import CoverArt from '../UI/CoverArt'
 import { AlbumCard } from '../UI/MediaCard'
@@ -110,6 +111,7 @@ export default function HomePage() {
                 subtitle={<TrackSubtitle item={item} />}
               >
                 <TrackDuration ticks={item.RunTimeTicks} />
+                <TrackMenu track={item} />
               </TrackRow>
             ))}
           </div>

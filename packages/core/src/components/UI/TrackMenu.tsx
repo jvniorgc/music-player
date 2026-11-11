@@ -1,102 +1,92 @@
-import { useState, useEffect, useRef } from 'react'
-import { MoreHorizontal, ListEnd, ListStart, ListPlus } from 'lucide-react'
-import { JellyfinItem } from '../../services/jellyfin'
+import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { ListEnd, ListStart, ListPlus, Radio, User, Disc3, X } from 'lucide-react'
+import type { JellyfinItem } from '../../services/jellyfin'
 import { usePlayerStore } from '../../stores/player'
+import { useLibraryStore } from '../../stores/library'
 import { useToastStore } from '../../stores/toast'
-import { useShallow } from 'zustand/react/shallow'
+import { MoreMenu, type MenuEntry } from './Menu'
+import AddToPlaylist from './AddToPlaylist'
 
-interface TrackMenuProps {
-  track: JellyfinItem
-  extraItems?: React.ReactNode
-  onPlaylistAdd?: (track: JellyfinItem) => void
+/** Menu strings, kept together for later extraction (i18n). */
+export const MENU_TEXT = {
+  play: 'Play',
+  shuffle: 'Shuffle',
+  playNext: 'Play next',
+  addToQueue: 'Add to queue',
+  startRadio: 'Start radio',
+  goToArtist: 'Go to artist',
+  goToNamedArtist: (name: string) => `Go to ${name}`,
+  goToAlbum: 'Go to album',
+  addToPlaylist: 'Add to playlist',
+  removeFromPlaylist: 'Remove from playlist',
+  removeFromQueue: 'Remove from queue',
+  willPlayNext: 'Will play next',
+  addedToQueue: 'Added to queue',
+  radioFailed: 'Could not start radio',
+} as const
+
+export function useGoTo() {
+  const navigate = useNavigate()
+  return (to: string) => {
+    const p = usePlayerStore.getState()
+    if (p.showFullScreen) p.setShowFullScreen(false)
+    navigate(to)
+  }
 }
 
-export default function TrackMenu({ track, extraItems, onPlaylistAdd }: TrackMenuProps) {
-  const [open, setOpen] = useState(false)
-  const [position, setPosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 })
-  const buttonRef = useRef<HTMLButtonElement>(null)
-  const menuRef = useRef<HTMLDivElement>(null)
-  const { addToQueue, addNext } = usePlayerStore(useShallow(s => ({ addToQueue: s.addToQueue, addNext: s.addNext })))
+/** "Go to artist" entries: one per linked artist (labelled by name when several). */
+export function artistEntries(item: Pick<JellyfinItem, 'ArtistItems' | 'AlbumArtists'>, goTo: (to: string) => void): MenuEntry[] {
+  const artists = item.ArtistItems?.length ? item.ArtistItems : item.AlbumArtists ?? []
+  return artists.slice(0, 5).map(a => ({
+    label: artists.length > 1 ? MENU_TEXT.goToNamedArtist(a.Name) : MENU_TEXT.goToArtist,
+    icon: User,
+    onSelect: () => goTo(`/artist/${a.Id}`),
+  }))
+}
+
+export interface TrackMenuProps {
+  track: JellyfinItem
+  /** Adds a destructive "Remove from …" entry. */
+  onRemove?: () => void
+  removeLabel?: string
+  /** Hide "Go to album" (e.g. inside that album). */
+  hideAlbum?: boolean
+  className?: string
+}
+
+/** Standard track context menu: "..." button plus right-click on the surrounding row. */
+export default function TrackMenu({ track, onRemove, removeLabel = MENU_TEXT.removeFromPlaylist, hideAlbum, className }: TrackMenuProps) {
+  const [pickerSong, setPickerSong] = useState<JellyfinItem | null>(null)
   const toast = useToastStore(s => s.show)
+  const goTo = useGoTo()
 
-  useEffect(() => {
-    if (!open) return
-    const close = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-        setOpen(false)
-      }
-    }
-    window.addEventListener('click', close)
-    return () => window.removeEventListener('click', close)
-  }, [open])
-
-  const handleOpen = (e: React.MouseEvent) => {
-    e.stopPropagation()
-    const rect = buttonRef.current?.getBoundingClientRect()
-    if (rect) {
-      const x = Math.min(rect.left, window.innerWidth - 200)
-      const y = rect.bottom + 4
-      setPosition({ x, y: y + 160 > window.innerHeight ? rect.top - 160 : y })
-    }
-    setOpen(true)
-  }
-
-  const handleAddToQueue = () => {
-    addToQueue(track)
-    toast('Added to queue', 'success')
-    setOpen(false)
-  }
-
-  const handlePlayNext = () => {
-    addNext(track)
-    toast('Will play next', 'success')
-    setOpen(false)
+  const entries = (): MenuEntry[] => {
+    const p = usePlayerStore.getState()
+    return [
+      { label: MENU_TEXT.playNext, icon: ListStart, onSelect: () => { p.addNext(track); toast(MENU_TEXT.willPlayNext, 'success') } },
+      { label: MENU_TEXT.addToQueue, icon: ListEnd, onSelect: () => { p.addToQueue(track); toast(MENU_TEXT.addedToQueue, 'success') } },
+      { label: MENU_TEXT.startRadio, icon: Radio, onSelect: () => { p.startTrackRadio(track).catch(() => toast(MENU_TEXT.radioFailed, 'error')) } },
+      'separator',
+      ...artistEntries(track, goTo),
+      !hideAlbum && track.AlbumId && { label: MENU_TEXT.goToAlbum, icon: Disc3, onSelect: () => goTo(`/album/${track.AlbumId}`) },
+      'separator',
+      {
+        label: MENU_TEXT.addToPlaylist, icon: ListPlus, onSelect: () => {
+          const lib = useLibraryStore.getState()
+          if (lib.playlists.length === 0) lib.fetchPlaylists()
+          setPickerSong(track)
+        },
+      },
+      onRemove && 'separator',
+      onRemove && { label: removeLabel, icon: X, danger: true, onSelect: onRemove },
+    ]
   }
 
   return (
     <>
-      <button
-        ref={buttonRef}
-        onClick={handleOpen}
-        className="p-1.5 rounded-full opacity-0 group-hover:opacity-100 hover:bg-white/10 text-text-tertiary transition-all shrink-0"
-        title="More options"
-      >
-        <MoreHorizontal size={14} />
-      </button>
-
-      {open && (
-        <div
-          ref={menuRef}
-          className="fixed z-50 bg-surface-2 border border-border rounded-lg shadow-lg shadow-black/40 py-1.5 min-w-[180px]"
-          style={{ left: position.x, top: position.y }}
-          onClick={e => e.stopPropagation()}
-        >
-          <button
-            onClick={handlePlayNext}
-            className="flex items-center gap-3 w-full px-4 py-2 text-sm text-text-primary hover:bg-white/10 transition-colors"
-          >
-            <ListStart size={14} />
-            Play Next
-          </button>
-          <button
-            onClick={handleAddToQueue}
-            className="flex items-center gap-3 w-full px-4 py-2 text-sm text-text-primary hover:bg-white/10 transition-colors"
-          >
-            <ListEnd size={14} />
-            Add to Queue
-          </button>
-          {onPlaylistAdd && (
-            <button
-              onClick={() => { setOpen(false); onPlaylistAdd(track) }}
-              className="flex items-center gap-3 w-full px-4 py-2 text-sm text-text-primary hover:bg-white/10 transition-colors"
-            >
-              <ListPlus size={14} />
-              Add to Playlist
-            </button>
-          )}
-          {extraItems}
-        </div>
-      )}
+      <MoreMenu entries={entries} className={className} />
+      <AddToPlaylist song={pickerSong} onClose={() => setPickerSong(null)} />
     </>
   )
 }
