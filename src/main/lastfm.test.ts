@@ -447,3 +447,48 @@ describe('offline scrobble queue', () => {
     }
   })
 })
+
+describe('getInfo', () => {
+  it('rejects methods outside the read-only allowlist', async () => {
+    await expect(lastfm.getInfo('track.scrobble', {})).rejects.toThrow(/Unsupported/)
+    expect(h.fetchMock).not.toHaveBeenCalled()
+  })
+
+  it('returns null without an API key', async () => {
+    expect(await lastfm.getInfo('album.getInfo', { artist: 'A', album: 'B' })).toBeNull()
+    expect(h.fetchMock).not.toHaveBeenCalled()
+  })
+
+  it('sends allowed params, autocorrect and the linked username', async () => {
+    lastfm.setCredentials('my-key', 'my-secret')
+    getDatabase().prepare('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)').run('lastfm_username', 'rj')
+    h.fetchMock!.mockResolvedValueOnce(jsonRes({ album: { listeners: '5' } }))
+    const out = await lastfm.getInfo('album.getInfo', { artist: 'A', album: 'B', mbid: '', evil: 'x' })
+    const params = sentParams(h.fetchMock!.mock.calls[0])
+    expect(params.get('method')).toBe('album.getInfo')
+    expect(params.get('api_key')).toBe('my-key')
+    expect(params.get('autocorrect')).toBe('1')
+    expect(params.get('username')).toBe('rj')
+    expect(params.get('artist')).toBe('A')
+    expect(params.has('mbid')).toBe(false)
+    expect(params.has('evil')).toBe(false)
+    expect(out).toEqual({ album: { listeners: '5' } })
+  })
+
+  it('omits username when none is linked and tolerates missing params', async () => {
+    lastfm.setCredentials('my-key', 'my-secret')
+    h.fetchMock!.mockResolvedValueOnce(jsonRes({ artist: {} }))
+    await lastfm.getInfo('artist.getInfo', undefined as unknown as Record<string, string>)
+    expect(sentParams(h.fetchMock!.mock.calls[0]).has('username')).toBe(false)
+  })
+
+  it('maps "not found" to null and throws on other errors', async () => {
+    lastfm.setCredentials('my-key', 'my-secret')
+    h.fetchMock!.mockResolvedValueOnce(jsonRes({ error: 6, message: 'Album not found' }))
+    expect(await lastfm.getInfo('album.getInfo', { artist: 'A', album: 'B' })).toBeNull()
+    h.fetchMock!.mockResolvedValueOnce(jsonRes({ error: 29 }))
+    await expect(lastfm.getInfo('album.getInfo', { artist: 'A', album: 'B' })).rejects.toThrow(/Last.fm error 29/)
+    h.fetchMock!.mockResolvedValueOnce(new Response('oops', { status: 500 }))
+    await expect(lastfm.getInfo('album.getInfo', { artist: 'A', album: 'B' })).rejects.toThrow(/HTTP 500/)
+  })
+})

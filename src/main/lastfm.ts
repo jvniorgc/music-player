@@ -335,3 +335,35 @@ export async function getSimilarTracks(artist: string, track: string, limit = 50
     })
     .filter((t): t is LastfmSimilarTrack => t !== null)
 }
+
+/** Read-only Last.fm `*.getInfo` methods the renderer may request for popularity data. */
+export const INFO_METHODS = ['album.getInfo', 'track.getInfo', 'artist.getInfo'] as const
+export type LastfmInfoMethod = typeof INFO_METHODS[number]
+const INFO_PARAMS = new Set(['artist', 'album', 'track', 'mbid'])
+const NOT_FOUND_CODE = 6
+
+/**
+ * Unauthenticated `album|track|artist.getInfo` lookup (only the API key is
+ * needed). The linked username is added so Last.fm includes `userplaycount`.
+ * Returns the raw JSON, or null when no API key is configured or Last.fm
+ * reports the item as not found. Other failures throw.
+ */
+export async function getInfo(method: string, params: Record<string, string>): Promise<Record<string, unknown> | null> {
+  if (!(INFO_METHODS as readonly string[]).includes(method)) throw new Error(`Unsupported Last.fm method: ${method}`)
+  const apiKey = getSetting(KEY_API_KEY)
+  if (!apiKey) return null
+
+  const query = new URLSearchParams({ method, api_key: apiKey, autocorrect: '1', format: 'json' })
+  for (const [k, v] of Object.entries(params ?? {})) {
+    if (INFO_PARAMS.has(k) && typeof v === 'string' && v) query.set(k, v)
+  }
+  const username = getSetting(KEY_USERNAME)
+  if (username) query.set('username', username)
+
+  const res = await net.fetch(`${API_ROOT}?${query.toString()}`, { signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS) })
+  const json = await res.json().catch(() => null) as (LastfmJson & Record<string, unknown>) | null
+  if (json?.error === NOT_FOUND_CODE) return null
+  if (json?.error) throw new LastfmApiError(json.error, json.message ?? '')
+  if (!res.ok || !json) throw new Error(`Last.fm HTTP ${res.status}`)
+  return json
+}

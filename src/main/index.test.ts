@@ -139,7 +139,7 @@ describe('main process: IPC registration', () => {
       'settings:get', 'settings:set',
       'lastfm:get-status', 'lastfm:set-credentials', 'lastfm:set-enabled', 'lastfm:start-auth',
       'lastfm:finish-auth', 'lastfm:disconnect', 'lastfm:now-playing', 'lastfm:scrobble',
-      'lastfm:get-similar-tracks',
+      'lastfm:get-similar-tracks', 'lastfm:get-info',
       'lyrics:get', 'lyrics:save', 'lyrics:get-downloaded', 'lyrics:save-downloaded',
       'file:get-url', 'cors:allow-origin'
     ]
@@ -166,6 +166,12 @@ describe('main process: Last.fm similar tracks handler', () => {
 
     const out = await invoke('lastfm:get-similar-tracks', { artist: 'Radiohead', track: 'Reckoner' })
     expect(out).toEqual([{ artist: 'Radiohead', track: 'Nude', match: 0.9 }])
+  })
+})
+
+describe('main process: Last.fm info handler', () => {
+  it('forwards method and params to the Last.fm client', async () => {
+    expect(await invoke('lastfm:get-info', 'artist.getInfo', { artist: 'A' })).toBeNull()
   })
 })
 

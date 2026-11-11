@@ -359,6 +359,7 @@ function setupIPC() {
   ipcMain.handle('lastfm:now-playing', (_e, track: LastfmTrack) => lastfm.updateNowPlaying(track))
   ipcMain.handle('lastfm:scrobble', (_e, track: LastfmTrack) => lastfm.scrobble(track))
   ipcMain.handle('lastfm:get-similar-tracks', (_e, track: { artist: string; track: string }, limit?: number) => lastfm.getSimilarTracks(track.artist, track.track, limit))
+  ipcMain.handle('lastfm:get-info', (_e, method: string, params: Record<string, string>) => lastfm.getInfo(method, params))
 
   // --- Lyrics Cache ---
   ipcMain.handle('lyrics:get', (_e, itemId: string) => {

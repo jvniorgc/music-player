@@ -54,6 +54,7 @@ export interface JellyfinItem {
   HasLyrics?: boolean
   Container?: string
   Path?: string
+  ProviderIds?: Record<string, string>
 }
 
 /** Full item DTO as returned by /Users/{id}/Items/{id}, round-tripped on updates. */

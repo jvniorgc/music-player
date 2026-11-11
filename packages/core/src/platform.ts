@@ -36,6 +36,8 @@ export type LastfmSimilarTrack = {
   match: number
 }
 
+export type LastfmInfoMethod = 'album.getInfo' | 'track.getInfo' | 'artist.getInfo'
+
 export type AuthData = {
   serverUrl: string
   token: string
@@ -107,6 +109,8 @@ export interface PlatformApi {
   lastfmScrobble: (track: LastfmTrack) => Promise<void>
   /** Similar-track recommendations for a seed (Last.fm track.getSimilar; needs only the API key). */
   lastfmGetSimilarTracks: (track: { artist: string; track: string }, limit?: number) => Promise<LastfmSimilarTrack[]>
+  /** Raw Last.fm `*.getInfo` JSON (API key only; adds the linked username). Null if unconfigured / not found. */
+  lastfmGetInfo: (method: LastfmInfoMethod, params: Record<string, string>) => Promise<Record<string, unknown> | null>
 
   // Lyrics cache (session)
   getCachedLyrics: (itemId: string) => Promise<string | null>

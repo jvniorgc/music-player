@@ -142,6 +142,9 @@ describe('preload bridge', () => {
 
     api.lastfmGetSimilarTracks({ artist: 'A', track: 'B' }, 5)
     expect(h.invoke).toHaveBeenCalledWith('lastfm:get-similar-tracks', { artist: 'A', track: 'B' }, 5)
+
+    api.lastfmGetInfo('album.getInfo', { artist: 'A', album: 'B' })
+    expect(h.invoke).toHaveBeenCalledWith('lastfm:get-info', 'album.getInfo', { artist: 'A', album: 'B' })
   })
 
   it('wires download:progress listeners and returns an unsubscribe', () => {

@@ -39,6 +39,7 @@ export function makeApiStub(): PlatformApi {
     lastfmNowPlaying: vi.fn().mockResolvedValue(undefined),
     lastfmScrobble: vi.fn().mockResolvedValue(undefined),
     lastfmGetSimilarTracks: vi.fn().mockResolvedValue([]),
+    lastfmGetInfo: vi.fn().mockResolvedValue(null),
     // Lyrics
     getCachedLyrics: vi.fn().mockResolvedValue(null),
     saveLyrics: vi.fn().mockResolvedValue(undefined),

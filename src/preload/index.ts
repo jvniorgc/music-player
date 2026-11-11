@@ -7,6 +7,7 @@ import type {
   UpdateAvailable,
   UpdateProgress,
   LastfmTrack,
+  LastfmInfoMethod,
 } from '@music-player/core/platform'
 
 const api = {
@@ -52,6 +53,7 @@ const api = {
   lastfmNowPlaying: (track: LastfmTrack) => ipcRenderer.invoke('lastfm:now-playing', track),
   lastfmScrobble: (track: LastfmTrack) => ipcRenderer.invoke('lastfm:scrobble', track),
   lastfmGetSimilarTracks: (track: { artist: string; track: string }, limit?: number) => ipcRenderer.invoke('lastfm:get-similar-tracks', track, limit),
+  lastfmGetInfo: (method: LastfmInfoMethod, params: Record<string, string>) => ipcRenderer.invoke('lastfm:get-info', method, params),
 
   // Lyrics Cache
   getCachedLyrics: (itemId: string) => ipcRenderer.invoke('lyrics:get', itemId),
