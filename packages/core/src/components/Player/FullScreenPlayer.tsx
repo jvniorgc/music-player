@@ -8,7 +8,7 @@ import {
   Play, Pause, SkipBack, SkipForward, Shuffle, Repeat, Repeat1,
   ChevronDown, Volume2, VolumeX, ListMusic, Captions, CaptionsOff
 } from 'lucide-react'
-import AnimatedBackground from './AnimatedBackground'
+import ArtworkBackground from './ArtworkBackground'
 import { formatTime, TICKS_PER_SECOND } from '../../lib/format'
 
 interface LyricLine {
@@ -117,7 +117,7 @@ export default function FullScreenPlayer() {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center fade-in">
-      <AnimatedBackground imageUrl={imageUrl} />
+      <ArtworkBackground imageUrl={imageUrl} />
 
 
       {/* Close button */}
@@ -147,11 +147,11 @@ export default function FullScreenPlayer() {
         {/* Left side: Art + Info + Controls */}
         <div className={`flex flex-col items-center min-w-0 mx-auto w-full ${lyricsVisible ? 'md:mx-0 md:shrink-0 md:w-96' : ''}`}>
           {/* Album Art */}
-          <div data-testid="album-art" className="w-[min(18rem,35vh)] max-w-full aspect-square rounded-2xl overflow-hidden shadow-2xl shadow-black/50 mb-4 md:mb-8">
+          <div data-testid="album-art" className="w-[min(18rem,35vh)] max-w-full aspect-square rounded-lg overflow-hidden shadow-lg shadow-black/50 mb-4 md:mb-8">
             {imageUrl ? (
               <img src={imageUrl} className="w-full h-full object-cover" alt="" />
             ) : (
-              <div className="w-full h-full bg-bg-elevated flex items-center justify-center">
+              <div className="w-full h-full bg-surface-2 flex items-center justify-center">
                 <ListMusic size={64} className="text-text-tertiary" />
               </div>
             )}
@@ -159,7 +159,7 @@ export default function FullScreenPlayer() {
 
           {/* Track info */}
           <div className="text-center mb-3 md:mb-6 w-full">
-            <h2 className="text-xl font-bold truncate">{item.Name}</h2>
+            <h2 className="text-xl font-semibold truncate">{item.Name}</h2>
             <p className="text-base text-accent mt-1 truncate">
               {item.ArtistItems?.length ? (
                 item.ArtistItems.map((a, i) => (
@@ -174,7 +174,7 @@ export default function FullScreenPlayer() {
                   </span>
                 ))
               ) : (
-                item.AlbumArtist || 'Unknown Artist'
+                item.AlbumArtist || 'Unknown artist'
               )}
             </p>
             {item.Album && (
@@ -197,12 +197,12 @@ export default function FullScreenPlayer() {
             >
               <Shuffle size={18} />
             </button>
-            <button onClick={previous} className="text-white hover:scale-105 transition-transform p-2">
+            <button onClick={previous} className="text-white hover:opacity-80 active:opacity-60 transition-opacity p-2">
               <SkipBack size={24} fill="currentColor" />
             </button>
             <button
               onClick={togglePlay}
-              className="w-14 h-14 bg-white rounded-full flex items-center justify-center hover:scale-105 transition-transform"
+              className="w-14 h-14 bg-white rounded-full flex items-center justify-center hover:opacity-80 active:opacity-60 transition-opacity"
             >
               {isPlaying ? (
                 <Pause size={26} className="text-black" fill="currentColor" />
@@ -210,7 +210,7 @@ export default function FullScreenPlayer() {
                 <Play size={26} className="text-black ml-1" fill="currentColor" />
               )}
             </button>
-            <button onClick={next} className="text-white hover:scale-105 transition-transform p-2">
+            <button onClick={next} className="text-white hover:opacity-80 active:opacity-60 transition-opacity p-2">
               <SkipForward size={24} fill="currentColor" />
             </button>
             <button
@@ -259,7 +259,7 @@ export default function FullScreenPlayer() {
                   <p
                     key={i}
                     ref={isActive ? activeLyricRef : undefined}
-                    className={`text-2xl font-bold leading-relaxed transition-all duration-500 ${
+                    className={`text-2xl font-semibold leading-relaxed transition-all duration-500 ${
                       isTimed
                         ? isActive
                           ? 'text-white scale-[1.02] origin-left'

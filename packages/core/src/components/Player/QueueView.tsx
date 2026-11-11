@@ -14,14 +14,15 @@ function TrackRow({ track, index, onPlay, onRemove }: {
 }) {
   return (
     <div
-      className="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-white/5 transition-colors group cursor-pointer"
+      className="flex items-center gap-3 px-2 py-2 rounded-sm hover:bg-white/5 transition-colors group cursor-pointer"
       onClick={onPlay}
     >
       <span className="text-xs text-text-tertiary w-5 text-right tabular-nums group-hover:hidden">{index + 1}</span>
       <CoverArt
         src={track.item.AlbumId ? jellyfin.getImageUrl(track.item.AlbumId, undefined, 80) : null}
-        className="w-9 h-9 rounded overflow-hidden bg-bg-elevated shrink-0"
-        fallback={<Music size={14} className="text-text-tertiary" />}
+        className="w-9 h-9 rounded overflow-hidden bg-surface-2 shrink-0"
+        kind="track"
+        iconSize={14}
       />
       <div className="min-w-0 flex-1">
         <p className="text-sm truncate">{track.item.Name}</p>
@@ -59,12 +60,12 @@ export default function QueueView() {
   const isEmpty = userQueue.length === 0 && contextUpNext.length === 0
 
   return (
-    <div className="w-80 bg-bg-secondary/80 backdrop-blur-xl border-l border-border-subtle flex flex-col h-full">
+    <div className="w-80 bg-surface-1 border-l border-border flex flex-col h-full">
       <div className="flex items-center justify-between px-5 pt-14 pb-3">
-        <h2 className="text-lg font-bold">Queue</h2>
+        <h2 className="text-lg font-semibold">Queue</h2>
         <button
           onClick={() => setShowQueue(false)}
-          className="p-1.5 rounded-lg hover:bg-white/10 transition-colors text-text-secondary"
+          className="p-1.5 rounded-sm hover:bg-white/10 transition-colors text-text-secondary"
         >
           <X size={16} />
         </button>
@@ -73,11 +74,11 @@ export default function QueueView() {
       {/* Now Playing */}
       {currentTrack && (
         <div className="px-4 mb-4">
-          <p className="text-[11px] font-semibold text-text-tertiary uppercase tracking-wider px-2 mb-2">Now Playing</p>
-          <div className="flex items-center gap-3 px-2 py-2 rounded-lg bg-white/5">
+          <p className="text-xs font-medium text-text-tertiary px-2 mb-2">Now playing</p>
+          <div className="flex items-center gap-3 px-2 py-2 rounded-sm bg-white/5">
             <CoverArt
               src={currentTrack.item.AlbumId ? jellyfin.getImageUrl(currentTrack.item.AlbumId, undefined, 80) : null}
-              className="w-10 h-10 rounded overflow-hidden bg-bg-elevated shrink-0"
+              className="w-10 h-10 rounded overflow-hidden bg-surface-2 shrink-0"
             />
             <div className="min-w-0 flex-1">
               <p className="text-sm font-medium truncate">{currentTrack.item.Name}</p>
@@ -96,7 +97,7 @@ export default function QueueView() {
         {/* Next in queue (manually added) */}
         {userQueue.length > 0 && (
           <div className="mb-4">
-            <p className="text-[11px] font-semibold text-text-tertiary uppercase tracking-wider px-2 mb-2">
+            <p className="text-xs font-medium text-text-tertiary px-2 mb-2">
               Next in Queue · {userQueue.length} {userQueue.length === 1 ? 'song' : 'songs'}
             </p>
             <div className="space-y-0.5">
@@ -116,8 +117,8 @@ export default function QueueView() {
         {/* Next from the current context (album/playlist) */}
         {contextUpNext.length > 0 && (
           <div>
-            <p className="text-[11px] font-semibold text-text-tertiary uppercase tracking-wider px-2 mb-2">
-              {contextName ? `Next from: ${contextName}` : 'Next Up'}
+            <p className="text-xs font-medium text-text-tertiary px-2 mb-2">
+              {contextName ? `Next from: ${contextName}` : 'Next up'}
             </p>
             <div className="space-y-0.5">
               {contextUpNext.map((track, i) => (
