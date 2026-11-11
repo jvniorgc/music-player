@@ -1,6 +1,7 @@
 import '@testing-library/jest-dom/vitest'
 import { vi, beforeEach, afterEach } from 'vitest'
 import type { PlatformApi } from '@music-player/core/platform'
+import { useI18nStore } from '@music-player/core/i18n'
 
 // A fresh, fully-stubbed `window.api` (the PlatformApi bridge) for every test.
 // Individual tests can override specific methods, e.g.
@@ -62,6 +63,8 @@ export function makeApiStub(): PlatformApi {
 
 beforeEach(() => {
   ;(window as unknown as { api: PlatformApi }).api = makeApiStub()
+  // UI text assertions are written in English; render with `en` unless a test opts in.
+  useI18nStore.setState({ preference: 'system', locale: 'en' })
 })
 
 afterEach(() => {

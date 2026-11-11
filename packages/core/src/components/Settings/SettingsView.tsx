@@ -9,34 +9,8 @@ import { ProfileEditModal } from '../UI/ProfileEditModal'
 import { LastfmSettings } from './LastfmSettings'
 import { SlskdSettings } from './SlskdSettings'
 import { shortcutList } from '../../lib/shortcuts'
-import { LANGUAGE_OPTIONS, getLanguagePreference, setLanguagePreference, type LanguagePreference } from '../../lib/language'
-
-/** Page strings, kept together for later extraction (i18n). */
-const TEXT = {
-  title: 'Settings',
-  account: 'Account',
-  server: 'Server',
-  user: 'User',
-  editProfile: 'Edit profile',
-  signOut: 'Sign out',
-  playback: 'Playback',
-  shortcuts: 'Keyboard shortcuts',
-  lastfm: 'Last.fm',
-  soulseek: 'Soulseek (slskd)',
-  storage: 'Cache and storage',
-  storageHint: 'Cached audio is stored locally to speed up playback. Clearing it frees disk space; tracks will be fetched again when played.',
-  clearCache: 'Clear audio cache',
-  cacheCleared: 'Audio cache cleared',
-  cacheFailed: 'Could not clear the cache',
-  language: 'Language',
-  languageHint: 'Takes effect after restarting the app.',
-  about: 'About',
-  version: 'Version',
-  checkUpdates: 'Check for updates',
-  upToDate: 'You are on the latest version',
-  updateAvailable: (v: string) => `Version ${v} is available`,
-  updateFailed: 'Could not check for updates',
-}
+import { LANGUAGE_OPTIONS, type LanguagePreference } from '../../lib/language'
+import { useI18nStore, useT } from '../../i18n'
 
 function Section({ id, title, children }: { id: string; title: string; children: ReactNode }) {
   return (
@@ -62,7 +36,9 @@ export default function SettingsView() {
   const navigate = useNavigate()
   const { hash } = useLocation()
   const [profileOpen, setProfileOpen] = useState(false)
-  const [language, setLanguage] = useState<LanguagePreference>(getLanguagePreference)
+  const { t } = useT()
+  const language = useI18nStore(s => s.preference)
+  const setLanguage = useI18nStore(s => s.setPreference)
   const [version, setVersion] = useState('')
   const [checking, setChecking] = useState(false)
   const [clearing, setClearing] = useState(false)
@@ -85,9 +61,9 @@ export default function SettingsView() {
     setClearing(true)
     try {
       await window.api.clearCache()
-      toast(TEXT.cacheCleared, 'success')
+      toast(t('settings.cacheCleared'), 'success')
     } catch {
-      toast(TEXT.cacheFailed, 'error')
+      toast(t('settings.cacheFailed'), 'error')
     } finally {
       setClearing(false)
     }
@@ -97,10 +73,10 @@ export default function SettingsView() {
     setChecking(true)
     try {
       const info = await window.api.checkForUpdates() as { version?: string } | null
-      if (info?.version && info.version !== version) toast(TEXT.updateAvailable(info.version), 'success')
-      else toast(TEXT.upToDate, 'success')
+      if (info?.version && info.version !== version) toast(t('settings.updateAvailable', { version: info.version }), 'success')
+      else toast(t('settings.upToDate'), 'success')
     } catch {
-      toast(TEXT.updateFailed, 'error')
+      toast(t('settings.updateFailed'), 'error')
     } finally {
       setChecking(false)
     }
@@ -108,23 +84,23 @@ export default function SettingsView() {
 
   return (
     <div className="fade-in max-w-2xl space-y-8 pb-8">
-      <h1 className="text-title font-semibold">{TEXT.title}</h1>
+      <h1 className="text-title font-semibold">{t('settings.title')}</h1>
 
-      <Section id="account" title={TEXT.account}>
-        <Row label={TEXT.server}>{auth?.serverUrl}</Row>
-        <Row label={TEXT.user}>{auth?.username}</Row>
+      <Section id="account" title={t('settings.account')}>
+        <Row label={t('settings.server')}>{auth?.serverUrl}</Row>
+        <Row label={t('settings.user')}>{auth?.username}</Row>
         <div className="flex gap-3 mt-4">
           <button onClick={() => setProfileOpen(true)} className={buttonClass('secondary')}>
-            <Pencil size={14} /> {TEXT.editProfile}
+            <Pencil size={14} /> {t('settings.editProfile')}
           </button>
           <button onClick={handleSignOut} className={buttonClass('secondary')}>
-            <LogOut size={14} /> {TEXT.signOut}
+            <LogOut size={14} /> {t('settings.signOut')}
           </button>
         </div>
       </Section>
 
-      <Section id="playback" title={TEXT.playback}>
-        <h3 className="text-sm font-medium mb-2">{TEXT.shortcuts}</h3>
+      <Section id="playback" title={t('settings.playback')}>
+        <h3 className="text-sm font-medium mb-2">{t('settings.shortcuts')}</h3>
         <dl className="divide-y divide-border text-sm">
           {shortcutList(isMac).map(s => (
             <div key={s.action} className="flex justify-between py-2">
@@ -135,41 +111,39 @@ export default function SettingsView() {
         </dl>
       </Section>
 
-      <Section id="lastfm" title={TEXT.lastfm}>
+      <Section id="lastfm" title={'Last.fm'}>
         <LastfmSettings />
       </Section>
 
-      <Section id="soulseek" title={TEXT.soulseek}>
+      <Section id="soulseek" title={t('settings.soulseek')}>
         <SlskdSettings />
       </Section>
 
-      <Section id="storage" title={TEXT.storage}>
-        <p className="text-sm text-text-secondary mb-4">{TEXT.storageHint}</p>
+      <Section id="storage" title={t('settings.storage')}>
+        <p className="text-sm text-text-secondary mb-4">{t('settings.storageHint')}</p>
         <button onClick={handleClearCache} disabled={clearing} className={buttonClass('secondary')}>
-          {clearing ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />} {TEXT.clearCache}
+          {clearing ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />} {t('settings.clearCache')}
         </button>
       </Section>
 
-      <Section id="language" title={TEXT.language}>
+      <Section id="language" title={t('settings.language')}>
         <select
           value={language}
           onChange={e => {
             const v = e.target.value as LanguagePreference
             setLanguage(v)
-            setLanguagePreference(v)
           }}
           className="bg-surface-2 border border-border rounded-sm px-3 py-2 text-sm text-text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-          aria-label={TEXT.language}
+          aria-label={t('settings.language')}
         >
-          {LANGUAGE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+          {LANGUAGE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.value === 'system' ? t('settings.languageSystem') : o.label}</option>)}
         </select>
-        <p className="text-xs text-text-tertiary mt-2">{TEXT.languageHint}</p>
       </Section>
 
-      <Section id="about" title={TEXT.about}>
-        <Row label={TEXT.version}>{version || '—'}</Row>
+      <Section id="about" title={t('settings.about')}>
+        <Row label={t('settings.version')}>{version || '—'}</Row>
         <button onClick={handleCheckUpdates} disabled={checking} className={`${buttonClass('secondary')} mt-4`}>
-          {checking ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />} {TEXT.checkUpdates}
+          {checking ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />} {t('settings.checkUpdates')}
         </button>
       </Section>
 
