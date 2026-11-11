@@ -1,4 +1,6 @@
-import { useEffect, useCallback, useRef, useState } from 'react'
+import { useEffect, useCallback, useLayoutEffect, useRef, useState } from 'react'
+import { useVirtualizer } from '@tanstack/react-virtual'
+import { getScrollParent } from '../../lib/scroll'
 import { useLibraryStore } from '../../stores/library'
 import { usePlayerStore } from '../../stores/player'
 import { useDownloadStore } from '../../stores/download'
@@ -24,6 +26,32 @@ export default function SongList() {
   const { playItems, currentTrack, isPlaying } = usePlayerStore(useShallow(s => ({ playItems: s.playItems, currentTrack: s.currentTrack, isPlaying: s.isPlaying })))
   const { isDownloaded, startDownload } = useDownloadStore(useShallow(s => ({ isDownloaded: s.isDownloaded, startDownload: s.startDownload, downloads: s.downloads })))
   const loaderRef = useRef<HTMLDivElement>(null)
+  const listRef = useRef<HTMLDivElement>(null)
+  const [scrollEl, setScrollEl] = useState<HTMLElement | null>(null)
+  const [scrollMargin, setScrollMargin] = useState(0)
+
+  // The library can hold thousands of songs, so only rows near the viewport are mounted.
+  const virtualizer = useVirtualizer({
+    count: songs.length,
+    getScrollElement: () => scrollEl,
+    estimateSize: () => 60,
+    overscan: 10,
+    scrollMargin,
+  })
+
+  useLayoutEffect(() => {
+    const list = listRef.current
+    const parent = getScrollParent(list)
+    setScrollEl(parent)
+    if (!list || !parent) return
+    const update = () => {
+      setScrollMargin(list.getBoundingClientRect().top - parent.getBoundingClientRect().top + parent.scrollTop)
+    }
+    update()
+    const ro = new ResizeObserver(update)
+    ro.observe(parent)
+    return () => ro.disconnect()
+  }, [])
 
   const [pickerSong, setPickerSong] = useState<JellyfinItem | null>(null)
 
@@ -63,50 +91,63 @@ export default function SongList() {
         <span className="w-20" />
       </div>
 
-      <div className="bg-bg-secondary/30 rounded-xl overflow-hidden">
-        {songs.map((song, i) => {
+      <div
+        ref={listRef}
+        className="bg-bg-secondary/30 rounded-xl overflow-hidden relative"
+        style={{ height: virtualizer.getTotalSize() }}
+      >
+        {virtualizer.getVirtualItems().map(row => {
+          const i = row.index
+          const song = songs[i]
           const isCurrent = currentTrack?.id === song.Id
           const downloaded = isDownloaded(song.Id)
 
           return (
-            <TrackRow
-              key={`${song.Id}-${i}`}
-              className="px-5 py-2.5"
-              isCurrent={isCurrent}
-              onClick={() => playItems(songs, i)}
-              leading={
-                <>
-                  <TrackIndex number={i + 1} isCurrent={isCurrent} isPlaying={isPlaying} />
-                  <CoverArt
-                    src={song.AlbumId ? jellyfin.getImageUrl(song.AlbumId, undefined, 80) : null}
-                    className="w-10 h-10 rounded overflow-hidden bg-bg-elevated shrink-0"
-                  />
-                </>
-              }
-              title={song.Name}
-              subtitle={artistNames(song, 'Unknown')}
+            <div
+              key={row.key}
+              data-index={i}
+              ref={virtualizer.measureElement}
+              className="absolute top-0 left-0 w-full"
+              style={{ transform: `translateY(${row.start - scrollMargin}px)` }}
             >
-              <span className="w-40 text-sm text-text-secondary truncate hidden md:block">
-                {song.Album || ''}
-              </span>
+              <TrackRow
+                className="px-5 py-2.5"
+                isCurrent={isCurrent}
+                onClick={() => playItems(songs, i)}
+                leading={
+                  <>
+                    <TrackIndex number={i + 1} isCurrent={isCurrent} isPlaying={isPlaying} />
+                    <CoverArt
+                      src={song.AlbumId ? jellyfin.getImageUrl(song.AlbumId, undefined, 80) : null}
+                      className="w-10 h-10 rounded overflow-hidden bg-bg-elevated shrink-0"
+                    />
+                  </>
+                }
+                title={song.Name}
+                subtitle={artistNames(song, 'Unknown')}
+              >
+                <span className="w-40 text-sm text-text-secondary truncate hidden md:block">
+                  {song.Album || ''}
+                </span>
 
-              <TrackDuration ticks={song.RunTimeTicks} className="w-12 text-right" />
+                <TrackDuration ticks={song.RunTimeTicks} className="w-12 text-right" />
 
-              <div className="w-20 flex justify-end gap-1 items-center">
-                <TrackMenu track={song} onPlaylistAdd={(s) => setPickerSong(s)} />
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    if (!downloaded) startDownload(song)
-                  }}
-                  className={`p-1 ${
-                    downloaded ? 'text-accent' : 'text-text-tertiary opacity-0 group-hover:opacity-100'
-                  } transition-all`}
-                >
-                  {downloaded ? <Check size={14} /> : <Download size={14} />}
-                </button>
-              </div>
-            </TrackRow>
+                <div className="w-20 flex justify-end gap-1 items-center">
+                  <TrackMenu track={song} onPlaylistAdd={(s) => setPickerSong(s)} />
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      if (!downloaded) startDownload(song)
+                    }}
+                    className={`p-1 ${
+                      downloaded ? 'text-accent' : 'text-text-tertiary opacity-0 group-hover:opacity-100'
+                    } transition-all`}
+                  >
+                    {downloaded ? <Check size={14} /> : <Download size={14} />}
+                  </button>
+                </div>
+              </TrackRow>
+            </div>
           )
         })}
       </div>

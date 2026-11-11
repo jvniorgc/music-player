@@ -48,6 +48,7 @@
     "npmRebuild": true
   },
   "dependencies": {
+    "@tanstack/react-virtual": "^3.14.26",
     "better-sqlite3": "^12.9.0",
     "electron-updater": "^6.8.3",
     "lucide-react": "^0.469.0",
