@@ -1,6 +1,7 @@
 import { Outlet } from 'react-router-dom'
 import Sidebar from './Sidebar'
 import HistoryNav from './HistoryNav'
+import { useKeyboardShortcuts } from './useKeyboardShortcuts'
 import NowPlayingBar from './NowPlayingBar'
 import QueueView from '../Player/QueueView'
 import FullScreenPlayer from '../Player/FullScreenPlayer'
@@ -14,6 +15,8 @@ import { useShallow } from 'zustand/react/shallow'
 
 export default function AppLayout() {
   const { showFullScreen, showQueue, initListeners } = usePlayerStore(useShallow(s => ({ showFullScreen: s.showFullScreen, showQueue: s.showQueue, initListeners: s.initListeners })))
+
+  useKeyboardShortcuts()
 
   useEffect(() => {
     const cleanup = initListeners()

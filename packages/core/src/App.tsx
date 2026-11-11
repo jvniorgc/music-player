@@ -21,7 +21,6 @@ import UserProfileView from './components/Social/UserProfileView'
 import UpdateDialog from './components/UpdateDialog'
 import { Loader2 } from 'lucide-react'
 import AppIcon from './components/UI/AppIcon'
-import { playback } from './services/playback'
 import { useShallow } from 'zustand/react/shallow'
 
 export default function App() {
@@ -40,19 +39,6 @@ export default function App() {
     }
   }, [isAuthenticated])
 
-  // Keyboard shortcuts
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return
-
-      if (e.code === 'Space') {
-        e.preventDefault()
-        playback.togglePlay()
-      }
-    }
-    window.addEventListener('keydown', handler)
-    return () => window.removeEventListener('keydown', handler)
-  }, [])
 
   if (isLoading) {
     return (

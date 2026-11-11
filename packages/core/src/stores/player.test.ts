@@ -18,6 +18,8 @@ vi.mock('../services/playback', () => ({
     playContextAt: vi.fn(),
     clearQueue: vi.fn(),
     togglePlay: vi.fn(),
+    play: vi.fn(),
+    pause: vi.fn(),
     next: vi.fn(),
     previous: vi.fn(),
     seek: vi.fn(),
@@ -241,7 +243,8 @@ describe('initListeners event mapping', () => {
     const actions = Object.fromEntries(mediaSession.setActionHandler.mock.calls) as Record<string, (d?: any) => void>
     actions.play()
     actions.pause()
-    expect(playback.togglePlay).toHaveBeenCalledTimes(2)
+    expect(playback.play).toHaveBeenCalledTimes(1)
+    expect(playback.pause).toHaveBeenCalledTimes(1)
     actions.previoustrack()
     expect(playback.previous).toHaveBeenCalled()
     actions.nexttrack()

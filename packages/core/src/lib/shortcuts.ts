@@ -11,3 +11,79 @@ export function isEditableTarget(target: EventTarget | null): boolean {
   }
   return el.isContentEditable || el.getAttribute?.('contenteditable') === 'true'
 }
+
+export type ShortcutAction =
+  | 'togglePlay' | 'next' | 'previous' | 'seekForward' | 'seekBack'
+  | 'volumeUp' | 'volumeDown' | 'mute' | 'shuffle' | 'repeat' | 'search'
+
+export interface ShortcutEvent {
+  key: string
+  code?: string
+  ctrlKey: boolean
+  metaKey: boolean
+  shiftKey: boolean
+  altKey: boolean
+  repeat?: boolean
+  target: EventTarget | null
+}
+
+/** Seconds skipped by Shift+Left/Right. */
+export const SEEK_STEP = 10
+/** Volume change for Ctrl/Cmd+Up/Down. */
+export const VOLUME_STEP = 0.1
+
+/**
+ * Maps a keydown to a player action. Plain arrow keys are left alone so they
+ * keep scrolling/moving focus in lists; seeking uses Shift+Left/Right.
+ */
+export function resolveShortcut(e: ShortcutEvent): ShortcutAction | null {
+  if (e.altKey || isEditableTarget(e.target)) return null
+  const mod = e.ctrlKey || e.metaKey
+  const key = e.key.length === 1 ? e.key.toLowerCase() : e.key
+
+  if (mod && !e.shiftKey) {
+    switch (key) {
+      case 'ArrowRight': return 'next'
+      case 'ArrowLeft': return 'previous'
+      case 'ArrowUp': return 'volumeUp'
+      case 'ArrowDown': return 'volumeDown'
+      case 'f': return 'search'
+    }
+    return null
+  }
+  if (mod) return null
+  if (e.shiftKey) {
+    if (key === 'ArrowRight') return 'seekForward'
+    if (key === 'ArrowLeft') return 'seekBack'
+    return null
+  }
+  if (e.repeat) return null
+  if (e.code === 'Space' || key === ' ') return 'togglePlay'
+  switch (key) {
+    case 'm': return 'mute'
+    case 's': return 'shuffle'
+    case 'r': return 'repeat'
+    case '/': return 'search'
+  }
+  return null
+}
+
+/** Human-readable list for the settings page. */
+export function shortcutList(isMac: boolean): { keys: string; action: string }[] {
+  const mod = isMac ? '⌘' : 'Ctrl'
+  return [
+    { keys: 'Space', action: 'Play / pause' },
+    { keys: `${mod} + →`, action: 'Next track' },
+    { keys: `${mod} + ←`, action: 'Previous track' },
+    { keys: 'Shift + → / ←', action: `Seek forward / back ${SEEK_STEP} seconds` },
+    { keys: `${mod} + ↑ / ↓`, action: 'Volume up / down' },
+    { keys: 'M', action: 'Mute / unmute' },
+    { keys: 'S', action: 'Toggle shuffle' },
+    { keys: 'R', action: 'Cycle repeat' },
+    { keys: `${mod} + F or /`, action: 'Search' },
+    { keys: 'Alt + ← / →', action: 'Go back / forward' },
+  ]
+}
+
+/** Event SearchView listens to so a shortcut can focus its input. */
+export const FOCUS_SEARCH_EVENT = 'app:focus-search'

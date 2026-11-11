@@ -8,6 +8,7 @@ import { Search, X, Disc3, Users, Music, Loader2 } from 'lucide-react'
 import TrackMenu from '../UI/TrackMenu'
 import AddToPlaylist from '../UI/AddToPlaylist'
 import { TrackSubtitle } from '../UI/Links'
+import { FOCUS_SEARCH_EVENT } from '../../lib/shortcuts'
 import TrackRow, { TrackDuration, CoverPlayOverlay } from '../UI/TrackRow'
 import CoverArt from '../UI/CoverArt'
 import { AlbumCard, ArtistCard } from '../UI/MediaCard'
@@ -28,6 +29,9 @@ export default function SearchView() {
   useEffect(() => {
     inputRef.current?.focus()
     if (playlists.length === 0) fetchPlaylists()
+    const focus = () => { inputRef.current?.focus(); inputRef.current?.select() }
+    window.addEventListener(FOCUS_SEARCH_EVENT, focus)
+    return () => window.removeEventListener(FOCUS_SEARCH_EVENT, focus)
   }, [])
 
   useEffect(() => {

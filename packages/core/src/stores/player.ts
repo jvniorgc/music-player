@@ -137,8 +137,8 @@ export const usePlayerStore = create<PlayerState>((set) => ({
 
     // Set up Media Session action handlers for OS media controls
     if ('mediaSession' in navigator) {
-      navigator.mediaSession.setActionHandler('play', () => playback.togglePlay())
-      navigator.mediaSession.setActionHandler('pause', () => playback.togglePlay())
+      navigator.mediaSession.setActionHandler('play', () => { playback.play() })
+      navigator.mediaSession.setActionHandler('pause', () => playback.pause())
       navigator.mediaSession.setActionHandler('previoustrack', () => playback.previous())
       navigator.mediaSession.setActionHandler('nexttrack', () => playback.next())
       navigator.mediaSession.setActionHandler('seekto', (details) => {
