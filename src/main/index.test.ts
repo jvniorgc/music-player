@@ -16,7 +16,8 @@ const h = vi.hoisted(() => ({
   windowOpts: null as Record<string, any> | null,
   navigateHandler: null as null | ((e: { preventDefault: () => void }, url: string) => void),
   headersHandler: null as null | ((details: any, cb: (r: any) => void) => void),
-  privileged: [] as unknown[]
+  privileged: [] as unknown[],
+  encAvailable: false
 }))
 
 vi.mock('electron', () => {
@@ -54,7 +55,16 @@ vi.mock('electron', () => {
       }
     },
     net: { fetch: netFetch },
-    Menu: { setApplicationMenu: vi.fn() }
+    Menu: { setApplicationMenu: vi.fn() },
+    safeStorage: {
+      isEncryptionAvailable: () => h.encAvailable,
+      encryptString: (v: string) => Buffer.from('X' + v, 'utf8'),
+      decryptString: (b: Buffer) => {
+        const v = b.toString('utf8')
+        if (!v.startsWith('X')) throw new Error('undecryptable')
+        return v.slice(1)
+      }
+    }
   }
 })
 
@@ -114,6 +124,7 @@ afterAll(() => {
 
 beforeEach(() => {
   h.sent.length = 0
+  h.encAvailable = false
   const db = getDatabase()
   db.exec('DELETE FROM auth; DELETE FROM downloads; DELETE FROM downloaded_lyrics; DELETE FROM audio_cache; DELETE FROM settings; DELETE FROM lyrics_cache;')
 })
@@ -177,6 +188,25 @@ describe('main process: auth persistence', () => {
     expect(count.c).toBe(1)
     expect((invoke('db:get-auth') as any).username).toBe('other')
   })
+
+  it('upgrades a legacy plaintext token to encrypted storage on read', () => {
+    invoke('db:save-auth', auth)
+    h.encAvailable = true
+    expect((invoke('db:get-auth') as any).token).toBe('t')
+    const stored = getDatabase().prepare('SELECT token FROM auth').get() as { token: string }
+    expect(stored.token.startsWith('enc:v1:')).toBe(true)
+    expect((invoke('db:get-auth') as any).token).toBe('t')
+  })
+
+  it('drops an undecryptable token so the user logs in again', () => {
+    invoke('db:save-auth', auth)
+    getDatabase().prepare('UPDATE auth SET token = ?').run('enc:v1:' + Buffer.from('garbage').toString('base64'))
+    h.encAvailable = true
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    expect(invoke('db:get-auth')).toBeNull()
+    expect((getDatabase().prepare('SELECT COUNT(*) c FROM auth').get() as { c: number }).c).toBe(0)
+    warn.mockRestore()
+  })
 })
 
 describe('main process: settings & lyrics', () => {
@@ -237,6 +267,17 @@ describe('main process: downloads', () => {
     expect(existsSync(path)).toBe(false)
     expect(invoke('download:get', 'd3')).toBeNull()
     expect(invoke('lyrics:get-downloaded', 'd3')).toBeNull()
+  })
+
+  it('still removes the row when deleting the file fails', () => {
+    const dir = join(h.paths.userData, 'downloads', 'not-a-file')
+    mkdirSync(dir, { recursive: true })
+    getDatabase().prepare('INSERT INTO downloads (item_id, file_path, filename, status) VALUES (?, ?, ?, ?)').run('d4', dir, 'x', 'completed')
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    invoke('download:remove', 'd4')
+    expect(warn).toHaveBeenCalledWith('[main] failed to delete', dir, expect.anything())
+    expect(invoke('download:get', 'd4')).toBeNull()
+    warn.mockRestore()
   })
 })
 
@@ -444,6 +485,22 @@ describe('main process: window & lifecycle wiring', () => {
     const preventDefault = vi.fn()
     h.navigateHandler!({ preventDefault }, 'https://evil.example/')
     expect(preventDefault).toHaveBeenCalled()
+    preventDefault.mockClear()
+    h.navigateHandler!({ preventDefault }, '::not a url::')
+    expect(preventDefault).toHaveBeenCalled()
+  })
+
+  it('allows navigation within the dev server origin only', () => {
+    process.env['ELECTRON_RENDERER_URL'] = 'http://localhost:5173'
+    try {
+      const preventDefault = vi.fn()
+      h.navigateHandler!({ preventDefault }, 'http://localhost:5173/#/settings')
+      expect(preventDefault).not.toHaveBeenCalled()
+      h.navigateHandler!({ preventDefault }, 'http://localhost:9999/')
+      expect(preventDefault).toHaveBeenCalled()
+    } finally {
+      delete process.env['ELECTRON_RENDERER_URL']
+    }
   })
 
   it('serves local-audio:// only for files inside the app dirs', async () => {
@@ -453,6 +510,8 @@ describe('main process: window & lifecycle wiring', () => {
     expect(h.netFetch).toHaveBeenCalledWith(pathToFileURL(inside).toString(), expect.anything())
     const denied = await h.protocolHandler!({ url: 'local-audio://%2Fetc%2Fpasswd' }) as Response
     expect(denied.status).toBe(403)
+    const bad = await h.protocolHandler!({ url: 'local-audio://%E0%A4%A' }) as Response
+    expect(bad.status).toBe(400)
     expect(h.privileged).toContainEqual(expect.objectContaining({ scheme: 'local-audio' }))
   })
 

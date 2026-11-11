@@ -523,6 +523,37 @@ describe('audio element events', () => {
     }
   })
 
+  it('resumes the interrupted track at its position once the network returns', async () => {
+    playback.setQueue(makeItems(3), 0)
+    await flush()
+    const online = vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false)
+    const audio = (playback as any).audio as FakeAudio
+    audio.currentTime = 42
+    audio.dispatch('error')
+    await flush()
+    online.mockRestore()
+    const load = vi.spyOn(playback as any, 'loadAndPlayCurrent')
+
+    window.dispatchEvent(new Event('online'))
+    expect(load).toHaveBeenCalledWith(42)
+    expect((playback as any)._resumeOnOnline).toBeNull()
+
+    // A second 'online' with nothing pending is a no-op.
+    load.mockClear()
+    window.dispatchEvent(new Event('online'))
+    expect(load).not.toHaveBeenCalled()
+  })
+
+  it('keeps playing when caching the streamed track fails', async () => {
+    vi.mocked(window.api.cacheAudio).mockRejectedValue(new Error('disk full'))
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    playback.setQueue(makeItems(2), 0)
+    await flush()
+    expect(window.api.cacheAudio).toHaveBeenCalled()
+    expect(warn).toHaveBeenCalledWith('[Playback] Caching track failed:', 't0', expect.any(Error))
+    expect(playback.currentTrack?.id).toBe('t0')
+  })
+
   it('stops skipping after repeated consecutive failures', async () => {
     audioConfig.failPlay = true
     playback.setQueue(makeItems(6), 0)

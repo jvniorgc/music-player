@@ -1,3 +1,4 @@
+import { describe, it, expect, vi, afterEach } from 'vitest'
 import { act, render, screen } from '@testing-library/react'
 import { en } from './en'
 import { ptBR } from './pt-BR'

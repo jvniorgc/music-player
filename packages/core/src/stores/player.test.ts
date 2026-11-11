@@ -1,3 +1,4 @@
+import { useToastStore } from './toast'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 vi.mock('../services/playback', () => ({
@@ -208,6 +209,16 @@ describe('initListeners event mapping', () => {
     expect(usePlayerStore.getState().isPlaying).toBe(false)
 
     expect(typeof unsub).toBe('function')
+  })
+
+  it('shows playback errors as toasts, with a translated fallback', () => {
+    const show = vi.spyOn(useToastStore.getState(), 'show')
+    usePlayerStore.getState().initListeners()
+    const listener = vi.mocked(playback.on).mock.calls.at(-1)![0]
+    listener('error', 'Stream failed')
+    expect(show).toHaveBeenLastCalledWith('Stream failed', 'error')
+    listener('error')
+    expect(show).toHaveBeenLastCalledWith('Playback error', 'error')
   })
 
   it('syncs both queue lists from the engine on queuechange and trackchange', () => {

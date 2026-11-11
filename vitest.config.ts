@@ -43,6 +43,7 @@ export default defineConfig({
       include: [
         'packages/core/src/services/**',
         'packages/core/src/stores/**',
+        'packages/core/src/i18n/**',
         'src/main/**',
         'src/preload/**',
       ],

@@ -410,4 +410,40 @@ describe('offline scrobble queue', () => {
     expect(sentParams(h.fetchMock!.mock.calls[1]).get('track[0]')).toBe('Queued')
   })
 
+  it('discards corrupt queue rows and still sends the valid ones', async () => {
+    await link()
+    getDatabase().prepare('INSERT INTO scrobble_queue (track, timestamp, attempts, next_attempt_at) VALUES (?, ?, 0, 0)').run('{not json', now() - 50)
+    lastfm.enqueueScrobble({ artist: 'A', track: 'Good', timestamp: now() - 40 })
+    h.fetchMock!.mockResolvedValueOnce(jsonRes({ scrobbles: {} }))
+    expect(await lastfm.flushScrobbleQueue()).toBe(1)
+    expect(sentParams(h.fetchMock!.mock.calls[0]).get('track[0]')).toBe('Good')
+    expect(lastfm.getQueuedScrobbleCount()).toBe(0)
+  })
+
+  it('drops queued scrobbles that Last.fm permanently rejects', async () => {
+    await link()
+    lastfm.enqueueScrobble({ artist: 'A', track: 'Bad', timestamp: now() - 40 })
+    h.fetchMock!.mockResolvedValueOnce(jsonRes({ error: 6, message: 'Invalid parameters' }))
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    expect(await lastfm.flushScrobbleQueue()).toBe(0)
+    expect(lastfm.getQueuedScrobbleCount()).toBe(0)
+    expect(warn).toHaveBeenCalledWith('[lastfm] dropping rejected queued scrobbles:', expect.stringContaining('Invalid parameters'))
+    warn.mockRestore()
+  })
+
+  it('startScrobbleQueue flushes after startup and then periodically, once', async () => {
+    vi.useFakeTimers()
+    try {
+      await link()
+      lastfm.enqueueScrobble({ artist: 'A', track: 'Timer', timestamp: now() - 40 })
+      h.fetchMock!.mockImplementation(async () => jsonRes({ scrobbles: {} }))
+      lastfm.startScrobbleQueue()
+      lastfm.startScrobbleQueue()
+      await vi.advanceTimersByTimeAsync(10_000)
+      expect(h.fetchMock!).toHaveBeenCalledTimes(1)
+      expect(lastfm.getQueuedScrobbleCount()).toBe(0)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
 })

@@ -104,6 +104,9 @@ describe('preload bridge', () => {
     api.saveDownloadedLyrics('i1', 'lrc')
     expect(h.invoke).toHaveBeenCalledWith('lyrics:save-downloaded', 'i1', 'lrc')
 
+    api.allowOrigin('http://slskd.lan:5030')
+    expect(h.invoke).toHaveBeenCalledWith('cors:allow-origin', 'http://slskd.lan:5030')
+
     api.downloadUpdate()
     expect(h.invoke).toHaveBeenCalledWith('updater:download')
 

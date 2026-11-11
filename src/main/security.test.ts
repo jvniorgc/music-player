@@ -16,6 +16,8 @@ describe('URL validation', () => {
     expect(isSafeExternalUrl('https://example.com')).toBe(true)
     expect(isSafeExternalUrl('smb://host/share')).toBe(false)
     expect(isSafeExternalUrl('file:///C:/Windows')).toBe(false)
+    expect(isSafeExternalUrl('not a url')).toBe(false)
+    expect(isSafeExternalUrl(42)).toBe(false)
   })
 
   it('derives origins', () => {
@@ -57,6 +59,7 @@ describe('isCorsAllowed', () => {
   })
   it('denies everything else', () => {
     expect(isCorsAllowed('http://jf.lan:9999/Items', origins)).toBe(false)
+    expect(isCorsAllowed('not a url', origins)).toBe(false)
     expect(isCorsAllowed('http://coverartarchive.org/x', origins)).toBe(false)
     expect(isCorsAllowed('https://notarchive.org/x', origins)).toBe(false)
     expect(isCorsAllowed('https://evil.com/?musicbrainz.org', origins)).toBe(false)

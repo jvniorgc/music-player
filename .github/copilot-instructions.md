@@ -90,4 +90,5 @@ The `ElectronAPI` type is exported from the preload for type safety.
 - **Native module builds**: `better-sqlite3` requires platform-specific compilation. Cross-compilation is not supported; build on the target OS (CI builds per-OS).
 - **Audio autoplay**: The app disables Chrome's autoplay policy (`--autoplay-policy=no-user-gesture-required`) because async source resolution breaks the user gesture chain.
 - **Session vs persistent cache**: Audio cache and lyrics cache are cleared on app start. Downloads and downloaded lyrics persist across sessions.
+- **i18n (en / pt-BR)**: No hardcoded user-visible strings in the renderer (labels, toasts, aria-labels, titles). Add a key to `packages/core/src/i18n/en.ts` and the same key to `pt-BR.ts` (the `Messages` type enforces parity), then use `const { t, tn } = useT()` in components (re-renders on language change) or `t()` outside React. Plurals are `{ one, other }` entries used via `tn(key, count)`; use `formatNumber`/`formatDate` for locale-aware output. Tests render in English by default (reset in `test/setup.core.ts`).
 - **No Co-authored-by**: Never include `Co-authored-by` trailers in commit messages.
