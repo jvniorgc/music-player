@@ -88,6 +88,7 @@ export interface PlatformApi {
   cacheAudio: (data: { itemId: string; url: string; quality: string }) => Promise<{ success: boolean; error?: string }>
   getCachedAudio: (itemId: string) => Promise<string | null>
   clearCache: () => Promise<void>
+  getAppVersion: () => Promise<string>
 
   // Settings
   getSetting: (key: string) => Promise<string | null>

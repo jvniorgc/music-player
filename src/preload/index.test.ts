@@ -45,6 +45,8 @@ describe('preload bridge', () => {
     api.listDownloads()
     expect(h.invoke).toHaveBeenCalledWith('download:list')
 
+    api.getAppVersion()
+    expect(h.invoke).toHaveBeenCalledWith('app:get-version')
     api.clearCache()
     expect(h.invoke).toHaveBeenCalledWith('cache:clear')
 

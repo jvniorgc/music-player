@@ -36,6 +36,7 @@ const api = {
     ipcRenderer.invoke('cache:audio:save', data),
   getCachedAudio: (itemId: string) => ipcRenderer.invoke('cache:audio:get', itemId),
   clearCache: () => ipcRenderer.invoke('cache:clear'),
+  getAppVersion: () => ipcRenderer.invoke('app:get-version'),
 
   // Settings
   getSetting: (key: string) => ipcRenderer.invoke('settings:get', key),

@@ -328,6 +328,8 @@ function setupIPC() {
     return null
   })
 
+  ipcMain.handle('app:get-version', () => app.getVersion())
+
   ipcMain.handle('cache:clear', () => {
     const rows = db.prepare('SELECT file_path FROM audio_cache').all() as { file_path: string }[]
     for (const row of rows) safeUnlink(row.file_path, [CACHE_AUDIO_DIR])

@@ -3,7 +3,7 @@ import { useAuthStore } from '../../stores/auth'
 import { useLibraryStore } from '../../stores/library'
 import { useDownloadStore } from '../../stores/download'
 import { useToastStore } from '../../stores/toast'
-import { Home, Disc3, Users, ListMusic, Search, LogOut, Download, RefreshCw, Share2, Globe, Shuffle, User, Music } from 'lucide-react'
+import { Home, Disc3, Users, ListMusic, Search, Settings, Download, RefreshCw, Share2, Globe, Shuffle, User, Music } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { jellyfin } from '../../services/jellyfin'
 import { usePlayerStore } from '../../stores/player'
@@ -27,7 +27,7 @@ const libraryItems = [
 
 export default function Sidebar() {
   const isMac = window.api.platform === 'darwin'
-  const { logout, auth, primaryImageTag } = useAuthStore(useShallow(s => ({ logout: s.logout, auth: s.auth, primaryImageTag: s.primaryImageTag })))
+  const { auth, primaryImageTag } = useAuthStore(useShallow(s => ({ auth: s.auth, primaryImageTag: s.primaryImageTag })))
   const { playlists, fetchPlaylists, refreshAll } = useLibraryStore(useShallow(s => ({ playlists: s.playlists, fetchPlaylists: s.fetchPlaylists, refreshAll: s.refreshAll })))
   const loadDownloads = useDownloadStore(s => s.loadDownloads)
   const shuffleAllSongs = usePlayerStore(s => s.shuffleAllSongs)
@@ -39,11 +39,6 @@ export default function Sidebar() {
   useEffect(() => {
     fetchPlaylists()
   }, [])
-
-  const handleLogout = () => {
-    logout()
-    navigate('/')
-  }
 
   const handleRefresh = async () => {
     setRefreshing(true)
@@ -182,13 +177,17 @@ export default function Sidebar() {
           </div>
           <span className="truncate">{auth?.username || 'Profile'}</span>
         </button>
-        <button
-          onClick={handleLogout}
-          className="flex items-center gap-3 px-3 py-2 rounded-sm text-sm text-text-secondary hover:text-text-primary hover:bg-white/5 transition-colors w-full no-drag"
+        <NavLink
+          to="/settings"
+          className={({ isActive }) =>
+            `flex items-center gap-3 px-3 py-2 rounded-sm text-sm transition-colors w-full no-drag ${
+              isActive ? 'bg-white/10 text-text-primary' : 'text-text-secondary hover:text-text-primary hover:bg-white/5'
+            }`
+          }
         >
-          <LogOut size={16} />
-          <span>Log out</span>
-        </button>
+          <Settings size={16} />
+          <span>Settings</span>
+        </NavLink>
       </div>
 
       <ProfileEditModal open={profileOpen} onClose={() => setProfileOpen(false)} />

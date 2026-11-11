@@ -40,7 +40,8 @@ vi.mock('electron', () => {
       commandLine: { appendSwitch: vi.fn() },
       whenReady: () => Promise.resolve(),
       on: (event: string, cb: (...a: any[]) => any) => h.appHandlers.set(event, cb),
-      quit: vi.fn()
+      quit: vi.fn(),
+      getVersion: () => '9.9.9'
     },
     BrowserWindow,
     ipcMain: { handle: (channel: string, cb: (...a: any[]) => any) => h.handlers.set(channel, cb) },
@@ -123,7 +124,7 @@ describe('main process: IPC registration', () => {
       'db:get-auth', 'db:save-auth', 'db:clear-auth',
       'download:start', 'download:remove', 'download:list', 'download:get', 'download:get-path',
       'collage:save',
-      'cache:audio:save', 'cache:audio:get', 'cache:clear',
+      'cache:audio:save', 'cache:audio:get', 'cache:clear', 'app:get-version',
       'settings:get', 'settings:set',
       'lastfm:get-status', 'lastfm:set-credentials', 'lastfm:set-enabled', 'lastfm:start-auth',
       'lastfm:finish-auth', 'lastfm:disconnect', 'lastfm:now-playing', 'lastfm:scrobble',
@@ -132,6 +133,10 @@ describe('main process: IPC registration', () => {
       'file:get-url', 'cors:allow-origin'
     ]
     for (const ch of expected) expect(h.handlers.has(ch)).toBe(true)
+  })
+
+  it('app:get-version returns the app version', async () => {
+    expect(await h.handlers.get('app:get-version')!()).toBe('9.9.9')
   })
 })
 

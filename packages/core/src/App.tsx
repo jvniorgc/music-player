@@ -18,6 +18,7 @@ import DownloadsView from './components/Library/DownloadsView'
 import SoulseekView from './components/Soulseek/SoulseekView'
 import SocialView from './components/Social/SocialView'
 import UserProfileView from './components/Social/UserProfileView'
+import SettingsView from './components/Settings/SettingsView'
 import UpdateDialog from './components/UpdateDialog'
 import { Loader2 } from 'lucide-react'
 import AppIcon from './components/UI/AppIcon'
@@ -61,6 +62,7 @@ export default function App() {
           <Route path="/" element={<HomePage />} />
           <Route path="/search" element={<SearchView />} />
           <Route path="/songs" element={<SongList />} />
+          <Route path="/settings" element={<SettingsView />} />
           <Route path="/albums" element={<AlbumGrid />} />
           <Route path="/album/:id" element={<AlbumView />} />
           <Route path="/artists" element={<ArtistGrid />} />

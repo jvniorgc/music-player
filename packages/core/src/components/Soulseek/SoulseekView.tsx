@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef } from 'react'
+import { Link } from 'react-router-dom'
 import {
   startSearch, getSearch, getSearchResponses, deleteSearch, downloadFiles, getDownloads, removeDownload, removeCompletedDownloads,
   SlskdResponse, SlskdFile, SlskdSearch, SlskdTransferGroup,
   isAudioFile, getFileName, getFileExtension, formatFileSize, formatSpeed, formatDuration,
-  groupFilesByDirectory, configure, getConfig, deriveDefaultUrl, isConfigured, testConnection as slskdTestConnection
+  groupFilesByDirectory, configure, deriveDefaultUrl, isConfigured
 } from '../../services/slskd'
 import { jellyfin } from '../../services/jellyfin'
 import { useToastStore } from '../../stores/toast'
@@ -18,24 +19,11 @@ type Tab = 'search' | 'transfers'
 export default function SoulseekView() {
   const toast = useToastStore(s => s.show)
 
-  // Settings state
-  const [showSettings, setShowSettings] = useState(false)
-  const [settingsUrl, setSettingsUrl] = useState('')
-  const [settingsUser, setSettingsUser] = useState('')
-  const [settingsPass, setSettingsPass] = useState('')
-  const [testingConnection, setTestingConnection] = useState(false)
-  const [connected, setConnected] = useState<boolean | null>(null)
-
   // Auto-configure on mount
   useEffect(() => {
     if (!isConfigured()) {
-      const defaultUrl = deriveDefaultUrl(jellyfin.serverUrl)
-      configure({ url: defaultUrl, username: 'slskd', password: 'slskd' })
+      configure({ url: deriveDefaultUrl(jellyfin.serverUrl), username: 'slskd', password: 'slskd' })
     }
-    const cfg = getConfig()
-    setSettingsUrl(cfg.url)
-    setSettingsUser(cfg.username)
-    setSettingsPass(cfg.password)
   }, [])
 
   // Search state
@@ -212,26 +200,7 @@ export default function SoulseekView() {
     })
   }
 
-  const handleSaveSettings = () => {
-    configure({ url: settingsUrl, username: settingsUser, password: settingsPass })
-    setConnected(null)
-    setShowSettings(false)
-    toast('slskd settings saved', 'success')
-  }
 
-  const handleTestConnection = async () => {
-    setTestingConnection(true)
-    setConnected(null)
-    try {
-      configure({ url: settingsUrl, username: settingsUser, password: settingsPass })
-      await window.api?.allowOrigin?.(settingsUrl)
-      setConnected(await slskdTestConnection({ url: settingsUrl, username: settingsUser, password: settingsPass }))
-    } catch {
-      setConnected(false)
-    } finally {
-      setTestingConnection(false)
-    }
-  }
 
   // Compute format counts from search results
   const allAudioFiles = responses.flatMap(r => r.files.filter(f => isAudioFile(f.filename)))
@@ -268,83 +237,15 @@ export default function SoulseekView() {
     <div className="fade-in">
       <div className="flex items-center gap-3 mb-6">
         <h1 className="text-title font-semibold">Soulseek</h1>
-        <button
-          onClick={() => setShowSettings(!showSettings)}
-          className={`p-2 rounded-sm transition-colors ${showSettings ? 'bg-white/10 text-accent' : 'text-text-tertiary hover:text-text-primary hover:bg-white/5'}`}
+        <Link
+          to="/settings#soulseek"
+          className="p-2 rounded-sm transition-colors text-text-tertiary hover:text-text-primary hover:bg-white/5"
           title="slskd settings"
         >
           <Settings size={18} />
-        </button>
+        </Link>
       </div>
 
-      {/* Settings Panel */}
-      {showSettings && (
-        <div className="bg-surface-2 border border-border rounded-md p-5 mb-6">
-          <h3 className="text-sm font-semibold mb-4">slskd connection</h3>
-          <div className="space-y-3">
-            <div>
-              <label className="block text-xs font-medium text-text-secondary mb-1 ml-1">Server address</label>
-              <Input
-                variant="subtle"
-                type="text"
-                value={settingsUrl}
-                onChange={e => setSettingsUrl(e.target.value)}
-                placeholder="http://192.168.1.100:5030"
-              />
-            </div>
-            <div className="flex gap-3">
-              <div className="flex-1">
-                <label className="block text-xs font-medium text-text-secondary mb-1 ml-1">User</label>
-                <Input
-                  variant="subtle"
-                  type="text"
-                  value={settingsUser}
-                  onChange={e => setSettingsUser(e.target.value)}
-                  placeholder="slskd"
-                />
-              </div>
-              <div className="flex-1">
-                <label className="block text-xs font-medium text-text-secondary mb-1 ml-1">Password</label>
-                <Input
-                  variant="subtle"
-                  type="password"
-                  value={settingsPass}
-                  onChange={e => setSettingsPass(e.target.value)}
-                  placeholder="password"
-                />
-              </div>
-            </div>
-            <div className="flex items-center gap-3 pt-2">
-              <button
-                onClick={handleTestConnection}
-                disabled={testingConnection || !settingsUrl}
-                className="flex items-center gap-2 bg-white/10 hover:bg-white/15 text-white px-4 py-2 rounded-sm text-sm font-medium transition-colors disabled:opacity-40"
-              >
-                {testingConnection ? <Loader2 size={14} className="animate-spin" /> : <Zap size={14} />}
-                Test connection
-              </button>
-              <button
-                onClick={handleSaveSettings}
-                disabled={!settingsUrl}
-                className="flex items-center gap-2 bg-accent hover:bg-accent-hover text-white px-4 py-2 rounded-sm text-sm font-medium transition-colors disabled:opacity-40"
-              >
-                <Check size={14} />
-                Save
-              </button>
-              {connected === true && (
-                <span className="flex items-center gap-1 text-sm text-success">
-                  <Check size={14} /> Connected
-                </span>
-              )}
-              {connected === false && (
-                <span className="flex items-center gap-1 text-sm text-danger">
-                  <X size={14} /> Connection failed
-                </span>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Tabs */}
       <div className="flex gap-1 mb-6 bg-surface-2 rounded-sm p-0.5 w-fit">
