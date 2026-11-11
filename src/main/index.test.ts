@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeAll, beforeEach, afterAll } from 'vites
 import { mkdtempSync, rmSync, existsSync, writeFileSync, readFileSync, mkdirSync } from 'fs'
 import { join } from 'path'
 import { tmpdir } from 'os'
+import { pathToFileURL } from 'url'
 
 // Shared state captured by the electron mock (hoisted so the vi.mock factory can see it).
 const h = vi.hoisted(() => ({
@@ -12,7 +13,10 @@ const h = vi.hoisted(() => ({
   windowOpenHandler: null as null | ((d: { url: string }) => unknown),
   protocolHandler: null as null | ((req: { url: string }) => unknown),
   netFetch: null as null | ReturnType<typeof vi.fn>,
-  windowOpts: null as Record<string, any> | null
+  windowOpts: null as Record<string, any> | null,
+  navigateHandler: null as null | ((e: { preventDefault: () => void }, url: string) => void),
+  headersHandler: null as null | ((details: any, cb: (r: any) => void) => void),
+  privileged: [] as unknown[]
 }))
 
 vi.mock('electron', () => {
@@ -20,6 +24,7 @@ vi.mock('electron', () => {
     constructor(opts?: Record<string, any>) { h.windowOpts = opts ?? null }
     webContents = {
       setWindowOpenHandler: (cb: (d: { url: string }) => unknown) => { h.windowOpenHandler = cb },
+      on: (event: string, cb: any) => { if (event === 'will-navigate') h.navigateHandler = cb },
       send: (channel: string, data: unknown) => h.sent.push({ channel, data })
     }
     loadURL = vi.fn()
@@ -39,8 +44,14 @@ vi.mock('electron', () => {
     },
     BrowserWindow,
     ipcMain: { handle: (channel: string, cb: (...a: any[]) => any) => h.handlers.set(channel, cb) },
-    shell: { openExternal: vi.fn() },
-    session: { defaultSession: { protocol: { handle: (_scheme: string, cb: (req: { url: string }) => unknown) => { h.protocolHandler = cb } } } },
+    shell: { openExternal: vi.fn().mockResolvedValue(undefined) },
+    protocol: { registerSchemesAsPrivileged: (s: unknown[]) => { h.privileged.push(...s) } },
+    session: {
+      defaultSession: {
+        protocol: { handle: (_scheme: string, cb: (req: { url: string }) => unknown) => { h.protocolHandler = cb } },
+        webRequest: { onHeadersReceived: (_f: unknown, cb: any) => { h.headersHandler = cb } }
+      }
+    },
     net: { fetch: netFetch },
     Menu: { setApplicationMenu: vi.fn() }
   }
@@ -115,7 +126,7 @@ describe('main process: IPC registration', () => {
       'lastfm:finish-auth', 'lastfm:disconnect', 'lastfm:now-playing', 'lastfm:scrobble',
       'lastfm:get-similar-tracks',
       'lyrics:get', 'lyrics:save', 'lyrics:get-downloaded', 'lyrics:save-downloaded',
-      'file:get-url'
+      'file:get-url', 'cors:allow-origin'
     ]
     for (const ch of expected) expect(h.handlers.has(ch)).toBe(true)
   })
@@ -275,11 +286,78 @@ describe('main process: collage export', () => {
 })
 
 describe('main process: file:get-url', () => {
-  it('returns a file:// url for existing files and null for missing ones', () => {
-    const f = join(tmpRoot, 'present.bin')
+  it('returns a local-audio url for existing app files and null for missing ones', () => {
+    const f = join(h.paths.userData, 'downloads', 'present.audio')
     writeFileSync(f, 'data')
-    expect(invoke('file:get-url', f)).toBe(`file://${f}`)
-    expect(invoke('file:get-url', join(tmpRoot, 'absent.bin'))).toBeNull()
+    expect(invoke('file:get-url', f)).toBe(`local-audio://${encodeURIComponent(f)}`)
+    expect(invoke('file:get-url', join(h.paths.userData, 'downloads', 'absent.audio'))).toBeNull()
+  })
+
+  it('rejects paths outside the app dirs, traversal and non-strings', () => {
+    const outside = join(tmpRoot, 'present.bin')
+    writeFileSync(outside, 'data')
+    expect(invoke('file:get-url', outside)).toBeNull()
+    expect(invoke('file:get-url', join(h.paths.userData, 'downloads', '..', '..', 'present.bin'))).toBeNull()
+    expect(invoke('file:get-url', 42)).toBeNull()
+  })
+})
+
+describe('main process: input validation', () => {
+  it('rejects downloads with non-http URLs or unsafe item ids', async () => {
+    const fetchMock = vi.fn()
+    vi.stubGlobal('fetch', fetchMock)
+    expect(await invoke('download:start', { itemId: 'ok', url: 'file:///etc/passwd', filename: 'x', metadata: '{}' }))
+      .toMatchObject({ success: false })
+    expect(await invoke('download:start', { itemId: '../../evil', url: 'http://x/a', filename: 'x', metadata: '{}' }))
+      .toMatchObject({ success: false })
+    expect(await invoke('cache:audio:save', { itemId: 'c', url: 'javascript:alert(1)', quality: 'hi' })).toBeNull()
+    expect(await invoke('cache:audio:save', { itemId: 'c', url: 'http://x', quality: '../q' })).toBeNull()
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it('does not delete files outside the downloads dir on download:remove', () => {
+    const victim = join(tmpRoot, 'victim.txt')
+    writeFileSync(victim, 'keep')
+    getDatabase().prepare(`INSERT INTO downloads (item_id, file_path, filename, status) VALUES ('v', ?, 'v', 'completed')`).run(victim)
+    invoke('download:remove', 'v')
+    expect(existsSync(victim)).toBe(true)
+  })
+
+  it('never exposes Last.fm secrets through the generic settings channel', () => {
+    getDatabase().prepare('INSERT INTO settings (key, value) VALUES (?, ?)').run('lastfm_session_key', 'sk')
+    expect(invoke('settings:get', 'lastfm_session_key')).toBeNull()
+    expect(() => invoke('settings:set', 'lastfm_session_key', 'x')).toThrow()
+  })
+
+  it('rejects malformed auth data', () => {
+    expect(() => invoke('db:save-auth', { serverUrl: 'javascript:x', token: 't', userId: 'u', username: 'n', serverId: 's' })).toThrow()
+  })
+})
+
+describe('main process: CORS allowlist', () => {
+  const run = (details: Record<string, unknown>) => {
+    let result: any
+    h.headersHandler!({ method: 'GET', statusCode: 200, responseHeaders: {}, ...details }, r => { result = r })
+    return result
+  }
+
+  it('adds CORS headers only for the configured Jellyfin/slskd origins and public APIs', async () => {
+    invoke('db:save-auth', { serverUrl: 'http://jf.lan:8096', token: 't', userId: 'u', username: 'n', serverId: 's' })
+    await invoke('cors:allow-origin', 'http://jf.lan:5030')
+    expect(run({ url: 'http://jf.lan:8096/Items' }).responseHeaders['Access-Control-Allow-Origin']).toEqual(['*'])
+    expect(run({ url: 'http://jf.lan:5030/api/v0/session' }).responseHeaders).toBeTruthy()
+    expect(run({ url: 'https://ia800.us.archive.org/x.jpg' }).responseHeaders).toBeTruthy()
+    expect(run({ url: 'http://evil.example/' })).toEqual({})
+  })
+
+  it('leaves existing CORS headers alone and answers failed preflights', () => {
+    invoke('db:save-auth', { serverUrl: 'http://jf.lan:8096', token: 't', userId: 'u', username: 'n', serverId: 's' })
+    expect(run({ url: 'http://jf.lan:8096/x', responseHeaders: { 'access-control-allow-origin': ['*'] } })).toEqual({})
+    expect(run({ url: 'http://jf.lan:8096/x', method: 'OPTIONS', statusCode: 405 }).statusLine).toMatch(/204/)
+  })
+
+  it('rejects non-http origins', async () => {
+    await expect(async () => invoke('cors:allow-origin', 'file:///')).rejects.toThrow()
   })
 })
 
@@ -300,7 +378,7 @@ describe('main process: download progress', () => {
 describe('main process: cache eviction (2GB LRU)', () => {
   it('evicts the least-recently-used entries when the cache exceeds the limit', async () => {
     const db = getDatabase()
-    const bigFile = join(tmpRoot, 'evict-me.audio')
+    const bigFile = join(h.paths.userData, 'cache', 'audio', 'evict-me.audio')
     writeFileSync(bigFile, 'big')
     const oneSixGB = 1_600_000_000
     // Oldest entry backed by a real file (covers the unlink branch).
@@ -308,7 +386,7 @@ describe('main process: cache eviction (2GB LRU)', () => {
       .run('evOld', 'q', bigFile, oneSixGB)
     // Newer entry whose file no longer exists (covers the existsSync-false branch).
     db.prepare(`INSERT INTO audio_cache (item_id, quality, file_path, file_size, last_accessed) VALUES (?, ?, ?, ?, datetime('now', '-1 hours'))`)
-      .run('evNew', 'q', join(tmpRoot, 'gone.audio'), oneSixGB)
+      .run('evNew', 'q', join(h.paths.userData, 'cache', 'audio', 'gone.audio'), oneSixGB)
 
     // Saving a new small entry pushes the total past 2GB and triggers eviction.
     vi.stubGlobal('fetch', vi.fn(async () => new Response(Buffer.from('tiny'))))
@@ -338,18 +416,36 @@ describe('main process: collage export errors', () => {
 })
 
 describe('main process: window & lifecycle wiring', () => {
-  it('opens external URLs through the shell and denies in-app navigation', async () => {
-    const { shell } = await import('electron') as any
-    expect(h.windowOpenHandler).toBeTypeOf('function')
-    const result = h.windowOpenHandler!({ url: 'https://example.com' })
-    expect(shell.openExternal).toHaveBeenCalledWith('https://example.com')
-    expect(result).toEqual({ action: 'deny' })
+  it('runs the renderer sandboxed with web security on', () => {
+    expect(h.windowOpts?.webPreferences).toMatchObject({ sandbox: true, webSecurity: true, contextIsolation: true, nodeIntegration: false })
   })
 
-  it('serves local-audio:// requests via net.fetch against a file:// URL', () => {
+  it('opens only http(s)/mailto URLs externally and always denies new windows', async () => {
+    const { shell } = await import('electron') as any
+    shell.openExternal.mockClear()
+    expect(h.windowOpenHandler).toBeTypeOf('function')
+    expect(h.windowOpenHandler!({ url: 'https://example.com' })).toEqual({ action: 'deny' })
+    expect(shell.openExternal).toHaveBeenCalledWith('https://example.com')
+    for (const url of ['file:///etc/passwd', 'smb://host/share', 'javascript:alert(1)']) {
+      expect(h.windowOpenHandler!({ url })).toEqual({ action: 'deny' })
+    }
+    expect(shell.openExternal).toHaveBeenCalledTimes(1)
+  })
+
+  it('blocks in-window navigation away from the app', () => {
+    const preventDefault = vi.fn()
+    h.navigateHandler!({ preventDefault }, 'https://evil.example/')
+    expect(preventDefault).toHaveBeenCalled()
+  })
+
+  it('serves local-audio:// only for files inside the app dirs', async () => {
     expect(h.protocolHandler).toBeTypeOf('function')
-    h.protocolHandler!({ url: 'local-audio://%2Ftmp%2Fsong.audio' })
-    expect(h.netFetch).toHaveBeenCalledWith('file:///tmp/song.audio')
+    const inside = join(h.paths.userData, 'cache', 'audio', 'song.audio')
+    h.protocolHandler!({ url: `local-audio://${encodeURIComponent(inside)}` })
+    expect(h.netFetch).toHaveBeenCalledWith(pathToFileURL(inside).toString(), expect.anything())
+    const denied = await h.protocolHandler!({ url: 'local-audio://%2Fetc%2Fpasswd' }) as Response
+    expect(denied.status).toBe(403)
+    expect(h.privileged).toContainEqual(expect.objectContaining({ scheme: 'local-audio' }))
   })
 
   it('re-creates the window on activate, honoring the renderer dev URL branch', () => {

@@ -310,3 +310,104 @@ function computeSig(params: URLSearchParams, secret: string): string {
   s += secret
   return createHash('md5').update(s, 'utf8').digest('hex')
 }
+describe('offline scrobble queue', () => {
+  const now = () => Math.floor(Date.now() / 1000)
+
+  async function link() {
+    lastfm.setCredentials('my-key', 'my-secret')
+    h.fetchMock!.mockResolvedValueOnce(jsonRes({ session: { name: 'rj', key: 'sk-999' } }))
+    await lastfm.finishAuth('t')
+    lastfm.setEnabled(true)
+    h.fetchMock!.mockReset()
+  }
+
+  beforeEach(() => {
+    getDatabase().exec('DELETE FROM scrobble_queue;')
+  })
+
+  it('queues a scrobble on network failure instead of throwing', async () => {
+    await link()
+    h.fetchMock!.mockRejectedValueOnce(new TypeError('fetch failed'))
+    await expect(lastfm.scrobble({ artist: 'A', track: 'B', timestamp: now() - 60 })).resolves.toBeUndefined()
+    expect(lastfm.getQueuedScrobbleCount()).toBe(1)
+  })
+
+  it('queues on temporary Last.fm errors (service unavailable)', async () => {
+    await link()
+    h.fetchMock!.mockResolvedValueOnce(jsonRes({ error: 16, message: 'Temporarily unavailable' }))
+    await lastfm.scrobble({ artist: 'A', track: 'B', timestamp: now() - 60 })
+    expect(lastfm.getQueuedScrobbleCount()).toBe(1)
+  })
+
+  it('submits queued scrobbles as an indexed batch and clears them', async () => {
+    await link()
+    const t = now() - 3600
+    lastfm.enqueueScrobble({ artist: 'A1', track: 'T1', album: 'Al', timestamp: t })
+    lastfm.enqueueScrobble({ artist: 'A2', track: 'T2', timestamp: t + 10 })
+    h.fetchMock!.mockResolvedValueOnce(jsonRes({ scrobbles: { '@attr': { accepted: 2 } } }))
+
+    expect(await lastfm.flushScrobbleQueue()).toBe(2)
+    const p = sentParams(h.fetchMock!.mock.calls[0])
+    expect(p.get('method')).toBe('track.scrobble')
+    expect(p.get('artist[0]')).toBe('A1')
+    expect(p.get('album[0]')).toBe('Al')
+    expect(p.get('track[1]')).toBe('T2')
+    expect(p.get('timestamp[1]')).toBe(String(t + 10))
+    expect(p.get('api_sig')).toBe(computeSig(p, 'my-secret'))
+    expect(lastfm.getQueuedScrobbleCount()).toBe(0)
+  })
+
+  it('batches at most 50 per request', async () => {
+    await link()
+    for (let i = 0; i < 60; i++) lastfm.enqueueScrobble({ artist: 'A', track: `T${i}`, timestamp: now() - 1000 + i })
+    h.fetchMock!.mockImplementation(async () => jsonRes({ scrobbles: {} }))
+    expect(await lastfm.flushScrobbleQueue()).toBe(60)
+    expect(h.fetchMock!).toHaveBeenCalledTimes(2)
+    expect(sentParams(h.fetchMock!.mock.calls[0]).has('track[49]')).toBe(true)
+    expect(sentParams(h.fetchMock!.mock.calls[0]).has('track[50]')).toBe(false)
+  })
+
+  it('backs off (bounded) after a failed retry and skips entries not yet due', async () => {
+    await link()
+    lastfm.enqueueScrobble({ artist: 'A', track: 'B', timestamp: now() - 100 })
+    h.fetchMock!.mockRejectedValueOnce(new TypeError('offline'))
+    const t0 = now()
+    expect(await lastfm.flushScrobbleQueue(t0)).toBe(0)
+    const row = getDatabase().prepare('SELECT attempts, next_attempt_at FROM scrobble_queue').get() as { attempts: number; next_attempt_at: number }
+    expect(row.attempts).toBe(1)
+    expect(row.next_attempt_at).toBe(t0 + lastfm.backoffSeconds(1))
+
+    // Not due yet: no request is made.
+    h.fetchMock!.mockReset()
+    expect(await lastfm.flushScrobbleQueue(t0 + 1)).toBe(0)
+    expect(h.fetchMock!).not.toHaveBeenCalled()
+
+    expect(lastfm.backoffSeconds(30)).toBe(lastfm.backoffSeconds(100))
+    expect(lastfm.backoffSeconds(2)).toBeGreaterThan(lastfm.backoffSeconds(1))
+  })
+
+  it('drops entries older than 14 days instead of sending them', async () => {
+    await link()
+    const old = now() - lastfm.MAX_SCROBBLE_AGE_S + 60
+    lastfm.enqueueScrobble({ artist: 'A', track: 'Old', timestamp: old })
+    expect(lastfm.getQueuedScrobbleCount()).toBe(1)
+    // Two minutes later it is past the 14-day window.
+    expect(await lastfm.flushScrobbleQueue(now() + 120)).toBe(0)
+    expect(lastfm.getQueuedScrobbleCount()).toBe(0)
+    expect(h.fetchMock!).not.toHaveBeenCalled()
+    // Already-expired plays are never queued.
+    lastfm.enqueueScrobble({ artist: 'A', track: 'Ancient', timestamp: 1 })
+    expect(lastfm.getQueuedScrobbleCount()).toBe(0)
+  })
+
+  it('drains the queue after a successful live scrobble', async () => {
+    await link()
+    lastfm.enqueueScrobble({ artist: 'Q', track: 'Queued', timestamp: now() - 500 })
+    h.fetchMock!.mockImplementation(async () => jsonRes({ scrobbles: {} }))
+    await lastfm.scrobble({ artist: 'L', track: 'Live', timestamp: now() })
+    await lastfm.flushScrobbleQueue()
+    expect(lastfm.getQueuedScrobbleCount()).toBe(0)
+    expect(sentParams(h.fetchMock!.mock.calls[1]).get('track[0]')).toBe('Queued')
+  })
+
+})

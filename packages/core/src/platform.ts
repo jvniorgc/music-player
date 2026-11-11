@@ -112,8 +112,12 @@ export interface PlatformApi {
   getDownloadedLyrics: (itemId: string) => Promise<string | null>
   saveDownloadedLyrics: (itemId: string, lyrics: string) => Promise<void>
 
+  /** Optional: allow cross-origin requests to a user-configured server (desktop CORS allowlist). */
+  allowOrigin?: (url: string) => Promise<void>
+
   // File access
-  getFileUrl: (filePath: string) => Promise<string>
+  /** Playable URL for a cached/downloaded file inside the app's own dirs; null otherwise. */
+  getFileUrl: (filePath: string) => Promise<string | null>
 
   // Download event listeners (return an unsubscribe function)
   onDownloadProgress: (cb: (data: DownloadProgress) => void) => () => void

@@ -42,13 +42,14 @@ export function initAutoUpdater(window: BrowserWindow) {
     try {
       const result = await autoUpdater.checkForUpdates()
       return result?.updateInfo ?? null
-    } catch {
+    } catch (err) {
+      console.warn('[updater] update check failed:', err)
       return null
     }
   })
 
   ipcMain.handle('updater:download', () => {
-    autoUpdater.downloadUpdate()
+    Promise.resolve(autoUpdater.downloadUpdate()).catch(err => console.warn('[updater] download failed:', err))
   })
 
   ipcMain.handle('updater:install', () => {
@@ -57,6 +58,6 @@ export function initAutoUpdater(window: BrowserWindow) {
 
   // Check for updates after a short delay
   setTimeout(() => {
-    autoUpdater.checkForUpdates().catch(() => {})
+    autoUpdater.checkForUpdates().catch(err => console.warn('[updater] startup update check failed:', err))
   }, 3000)
 }

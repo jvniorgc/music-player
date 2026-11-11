@@ -60,6 +60,9 @@ const api = {
   getDownloadedLyrics: (itemId: string) => ipcRenderer.invoke('lyrics:get-downloaded', itemId),
   saveDownloadedLyrics: (itemId: string, lyrics: string) => ipcRenderer.invoke('lyrics:save-downloaded', itemId, lyrics),
 
+  // Register a user-configured server (e.g. slskd) so the main process allows CORS to it
+  allowOrigin: (url: string) => ipcRenderer.invoke('cors:allow-origin', url),
+
   // File access
   getFileUrl: (filePath: string) => ipcRenderer.invoke('file:get-url', filePath),
 
