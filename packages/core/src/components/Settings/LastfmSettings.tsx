@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Radio, Loader2, Check, ExternalLink } from 'lucide-react'
 import * as lastfm from '../../services/lastfm'
 import type { LastfmStatus } from '../../platform'
+import { buttonClass } from '../UI/Button'
 import { useToastStore } from '../../stores/toast'
 
 const EMPTY_STATUS: LastfmStatus = { configured: false, connected: false, enabled: false, username: null }
@@ -97,10 +98,10 @@ export function LastfmSettings() {
   }
 
   return (
-    <div className="w-full border-t border-border-subtle pt-5">
+    <div className="w-full border-t border-border pt-5">
       <div className="flex items-center gap-2 mb-3">
         <Radio size={16} className="text-accent" />
-        <h3 className="text-xs font-semibold text-text-secondary uppercase tracking-wider">Last.fm Scrobbling</h3>
+        <h3 className="text-xs font-semibold text-text-secondary">Last.fm Scrobbling</h3>
       </div>
 
       {!status.configured ? (
@@ -113,19 +114,19 @@ export function LastfmSettings() {
             value={apiKey}
             onChange={e => setApiKey(e.target.value)}
             placeholder="API key"
-            className="w-full bg-bg-elevated border border-border rounded-xl px-4 py-2.5 text-sm text-text-primary placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-accent transition"
+            className="w-full bg-surface-2 border border-border rounded-sm px-3 h-9 text-sm text-text-primary placeholder:text-text-tertiary focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition"
           />
           <input
             type="password"
             value={apiSecret}
             onChange={e => setApiSecret(e.target.value)}
             placeholder="Shared secret"
-            className="w-full bg-bg-elevated border border-border rounded-xl px-4 py-2.5 text-sm text-text-primary placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-accent transition"
+            className="w-full bg-surface-2 border border-border rounded-sm px-3 h-9 text-sm text-text-primary placeholder:text-text-tertiary focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition"
           />
           <button
             onClick={handleSaveCredentials}
             disabled={busy || !apiKey.trim() || !apiSecret.trim()}
-            className="px-4 py-2 rounded-full text-sm font-semibold bg-accent hover:bg-accent-hover text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
+            className={buttonClass('primary')}
           >
             {busy && <Loader2 size={14} className="animate-spin" />}
             Save credentials
@@ -138,7 +139,7 @@ export function LastfmSettings() {
             <button
               onClick={handleConnect}
               disabled={busy}
-              className="px-4 py-2 rounded-full text-sm font-semibold bg-accent hover:bg-accent-hover text-white transition-colors disabled:opacity-40 flex items-center gap-2"
+              className={buttonClass('primary')}
             >
               {busy ? <Loader2 size={14} className="animate-spin" /> : <ExternalLink size={14} />}
               {pendingToken ? 'Re-open authorize page' : 'Connect account'}
@@ -147,7 +148,7 @@ export function LastfmSettings() {
               <button
                 onClick={handleFinish}
                 disabled={busy}
-                className="px-4 py-2 rounded-full text-sm font-semibold bg-white/10 hover:bg-white/20 text-text-primary transition-colors disabled:opacity-40 flex items-center gap-2"
+                className={buttonClass('secondary')}
               >
                 <Check size={14} />
                 Finish
@@ -159,13 +160,13 @@ export function LastfmSettings() {
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 text-sm text-text-primary">
-              <Check size={14} className="text-green-500" />
+              <Check size={14} className="text-success" />
               Connected as <span className="font-semibold">{status.username}</span>
             </div>
             <button
               onClick={handleDisconnect}
               disabled={busy}
-              className="text-xs text-text-tertiary hover:text-red-400 transition-colors disabled:opacity-40"
+              className="text-xs text-text-tertiary hover:text-danger transition-colors disabled:opacity-40"
             >
               Disconnect
             </button>

@@ -12,6 +12,8 @@ import AddToPlaylist from '../UI/AddToPlaylist'
 import { artistNames } from '../../lib/format'
 import TrackRow, { TrackIndex, TrackDuration } from '../UI/TrackRow'
 import CoverArt from '../UI/CoverArt'
+import { buttonClass } from '../UI/Button'
+import { CoverFallbackIcon } from '../UI/CoverArt'
 import { useShallow } from 'zustand/react/shallow'
 
 export default function PlaylistView() {
@@ -111,19 +113,19 @@ export default function PlaylistView() {
       </button>
 
       <div className="flex gap-8 mb-8">
-        <div className="w-56 h-56 rounded-2xl overflow-hidden bg-bg-elevated shadow-2xl shrink-0">
+        <div className="w-56 h-56 rounded-lg overflow-hidden bg-surface-2 shadow-lg shrink-0">
           {imageUrl ? (
             <img src={imageUrl} className="w-full h-full object-cover" alt="" />
           ) : (
-            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-accent/20 to-pink-600/20">
-              <ListMusic size={64} className="text-accent/60" />
+            <div className="w-full h-full flex items-center justify-center bg-surface-2">
+              <CoverFallbackIcon kind="playlist" size={64} />
             </div>
           )}
         </div>
 
         <div className="flex flex-col justify-end min-w-0">
-          <p className="text-xs font-medium text-text-tertiary uppercase tracking-wider mb-2">Playlist</p>
-          <h1 className="text-3xl font-bold truncate">{playlist?.Name}</h1>
+          <p className="text-xs font-medium text-text-tertiary mb-2">Playlist</p>
+          <h1 className="text-title font-semibold truncate">{playlist?.Name}</h1>
           <p className="text-sm text-text-secondary mt-2">{tracks.length} songs</p>
 
           <div className="flex items-center gap-3 mt-5">
@@ -132,7 +134,7 @@ export default function PlaylistView() {
                 if (isCurrentPlaylist && isPlaying) togglePlay()
                 else playItems(tracks)
               }}
-              className="flex items-center gap-2 bg-accent hover:bg-accent-hover text-white px-6 py-2.5 rounded-full font-semibold text-sm transition-colors"
+              className={buttonClass('primary')}
             >
               {isCurrentPlaylist && isPlaying ? <Pause size={16} fill="white" /> : <Play size={16} fill="white" className="ml-0.5" />}
               {isCurrentPlaylist && isPlaying ? 'Pause' : 'Play'}
@@ -142,21 +144,21 @@ export default function PlaylistView() {
                 const shuffled = [...tracks].sort(() => Math.random() - 0.5)
                 playItems(shuffled)
               }}
-              className="flex items-center gap-2 bg-white/10 hover:bg-white/15 text-white px-5 py-2.5 rounded-full text-sm transition-colors"
+              className={buttonClass('secondary')}
             >
               <Shuffle size={15} />
               Shuffle
             </button>
             <button
               onClick={() => setShowRename(true)}
-              className="p-2.5 rounded-full bg-white/10 hover:bg-white/15 text-text-secondary hover:text-text-primary transition-colors"
+              className="w-8 h-8 inline-flex items-center justify-center rounded-full border border-border text-text-secondary hover:text-text-primary hover:bg-white/10 transition-colors"
               title="Rename"
             >
               <Pencil size={15} />
             </button>
             <button
               onClick={() => setShowDelete(true)}
-              className="p-2.5 rounded-full bg-white/10 hover:bg-white/15 text-text-secondary hover:text-red-400 transition-colors"
+              className="w-8 h-8 inline-flex items-center justify-center rounded-full border border-border text-text-secondary hover:text-danger hover:bg-white/10 transition-colors"
               title="Delete"
             >
               <Trash2 size={15} />
@@ -166,7 +168,7 @@ export default function PlaylistView() {
       </div>
 
       {tracks.length > 0 ? (
-        <div className="bg-bg-secondary/40 rounded-xl overflow-hidden">
+        <div>
           {tracks.map((track, i) => {
             const isCurrent = currentTrack?.id === track.Id
 
@@ -180,8 +182,8 @@ export default function PlaylistView() {
                     <TrackIndex number={i + 1} isCurrent={isCurrent} isPlaying={isPlaying} className="w-7" />
                     <CoverArt
                       src={track.AlbumId ? jellyfin.getImageUrl(track.AlbumId, undefined, 80) : null}
-                      className="w-10 h-10 rounded overflow-hidden bg-bg-elevated shrink-0"
-                      fallback={<ListMusic size={16} className="text-text-tertiary" />}
+                      className="w-10 h-10 rounded overflow-hidden bg-surface-2 shrink-0"
+                      kind="track"
                     />
                   </>
                 }
@@ -196,7 +198,7 @@ export default function PlaylistView() {
                   extraItems={
                     <button
                       onClick={() => handleRemoveTrack(track)}
-                      className="flex items-center gap-3 w-full px-4 py-2 text-sm text-red-400 hover:bg-white/10 transition-colors"
+                      className="flex items-center gap-3 w-full px-4 py-2 text-sm text-danger hover:bg-white/10 transition-colors"
                     >
                       <XIcon size={14} />
                       Remove from Playlist
@@ -216,7 +218,7 @@ export default function PlaylistView() {
 
       <InputModal
         open={showRename}
-        title="Rename Playlist"
+        title="Rename playlist"
         placeholder="New name"
         initialValue={playlist?.Name || ''}
         confirmLabel="Rename"
@@ -226,7 +228,7 @@ export default function PlaylistView() {
 
       <ConfirmModal
         open={showDelete}
-        title="Delete Playlist"
+        title="Delete playlist"
         message={`Are you sure you want to delete "${playlist?.Name}"? This action cannot be undone.`}
         confirmLabel="Delete"
         destructive

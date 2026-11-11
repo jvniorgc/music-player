@@ -3,7 +3,7 @@ import { useAuthStore } from '../../stores/auth'
 import { useLibraryStore } from '../../stores/library'
 import { useDownloadStore } from '../../stores/download'
 import { useToastStore } from '../../stores/toast'
-import { Home, Disc3, Users, ListMusic, Search, LogOut, Download, RefreshCw, Share2, Globe, Shuffle } from 'lucide-react'
+import { Home, Disc3, Users, ListMusic, Search, LogOut, Download, RefreshCw, Share2, Globe, Shuffle, User } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { jellyfin } from '../../services/jellyfin'
 import { usePlayerStore } from '../../stores/player'
@@ -65,7 +65,7 @@ export default function Sidebar() {
     : null
 
   return (
-    <aside className="w-60 h-full bg-bg-secondary/80 backdrop-blur-xl border-r border-border-subtle flex flex-col">
+    <aside className="w-60 h-full bg-surface-1 border-r border-border flex flex-col">
       {/* Área de arraste do titlebar — no macOS alinha com a altura da playback bar
           para os botões da janela ficarem integrados na mesma faixa do topo */}
       <div className={`${isMac ? 'h-14' : 'h-13'} drag-region shrink-0`} />
@@ -78,7 +78,7 @@ export default function Sidebar() {
             to={item.to}
             end={item.to === '/'}
             className={({ isActive }) =>
-              `flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors no-drag ${
+              `flex items-center gap-3 px-3 py-2 rounded-sm text-sm font-medium transition-colors no-drag ${
                 isActive
                   ? 'bg-white/10 text-text-primary'
                   : 'text-text-secondary hover:text-text-primary hover:bg-white/5'
@@ -95,7 +95,7 @@ export default function Sidebar() {
       <div className="px-3 mt-1">
         <button
           onClick={handleShuffleAll}
-          className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-text-secondary hover:text-text-primary hover:bg-white/5 transition-colors w-full no-drag"
+          className="flex items-center gap-3 px-3 py-2 rounded-sm text-sm font-medium text-text-secondary hover:text-text-primary hover:bg-white/5 transition-colors w-full no-drag"
           title="Play a shuffle of your whole library"
         >
           <Shuffle size={18} />
@@ -106,13 +106,13 @@ export default function Sidebar() {
       {/* Library section */}
       <div className="mt-6 px-3">
         <div className="flex items-center justify-between px-3 mb-2">
-          <h3 className="text-[11px] font-semibold text-text-tertiary uppercase tracking-wider">
+          <h3 className="text-xs font-medium text-text-tertiary">
             Library
           </h3>
           <button
             onClick={handleRefresh}
             disabled={refreshing}
-            className="p-1 rounded-md text-text-tertiary hover:text-text-primary hover:bg-white/10 transition-colors no-drag disabled:opacity-40"
+            className="p-1 rounded-sm text-text-tertiary hover:text-text-primary hover:bg-white/10 transition-colors no-drag disabled:opacity-40"
             title="Sync library"
           >
             <RefreshCw size={13} className={refreshing ? 'animate-spin' : ''} />
@@ -124,7 +124,7 @@ export default function Sidebar() {
               key={item.to}
               to={item.to}
               className={({ isActive }) =>
-                `flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors no-drag ${
+                `flex items-center gap-3 px-3 py-2 rounded-sm text-sm font-medium transition-colors no-drag ${
                   isActive
                     ? 'bg-white/10 text-text-primary'
                     : 'text-text-secondary hover:text-text-primary hover:bg-white/5'
@@ -141,7 +141,7 @@ export default function Sidebar() {
       {/* Playlists */}
       {playlists.length > 0 && (
         <div className="mt-6 px-3 flex-1 min-h-0 overflow-y-auto">
-          <h3 className="text-[11px] font-semibold text-text-tertiary uppercase tracking-wider px-3 mb-2">
+          <h3 className="text-xs font-medium text-text-tertiary px-3 mb-2">
             Playlists
           </h3>
           <nav className="space-y-0.5">
@@ -150,7 +150,7 @@ export default function Sidebar() {
                 key={pl.Id}
                 to={`/playlist/${pl.Id}`}
                 className={({ isActive }) =>
-                  `flex items-center gap-3 px-3 py-1.5 rounded-lg text-sm transition-colors truncate no-drag ${
+                  `flex items-center gap-3 px-3 py-1.5 rounded-sm text-sm transition-colors truncate no-drag ${
                     isActive
                       ? 'bg-white/10 text-text-primary'
                       : 'text-text-secondary hover:text-text-primary hover:bg-white/5'
@@ -166,24 +166,24 @@ export default function Sidebar() {
       )}
 
       {/* User section */}
-      <div className="mt-auto p-3 border-t border-border-subtle space-y-1">
+      <div className="mt-auto p-3 border-t border-border space-y-1">
         <button
           onClick={() => setProfileOpen(true)}
-          className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-text-secondary hover:text-text-primary hover:bg-white/5 transition-colors w-full no-drag"
+          className="flex items-center gap-3 px-3 py-2 rounded-sm text-sm text-text-secondary hover:text-text-primary hover:bg-white/5 transition-colors w-full no-drag"
           title="Edit profile"
         >
-          <div className="w-6 h-6 rounded-full overflow-hidden shrink-0 bg-bg-elevated flex items-center justify-center">
+          <div className="w-6 h-6 rounded-full overflow-hidden shrink-0 bg-surface-2 flex items-center justify-center">
             {avatarUrl ? (
               <img src={avatarUrl} className="w-full h-full object-cover" alt="" />
             ) : (
-              <span className="text-xs">👤</span>
+              <User size={14} className="text-text-tertiary" />
             )}
           </div>
           <span className="truncate">{auth?.username || 'Profile'}</span>
         </button>
         <button
           onClick={handleLogout}
-          className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-text-secondary hover:text-text-primary hover:bg-white/5 transition-colors w-full no-drag"
+          className="flex items-center gap-3 px-3 py-2 rounded-sm text-sm text-text-secondary hover:text-text-primary hover:bg-white/5 transition-colors w-full no-drag"
         >
           <LogOut size={16} />
           <span>Log out</span>

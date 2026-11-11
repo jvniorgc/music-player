@@ -54,11 +54,11 @@ export default function ArtistView() {
         {backdropUrl ? (
           <img src={backdropUrl} className="w-full h-full object-cover" alt="" />
         ) : imageUrl ? (
-          <img src={imageUrl} className="w-full h-full object-cover blur-2xl scale-110 opacity-40" alt="" />
+          <img src={imageUrl} className="w-full h-full object-cover blur-3xl scale-110 opacity-30" alt="" />
         ) : (
-          <div className="w-full h-full bg-gradient-to-b from-bg-tertiary to-bg-primary" />
+          <div className="w-full h-full bg-surface-1" />
         )}
-        <div className="absolute inset-0 bg-gradient-to-t from-bg-primary via-bg-primary/50 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-bg via-bg/50 to-transparent" />
 
         <div className="absolute bottom-0 left-0 right-0 px-8 pb-6">
           <button
@@ -71,11 +71,11 @@ export default function ArtistView() {
 
           <div className="flex items-end gap-6">
             {imageUrl ? (
-              <img src={imageUrl} className="w-32 h-32 rounded-full object-cover shadow-2xl border-2 border-white/10" alt="" />
+              <img src={imageUrl} className="w-32 h-32 rounded-full object-cover border border-white/10" alt="" />
             ) : (
               <button
                 onClick={() => setShowMetadataEditor(true)}
-                className="w-32 h-32 rounded-full bg-bg-elevated border-2 border-dashed border-border flex flex-col items-center justify-center gap-1 hover:border-accent/50 hover:bg-white/5 transition-colors"
+                className="w-32 h-32 rounded-full bg-surface-2 border-2 border-dashed border-border flex flex-col items-center justify-center gap-1 hover:border-accent/50 hover:bg-white/5 transition-colors"
                 title="Find artist image"
               >
                 <ImagePlus size={24} className="text-text-tertiary" />
@@ -83,8 +83,8 @@ export default function ArtistView() {
               </button>
             )}
             <div>
-              <p className="text-xs font-medium text-text-tertiary uppercase tracking-wider mb-1">Artist</p>
-              <h1 className="text-4xl font-bold">{artist?.Name}</h1>
+              <p className="text-xs font-medium text-text-tertiary mb-1">Artist</p>
+              <h1 className="text-display font-semibold">{artist?.Name}</h1>
               <div className="flex items-center gap-3 mt-1">
                 {albums.length > 0 && (
                   <p className="text-sm text-text-secondary">{albums.length} albums</p>
@@ -104,7 +104,7 @@ export default function ArtistView() {
 
       {/* Albums */}
       <div className="px-8 mt-8">
-        <h2 className="text-xl font-bold mb-4">Discography</h2>
+        <h2 className="text-heading font-semibold mb-4">Discography</h2>
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-5">
           {albums.map(album => (
             <AlbumCard

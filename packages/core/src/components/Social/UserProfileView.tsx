@@ -4,6 +4,8 @@ import { jellyfin, JellyfinItem, JellyfinUser } from '../../services/jellyfin'
 import { usePlayerStore } from '../../stores/player'
 import { ArrowLeft, ListMusic, Loader2, Grid3x3 } from 'lucide-react'
 import CollageModal from './CollageModal'
+import { CoverFallbackIcon } from '../UI/CoverArt'
+import MediaCard from '../UI/MediaCard'
 import { artistNames } from '../../lib/format'
 
 type ViewMode = 'artists' | 'albums' | 'songs'
@@ -127,21 +129,21 @@ export default function UserProfileView() {
       <div className="flex items-center gap-6">
         <button
           onClick={() => navigate('/social')}
-          className="p-2 rounded-lg hover:bg-white/10 transition-colors text-text-secondary hover:text-text-primary"
+          className="p-2 rounded-sm hover:bg-white/10 transition-colors text-text-secondary hover:text-text-primary"
         >
           <ArrowLeft size={20} />
         </button>
-        <div className="w-20 h-20 rounded-full overflow-hidden bg-bg-elevated shadow-lg shadow-black/30 shrink-0">
+        <div className="w-20 h-20 rounded-full overflow-hidden bg-surface-2 shrink-0">
           {imageUrl ? (
             <img src={imageUrl} className="w-full h-full object-cover" alt="" />
           ) : (
-            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-bg-elevated to-bg-tertiary">
-              <span className="text-3xl">👤</span>
+            <div className="w-full h-full flex items-center justify-center bg-surface-2">
+              <CoverFallbackIcon kind="artist" size={32} />
             </div>
           )}
         </div>
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">{user.Name}</h1>
+          <h1 className="text-title font-semibold">{user.Name}</h1>
           <p className="text-sm text-text-secondary mt-1">User profile</p>
         </div>
       </div>
@@ -149,7 +151,7 @@ export default function UserProfileView() {
       {/* Playlists */}
       {playlists.length > 0 && (
         <section>
-          <h2 className="text-xl font-bold mb-4">Playlists</h2>
+          <h2 className="text-heading font-semibold mb-4">Playlists</h2>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-5">
             {playlists.map(pl => (
               <PlaylistCard key={pl.Id} item={pl} onClick={() => navigate(`/playlist/${pl.Id}`)} />
@@ -161,11 +163,11 @@ export default function UserProfileView() {
       {/* Top Chart Section */}
       <section className="max-w-[720px]">
         <div className="flex items-center justify-between mb-5 flex-wrap gap-3">
-          <h2 className="text-xl font-bold">Top</h2>
+          <h2 className="text-heading font-semibold">Top</h2>
           <div className="flex items-center gap-2">
             <button
               onClick={() => setCollageOpen(true)}
-              className="flex items-center gap-1.5 bg-bg-elevated border border-border rounded-lg px-3 py-1.5 text-sm text-text-primary hover:bg-white/10 transition-colors cursor-pointer"
+              className="flex items-center gap-1.5 bg-surface-2 border border-border rounded-sm px-3 py-1.5 text-sm text-text-primary hover:bg-white/10 transition-colors cursor-pointer"
               title="Create a downloadable collage"
             >
               <Grid3x3 size={14} />
@@ -174,7 +176,7 @@ export default function UserProfileView() {
             <select
               value={viewMode}
               onChange={e => setViewMode(e.target.value as ViewMode)}
-              className="bg-bg-elevated border border-border rounded-lg px-3 py-1.5 text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
+              className="bg-surface-2 border border-border rounded-sm px-3 h-8 text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
             >
               <option value="artists">Artists</option>
               <option value="albums">Albums</option>
@@ -183,7 +185,7 @@ export default function UserProfileView() {
             <select
               value={timePeriod}
               onChange={e => setTimePeriod(e.target.value as TimePeriod)}
-              className="bg-bg-elevated border border-border rounded-lg px-3 py-1.5 text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
+              className="bg-surface-2 border border-border rounded-sm px-3 h-8 text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
             >
               {(Object.keys(TIME_LABELS) as TimePeriod[]).map(key => (
                 <option key={key} value={key}>{TIME_LABELS[key]}</option>
@@ -192,7 +194,7 @@ export default function UserProfileView() {
             <select
               value={gridSize}
               onChange={e => setGridSize(e.target.value as GridSize)}
-              className="bg-bg-elevated border border-border rounded-lg px-3 py-1.5 text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
+              className="bg-surface-2 border border-border rounded-sm px-3 h-8 text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
             >
               <option value="4x2">4×2</option>
               <option value="5x3">5×3</option>
@@ -261,26 +263,24 @@ function ChartCell({ item, rank, viewMode, onClick }: {
       : artistNames(item)
 
   return (
-    <div className="group relative aspect-square cursor-pointer overflow-hidden bg-bg-elevated" onClick={onClick}>
+    <div className="group relative aspect-square cursor-pointer overflow-hidden bg-surface-2" onClick={onClick}>
       {imageUrl ? (
         <img src={imageUrl} className="w-full h-full object-cover" alt="" loading="lazy" />
       ) : (
-        <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-bg-elevated to-bg-tertiary">
-          <span className="text-3xl opacity-40">
-            {viewMode === 'artists' ? '🎤' : viewMode === 'albums' ? '💿' : '🎵'}
-          </span>
+        <div className="w-full h-full flex items-center justify-center bg-surface-2">
+          <CoverFallbackIcon kind={viewMode === 'artists' ? 'artist' : viewMode === 'albums' ? 'album' : 'track'} size={28} />
         </div>
       )}
       {/* Gradient overlay for text readability */}
       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-80 group-hover:opacity-90 transition-opacity" />
       {/* Rank badge */}
       <div className="absolute top-1.5 left-1.5 min-w-5 h-5 px-1 rounded bg-black/70 flex items-center justify-center">
-        <span className="text-[10px] font-bold text-white leading-none">{rank}</span>
+        <span className="text-[10px] font-semibold text-white leading-none">{rank}</span>
       </div>
       {/* Play count badge */}
       {plays != null && viewMode !== 'artists' && (
         <div className="absolute top-1.5 right-1.5 px-1.5 h-5 rounded bg-black/70 flex items-center justify-center">
-          <span className="text-[10px] text-white/90 leading-none">{plays} ▶</span>
+          <span className="text-[10px] text-white/90 leading-none">{plays} plays</span>
         </div>
       )}
       {/* Bottom text overlay */}
@@ -295,26 +295,13 @@ function ChartCell({ item, rank, viewMode, onClick }: {
 }
 
 function PlaylistCard({ item, onClick }: { item: JellyfinItem; onClick: () => void }) {
-  const imageUrl = item.ImageTags?.Primary
-    ? jellyfin.getImageUrl(item.Id, item.ImageTags.Primary)
-    : null
-
   return (
-    <div className="group cursor-pointer" onClick={onClick}>
-      <div className="relative aspect-square rounded-xl overflow-hidden bg-bg-elevated mb-3 shadow-lg shadow-black/20">
-        {imageUrl ? (
-          <img src={imageUrl} className="w-full h-full object-cover" alt="" loading="lazy" />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-bg-elevated to-bg-tertiary">
-            <ListMusic size={32} className="text-text-tertiary" />
-          </div>
-        )}
-        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors" />
-      </div>
-      <p className="text-sm font-medium truncate">{item.Name}</p>
-      {item.ChildCount != null && (
-        <p className="text-xs text-text-secondary">{item.ChildCount} tracks</p>
-      )}
-    </div>
+    <MediaCard
+      kind="playlist"
+      imageUrl={item.ImageTags?.Primary ? jellyfin.getImageUrl(item.Id, item.ImageTags.Primary) : null}
+      title={item.Name}
+      subtitle={item.ChildCount != null ? `${item.ChildCount} tracks` : undefined}
+      onClick={onClick}
+    />
   )
 }

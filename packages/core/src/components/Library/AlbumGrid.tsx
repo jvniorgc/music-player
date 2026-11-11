@@ -110,7 +110,7 @@ export default function AlbumGrid() {
     <div className="fade-in" ref={containerRef}>
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Albums</h1>
+          <h1 className="text-title font-semibold">Albums</h1>
           {totalAlbums > 0 && (
             <p className="text-sm text-text-secondary mt-1">{totalAlbums} albums</p>
           )}
@@ -118,7 +118,7 @@ export default function AlbumGrid() {
         <select
           value={sort}
           onChange={e => setSort(e.target.value as SortOption)}
-          className="bg-bg-elevated border border-border rounded-lg px-3 py-1.5 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-accent/50"
+          className="bg-surface-2 border border-border rounded-sm px-3 h-8 text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent"
         >
           <option value="alphabetical">A–Z</option>
           <option value="recent">Recently added</option>

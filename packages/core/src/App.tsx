@@ -18,7 +18,8 @@ import SoulseekView from './components/Soulseek/SoulseekView'
 import SocialView from './components/Social/SocialView'
 import UserProfileView from './components/Social/UserProfileView'
 import UpdateDialog from './components/UpdateDialog'
-import { Loader2, Music2 } from 'lucide-react'
+import { Loader2 } from 'lucide-react'
+import AppIcon from './components/UI/AppIcon'
 import { playback } from './services/playback'
 import { useShallow } from 'zustand/react/shallow'
 
@@ -54,10 +55,8 @@ export default function App() {
 
   if (isLoading) {
     return (
-      <div className="h-full flex flex-col items-center justify-center bg-bg-primary gap-4">
-        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-accent to-pink-600 flex items-center justify-center shadow-lg shadow-accent/20">
-          <Music2 size={32} className="text-white" />
-        </div>
+      <div className="h-full flex flex-col items-center justify-center bg-bg gap-4">
+        <AppIcon size={64} />
         <Loader2 size={24} className="animate-spin text-text-tertiary" />
       </div>
     )

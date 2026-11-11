@@ -11,7 +11,7 @@ import {
   Search, Loader2, Download, FolderDown, ChevronDown, ChevronRight,
   User, HardDrive, Zap, Check, X, Music, AlertCircle, RefreshCw, Settings, Filter
 } from 'lucide-react'
-import { Input } from '../UI/Button'
+import { Input, buttonClass } from '../UI/Button'
 
 type Tab = 'search' | 'transfers'
 
@@ -267,10 +267,10 @@ export default function SoulseekView() {
   return (
     <div className="fade-in">
       <div className="flex items-center gap-3 mb-6">
-        <h1 className="text-3xl font-bold tracking-tight">Soulseek</h1>
+        <h1 className="text-title font-semibold">Soulseek</h1>
         <button
           onClick={() => setShowSettings(!showSettings)}
-          className={`p-2 rounded-lg transition-colors ${showSettings ? 'bg-white/10 text-accent' : 'text-text-tertiary hover:text-text-primary hover:bg-white/5'}`}
+          className={`p-2 rounded-sm transition-colors ${showSettings ? 'bg-white/10 text-accent' : 'text-text-tertiary hover:text-text-primary hover:bg-white/5'}`}
           title="slskd settings"
         >
           <Settings size={18} />
@@ -279,7 +279,7 @@ export default function SoulseekView() {
 
       {/* Settings Panel */}
       {showSettings && (
-        <div className="bg-bg-elevated border border-border rounded-xl p-5 mb-6">
+        <div className="bg-surface-2 border border-border rounded-md p-5 mb-6">
           <h3 className="text-sm font-semibold mb-4">slskd connection</h3>
           <div className="space-y-3">
             <div>
@@ -318,7 +318,7 @@ export default function SoulseekView() {
               <button
                 onClick={handleTestConnection}
                 disabled={testingConnection || !settingsUrl}
-                className="flex items-center gap-2 bg-white/10 hover:bg-white/15 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-40"
+                className="flex items-center gap-2 bg-white/10 hover:bg-white/15 text-white px-4 py-2 rounded-sm text-sm font-medium transition-colors disabled:opacity-40"
               >
                 {testingConnection ? <Loader2 size={14} className="animate-spin" /> : <Zap size={14} />}
                 Test connection
@@ -326,18 +326,18 @@ export default function SoulseekView() {
               <button
                 onClick={handleSaveSettings}
                 disabled={!settingsUrl}
-                className="flex items-center gap-2 bg-accent hover:bg-accent-hover text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-40"
+                className="flex items-center gap-2 bg-accent hover:bg-accent-hover text-white px-4 py-2 rounded-sm text-sm font-medium transition-colors disabled:opacity-40"
               >
                 <Check size={14} />
                 Save
               </button>
               {connected === true && (
-                <span className="flex items-center gap-1 text-sm text-green-400">
+                <span className="flex items-center gap-1 text-sm text-success">
                   <Check size={14} /> Connected
                 </span>
               )}
               {connected === false && (
-                <span className="flex items-center gap-1 text-sm text-red-400">
+                <span className="flex items-center gap-1 text-sm text-danger">
                   <X size={14} /> Connection failed
                 </span>
               )}
@@ -347,10 +347,10 @@ export default function SoulseekView() {
       )}
 
       {/* Tabs */}
-      <div className="flex gap-1 mb-6 bg-bg-elevated/50 rounded-xl p-1 w-fit">
+      <div className="flex gap-1 mb-6 bg-surface-2 rounded-sm p-0.5 w-fit">
         <button
           onClick={() => setTab('search')}
-          className={`px-5 py-2 rounded-lg text-sm font-medium transition-colors ${
+          className={`px-5 py-2 rounded-sm text-sm font-medium transition-colors ${
             tab === 'search' ? 'bg-white/10 text-text-primary' : 'text-text-secondary hover:text-text-primary'
           }`}
         >
@@ -359,7 +359,7 @@ export default function SoulseekView() {
         </button>
         <button
           onClick={() => setTab('transfers')}
-          className={`px-5 py-2 rounded-lg text-sm font-medium transition-colors ${
+          className={`px-5 py-2 rounded-sm text-sm font-medium transition-colors ${
             tab === 'transfers' ? 'bg-white/10 text-text-primary' : 'text-text-secondary hover:text-text-primary'
           }`}
         >
@@ -381,13 +381,13 @@ export default function SoulseekView() {
                 onChange={e => setQuery(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && handleSearch()}
                 placeholder="Search songs, albums, artists..."
-                className="w-full bg-bg-elevated border border-border rounded-xl pl-11 pr-4 py-3 text-sm text-text-primary placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-accent transition"
+                className="w-full bg-surface-2 border border-border rounded-sm pl-11 pr-4 h-10 text-sm text-text-primary placeholder:text-text-tertiary focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition"
               />
             </div>
             <button
               onClick={handleSearch}
               disabled={searching || !query.trim()}
-              className="flex items-center gap-2 bg-accent hover:bg-accent-hover text-white px-6 py-3 rounded-xl font-semibold text-sm transition-colors disabled:opacity-40"
+              className={buttonClass('primary', 'h-10')}
             >
               {searching ? <Loader2 size={16} className="animate-spin" /> : <Search size={16} />}
               Search
@@ -469,14 +469,14 @@ export default function SoulseekView() {
                   await removeCompletedDownloads().catch(() => {})
                   loadTransfers()
                 }}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm text-text-secondary hover:bg-white/5 transition-colors"
+                className="flex items-center gap-2 px-4 py-2 rounded-sm text-sm text-text-secondary hover:bg-white/5 transition-colors"
               >
                 <X size={14} />
                 Clear completed
               </button>
               <button
                 onClick={handleRefreshLibrary}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm text-accent hover:bg-accent/10 transition-colors"
+                className="flex items-center gap-2 px-4 py-2 rounded-sm text-sm text-accent hover:bg-accent/10 transition-colors"
               >
                 <RefreshCw size={14} />
                 Update Jellyfin
@@ -510,7 +510,7 @@ function UserResult({ response, expanded, expandedDirs, onToggle, onToggleDir, o
   const dirs = groupFilesByDirectory(audioFiles)
 
   return (
-    <div className="bg-bg-secondary/40 rounded-xl overflow-hidden">
+    <div className="bg-surface-1 border border-border rounded-md overflow-hidden">
       <button
         onClick={onToggle}
         className="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/5 transition-colors text-left"
@@ -520,7 +520,7 @@ function UserResult({ response, expanded, expandedDirs, onToggle, onToggleDir, o
         <span className="text-sm font-medium truncate flex-1">{response.username}</span>
         <div className="flex items-center gap-3 text-xs text-text-tertiary shrink-0">
           {response.hasFreeUploadSlot && (
-            <span className="flex items-center gap-1 text-green-400">
+            <span className="flex items-center gap-1 text-success">
               <Zap size={11} /> Free
             </span>
           )}
@@ -532,7 +532,7 @@ function UserResult({ response, expanded, expandedDirs, onToggle, onToggleDir, o
       </button>
 
       {expanded && (
-        <div className="border-t border-border-subtle">
+        <div className="border-t border-border">
           {Array.from(dirs.entries()).map(([dir, files]) => {
             const dirKey = `${response.username}:${dir}`
             const dirExpanded = expandedDirs.has(dirKey)
@@ -540,7 +540,7 @@ function UserResult({ response, expanded, expandedDirs, onToggle, onToggleDir, o
 
             return (
               <div key={dir}>
-                <div className="flex items-center gap-2 px-4 py-2 bg-bg-elevated/30">
+                <div className="flex items-center gap-2 px-4 py-2 bg-surface-2">
                   <button
                     onClick={() => onToggleDir(dirKey)}
                     className="flex items-center gap-2 flex-1 min-w-0 text-left"
@@ -552,7 +552,7 @@ function UserResult({ response, expanded, expandedDirs, onToggle, onToggleDir, o
                   </button>
                   <button
                     onClick={() => onDownloadFolder(files)}
-                    className="p-1.5 rounded-lg hover:bg-white/10 text-text-tertiary hover:text-accent transition-colors shrink-0"
+                    className="p-1.5 rounded-sm hover:bg-white/10 text-text-tertiary hover:text-accent transition-colors shrink-0"
                     title="Download folder"
                   >
                     <FolderDown size={14} />
@@ -593,7 +593,7 @@ function FileRow({ file, onDownload }: { file: SlskdFile; onDownload: () => void
       </div>
       <button
         onClick={onDownload}
-        className="p-1.5 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-white/10 text-text-tertiary hover:text-accent transition-all shrink-0"
+        className="p-1.5 rounded-sm opacity-0 group-hover:opacity-100 hover:bg-white/10 text-text-tertiary hover:text-accent transition-all shrink-0"
         title="Download"
       >
         <Download size={14} />
@@ -604,14 +604,14 @@ function FileRow({ file, onDownload }: { file: SlskdFile; onDownload: () => void
 
 function TransferGroup({ group, onRemove }: { group: SlskdTransferGroup; onRemove: (id: string) => void }) {
   return (
-    <div className="bg-bg-secondary/40 rounded-xl overflow-hidden">
-      <div className="flex items-center gap-3 px-4 py-3 border-b border-border-subtle">
+    <div className="bg-surface-1 border border-border rounded-md overflow-hidden">
+      <div className="flex items-center gap-3 px-4 py-3 border-b border-border">
         <User size={14} className="text-text-tertiary" />
         <span className="text-sm font-medium">{group.username}</span>
       </div>
       {group.directories.map(dir => (
         <div key={dir.directory}>
-          <div className="px-4 py-1.5 bg-bg-elevated/30">
+          <div className="px-4 py-1.5 bg-surface-2">
             <span className="text-xs text-text-tertiary truncate block">
               {dir.directory.split(/[/\\]/).slice(-2).join(' / ')}
             </span>
@@ -635,10 +635,10 @@ function TransferRow({ file, onRemove }: { file: { id: string; filename: string;
   return (
     <div className="flex items-center gap-3 px-5 py-2">
       <div className="shrink-0">
-        {isComplete && <Check size={14} className="text-green-400" />}
-        {isFailed && <X size={14} className="text-red-400" />}
+        {isComplete && <Check size={14} className="text-success" />}
+        {isFailed && <X size={14} className="text-danger" />}
         {isInProgress && <Loader2 size={14} className="animate-spin text-accent" />}
-        {isQueued && <AlertCircle size={14} className="text-yellow-400" />}
+        {isQueued && <AlertCircle size={14} className="text-warning" />}
       </div>
       <div className="flex-1 min-w-0">
         <p className="text-sm truncate">{name}</p>
@@ -662,7 +662,7 @@ function TransferRow({ file, onRemove }: { file: { id: string; filename: string;
       {(isComplete || isFailed) && (
         <button
           onClick={onRemove}
-          className="shrink-0 p-1 rounded hover:bg-white/10 text-text-tertiary hover:text-red-400 transition-colors"
+          className="shrink-0 p-1 rounded hover:bg-white/10 text-text-tertiary hover:text-danger transition-colors"
           title="Remove"
         >
           <X size={13} />

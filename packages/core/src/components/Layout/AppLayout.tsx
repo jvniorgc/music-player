@@ -17,7 +17,7 @@ export default function AppLayout() {
   }, [])
 
   return (
-    <div className="h-full flex flex-col bg-bg-primary">
+    <div className="h-full flex flex-col bg-bg">
       <div className="flex-1 flex min-h-0">
         <Sidebar />
         <div className="flex-1 flex flex-col min-w-0">

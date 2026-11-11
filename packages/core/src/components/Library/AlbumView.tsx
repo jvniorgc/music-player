@@ -11,6 +11,8 @@ import TrackMenu from '../UI/TrackMenu'
 import AddToPlaylist from '../UI/AddToPlaylist'
 import { formatTotalDuration } from '../../lib/format'
 import TrackRow, { TrackIndex, TrackDuration } from '../UI/TrackRow'
+import { CoverFallbackIcon } from '../UI/CoverArt'
+import { buttonClass } from '../UI/Button'
 import { useShallow } from 'zustand/react/shallow'
 
 export default function AlbumView() {
@@ -93,19 +95,19 @@ export default function AlbumView() {
 
       {/* Header */}
       <div className="flex gap-8 mb-8">
-        <div className="w-56 h-56 rounded-2xl overflow-hidden bg-bg-elevated shadow-2xl shadow-black/30 shrink-0">
+        <div className="w-56 h-56 rounded-lg overflow-hidden bg-surface-2 shrink-0">
           {album.ImageTags?.Primary ? (
             <img src={imageUrl} className="w-full h-full object-cover" alt="" />
           ) : (
-            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-bg-elevated to-bg-tertiary">
-              <span className="text-6xl">💿</span>
+            <div className="w-full h-full flex items-center justify-center bg-surface-2">
+              <CoverFallbackIcon kind="album" size={64} />
             </div>
           )}
         </div>
 
         <div className="flex flex-col justify-end min-w-0">
-          <p className="text-xs font-medium text-text-tertiary uppercase tracking-wider mb-2">Album</p>
-          <h1 className="text-3xl font-bold tracking-tight mb-2 truncate">{album.Name}</h1>
+          <p className="text-xs font-medium text-text-tertiary mb-2">Album</p>
+          <h1 className="text-title font-semibold mb-2 truncate">{album.Name}</h1>
           <p className="text-lg text-accent font-medium mb-1 truncate">
             {album.ArtistItems && album.ArtistItems.length > 0 ? (
               album.ArtistItems.map((a, i) => (
@@ -134,28 +136,28 @@ export default function AlbumView() {
           <div className="flex items-center gap-3 mt-5">
             <button
               onClick={handlePlayAll}
-              className="flex items-center gap-2 bg-accent hover:bg-accent-hover text-white px-6 py-2.5 rounded-full font-semibold text-sm transition-colors"
+              className={buttonClass('primary')}
             >
               {isCurrentAlbum && isPlaying ? <Pause size={16} fill="white" /> : <Play size={16} fill="white" className="ml-0.5" />}
               {isCurrentAlbum && isPlaying ? 'Pause' : 'Play'}
             </button>
             <button
               onClick={handleShuffle}
-              className="flex items-center gap-2 bg-white/10 hover:bg-white/15 text-white px-5 py-2.5 rounded-full text-sm transition-colors"
+              className={buttonClass('secondary')}
             >
               <Shuffle size={15} />
               Shuffle
             </button>
             <button
               onClick={handleDownloadAll}
-              className="p-2.5 rounded-full bg-white/10 hover:bg-white/15 transition-colors"
+              className="w-8 h-8 inline-flex items-center justify-center rounded-full border border-border text-text-secondary hover:text-text-primary hover:bg-white/10 transition-colors"
               title="Download album"
             >
               <Download size={16} />
             </button>
             <button
               onClick={() => setShowMetadata(true)}
-              className="p-2.5 rounded-full bg-white/10 hover:bg-white/15 transition-colors"
+              className="w-8 h-8 inline-flex items-center justify-center rounded-full border border-border text-text-secondary hover:text-text-primary hover:bg-white/10 transition-colors"
               title="Edit metadata"
             >
               <Pencil size={16} />
@@ -165,7 +167,7 @@ export default function AlbumView() {
       </div>
 
       {/* Track list */}
-      <div className="bg-bg-secondary/40 rounded-xl overflow-hidden">
+      <div>
         {tracks.map((track, i) => {
           const isCurrent = currentTrack?.id === track.Id
           const downloaded = isDownloaded(track.Id)

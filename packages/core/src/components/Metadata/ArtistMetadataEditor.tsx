@@ -6,8 +6,8 @@ import {
 } from '../../services/musicbrainz'
 import { useToastStore } from '../../stores/toast'
 import { Modal } from '../UI/Modal'
-import { Search, Loader2, Check, User, ArrowLeft, Image, MapPin, Calendar, Upload } from 'lucide-react'
-import { Button } from '../UI/Button'
+import { Search, Loader2, Check, User, ArrowLeft, Image, MapPin, Calendar, Upload, ChevronRight } from 'lucide-react'
+import { Button, buttonClass } from '../UI/Button'
 
 interface ArtistMetadataEditorProps {
   artist: JellyfinItem
@@ -93,7 +93,7 @@ export default function ArtistMetadataEditor({ artist, open, onClose, onApplied 
       if (imageUrl) {
         try {
           await jellyfin.uploadImage(artist.Id, imageUrl)
-          toast('Artist image updated!', 'success')
+          toast('Artist image updated', 'success')
         } catch (err) {
           console.warn('Artist image upload failed:', err)
           toast('Could not upload artist image', 'error')
@@ -123,7 +123,7 @@ export default function ArtistMetadataEditor({ artist, open, onClose, onApplied 
     setUploading(true)
     try {
       await jellyfin.uploadImageBlob(artist.Id, file)
-      toast('Artist image updated!', 'success')
+      toast('Artist image updated', 'success')
       onApplied()
       onClose()
     } catch (err) {
@@ -147,13 +147,13 @@ export default function ArtistMetadataEditor({ artist, open, onClose, onApplied 
           onChange={e => setQuery(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && handleSearch()}
           placeholder="Artist name..."
-          className="flex-1 bg-bg-elevated border border-border rounded-xl px-4 py-2.5 text-sm text-text-primary placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-accent transition"
+          className="flex-1 bg-surface-2 border border-border rounded-sm px-3 h-9 text-sm text-text-primary placeholder:text-text-tertiary focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition"
           autoFocus
         />
         <button
           onClick={handleSearch}
           disabled={searching || !query.trim()}
-          className="px-4 py-2.5 rounded-xl bg-accent hover:bg-accent-hover text-white text-sm font-medium transition-colors disabled:opacity-40"
+          className={buttonClass('primary', 'h-9')}
         >
           {searching ? <Loader2 size={16} className="animate-spin" /> : <Search size={16} />}
         </button>
@@ -164,7 +164,7 @@ export default function ArtistMetadataEditor({ artist, open, onClose, onApplied 
           <div className="w-full border-t border-border" />
         </div>
         <div className="relative flex justify-center">
-          <span className="bg-bg-secondary px-3 text-xs text-text-tertiary">or</span>
+          <span className="bg-surface-1 px-3 text-xs text-text-tertiary">or</span>
         </div>
       </div>
 
@@ -178,7 +178,7 @@ export default function ArtistMetadataEditor({ artist, open, onClose, onApplied 
       <button
         onClick={() => fileInputRef.current?.click()}
         disabled={uploading}
-        className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-dashed border-border hover:border-accent/50 hover:bg-white/5 text-sm text-text-secondary hover:text-text-primary transition-colors disabled:opacity-40"
+        className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-sm border border-dashed border-border hover:border-accent/50 hover:bg-white/5 text-sm text-text-secondary hover:text-text-primary transition-colors disabled:opacity-40"
       >
         {uploading ? (
           <Loader2 size={16} className="animate-spin" />
@@ -206,10 +206,10 @@ export default function ArtistMetadataEditor({ artist, open, onClose, onApplied 
           <button
             key={mbArtist.id}
             onClick={() => handleSelect(mbArtist)}
-            className="w-full text-left px-4 py-3 rounded-xl hover:bg-white/5 transition-colors group"
+            className="w-full text-left px-4 py-3 rounded-sm hover:bg-white/5 transition-colors group"
           >
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-bg-elevated flex items-center justify-center flex-shrink-0">
+              <div className="w-10 h-10 rounded-full bg-surface-2 flex items-center justify-center flex-shrink-0">
                 <User size={16} className="text-text-tertiary" />
               </div>
               <div className="min-w-0 flex-1">
@@ -233,7 +233,7 @@ export default function ArtistMetadataEditor({ artist, open, onClose, onApplied 
                   )}
                 </div>
               </div>
-              <ChevronIcon />
+              <ChevronRight size={16} className="text-text-tertiary shrink-0" />
             </div>
           </button>
         ))}
@@ -264,7 +264,7 @@ export default function ArtistMetadataEditor({ artist, open, onClose, onApplied 
         <>
           <div className="flex items-center gap-4">
             {/* Image preview */}
-            <div className="w-24 h-24 rounded-full overflow-hidden bg-bg-elevated flex-shrink-0">
+            <div className="w-24 h-24 rounded-full overflow-hidden bg-surface-2 flex-shrink-0">
               {loadingImage ? (
                 <div className="w-full h-full flex items-center justify-center">
                   <Loader2 size={20} className="animate-spin text-text-tertiary" />
@@ -272,13 +272,13 @@ export default function ArtistMetadataEditor({ artist, open, onClose, onApplied 
               ) : imageUrl ? (
                 <img src={imageUrl} className="w-full h-full object-cover" alt="" />
               ) : (
-                <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-bg-elevated to-bg-tertiary">
+                <div className="w-full h-full flex items-center justify-center bg-surface-2">
                   <User size={32} className="text-text-tertiary" />
                 </div>
               )}
             </div>
             <div className="min-w-0">
-              <h3 className="text-lg font-bold truncate">{selected?.name}</h3>
+              <h3 className="text-lg font-semibold truncate">{selected?.name}</h3>
               {selected?.type && (
                 <p className="text-xs text-text-tertiary">{selected.type}</p>
               )}
@@ -309,10 +309,10 @@ export default function ArtistMetadataEditor({ artist, open, onClose, onApplied 
           )}
 
           {/* Image status */}
-          <div className="flex items-center gap-2 p-3 rounded-xl bg-bg-elevated">
-            <Image size={16} className={imageUrl ? 'text-green-400' : 'text-text-tertiary'} />
+          <div className="flex items-center gap-2 p-3 rounded-md bg-surface-2">
+            <Image size={16} className={imageUrl ? 'text-success' : 'text-text-tertiary'} />
             <span className="text-sm text-text-secondary">
-              {loadingImage ? 'Searching for image...' : imageUrl ? 'Image found!' : 'No image available'}
+              {loadingImage ? 'Searching for image...' : imageUrl ? 'Image found' : 'No image available'}
             </span>
           </div>
 
@@ -327,7 +327,7 @@ export default function ArtistMetadataEditor({ artist, open, onClose, onApplied 
             <button
               onClick={handleApply}
               disabled={applying || !imageUrl}
-              className="px-5 py-2.5 rounded-full text-sm font-semibold bg-accent hover:bg-accent-hover text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
+              className={buttonClass('primary')}
             >
               {applying ? (
                 <Loader2 size={14} className="animate-spin" />
@@ -343,18 +343,10 @@ export default function ArtistMetadataEditor({ artist, open, onClose, onApplied 
   )
 
   return (
-    <Modal open={open} title="Artist Image Lookup" onClose={onClose}>
+    <Modal open={open} title="Artist image lookup" onClose={onClose}>
       {step === 'search' && renderSearch()}
       {step === 'results' && renderResults()}
       {step === 'preview' && renderPreview()}
     </Modal>
-  )
-}
-
-function ChevronIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-text-tertiary flex-shrink-0">
-      <path d="M9 18l6-6-6-6" />
-    </svg>
   )
 }

@@ -44,7 +44,7 @@ export default function UpdateDialog() {
   if (state === 'idle' || dismissed) return null
 
   return (
-    <div className="fixed top-4 right-4 z-[9999] w-80 bg-bg-elevated border border-border rounded-xl shadow-2xl p-4 fade-in">
+    <div className="fixed top-4 right-4 z-[9999] w-80 bg-surface-2 border border-border rounded-lg shadow-lg p-4 fade-in">
       {state === 'available' && (
         <>
           <div className="flex items-start justify-between gap-2">
@@ -68,14 +68,14 @@ export default function UpdateDialog() {
                 setState('downloading')
                 window.api.downloadUpdate()
               }}
-              className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 bg-accent hover:bg-accent-hover text-white text-xs font-medium rounded-lg transition-colors"
+              className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 bg-accent hover:bg-accent-hover text-white text-xs font-medium rounded-sm transition-colors"
             >
               <Download size={13} />
               Atualizar
             </button>
             <button
               onClick={() => setDismissed(true)}
-              className="px-3 py-1.5 text-text-secondary hover:text-text-primary text-xs rounded-lg border border-border hover:border-text-tertiary transition-colors"
+              className="px-3 py-1.5 text-text-secondary hover:text-text-primary text-xs rounded-sm border border-border hover:border-text-tertiary transition-colors"
             >
               Depois
             </button>
@@ -86,12 +86,12 @@ export default function UpdateDialog() {
       {state === 'downloading' && (
         <div>
           <div className="flex items-center gap-2 mb-2">
-            <Download size={18} className="text-accent animate-pulse" />
+            <Download size={18} className="text-accent" />
             <p className="text-sm font-medium text-text-primary">Baixando atualização...</p>
           </div>
-          <div className="w-full h-1.5 bg-bg-active rounded-full overflow-hidden">
+          <div className="w-full h-1.5 bg-surface-3 rounded-full overflow-hidden">
             <div
-              className="h-full bg-accent rounded-full transition-all duration-300"
+              className="h-full bg-accent rounded-full transition-[width] duration-300"
               style={{ width: `${progress}%` }}
             />
           </div>
@@ -102,7 +102,7 @@ export default function UpdateDialog() {
       {state === 'ready' && (
         <div>
           <div className="flex items-center gap-2 mb-2">
-            <CheckCircle2 size={18} className="text-green-500" />
+            <CheckCircle2 size={18} className="text-success" />
             <p className="text-sm font-medium text-text-primary">Pronto para instalar</p>
           </div>
           <p className="text-xs text-text-secondary mb-3">
@@ -110,7 +110,7 @@ export default function UpdateDialog() {
           </p>
           <button
             onClick={() => window.api.installUpdate()}
-            className="w-full flex items-center justify-center gap-1.5 px-3 py-1.5 bg-accent hover:bg-accent-hover text-white text-xs font-medium rounded-lg transition-colors"
+            className="w-full flex items-center justify-center gap-1.5 px-3 py-1.5 bg-accent hover:bg-accent-hover text-white text-xs font-medium rounded-sm transition-colors"
           >
             <RefreshCw size={13} />
             Reiniciar e atualizar

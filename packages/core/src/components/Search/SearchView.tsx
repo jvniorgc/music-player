@@ -70,7 +70,7 @@ export default function SearchView() {
           value={query}
           onChange={e => setQuery(e.target.value)}
           placeholder="Search songs, albums, artists..."
-          className="w-full bg-bg-elevated border border-border rounded-xl pl-11 pr-10 py-3 text-sm text-text-primary placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-accent transition"
+          className="w-full bg-surface-2 border border-border rounded-sm pl-11 pr-10 h-10 text-sm text-text-primary placeholder:text-text-tertiary focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition"
         />
         {query && (
           <button
@@ -95,9 +95,9 @@ export default function SearchView() {
             <section>
               <div className="flex items-center gap-2 mb-3">
                 <Music size={18} className="text-accent" />
-                <h2 className="text-lg font-bold">Songs</h2>
+                <h2 className="text-heading font-semibold">Songs</h2>
               </div>
-              <div className="bg-bg-secondary/40 rounded-xl overflow-hidden">
+              <div>
                 {results.songs.map((song, i) => (
                   <TrackRow
                     key={song.Id}
@@ -106,7 +106,7 @@ export default function SearchView() {
                     leading={
                       <CoverArt
                         src={song.AlbumId ? jellyfin.getImageUrl(song.AlbumId, undefined, 80) : null}
-                        className="w-10 h-10 rounded overflow-hidden bg-bg-elevated shrink-0 relative"
+                        className="w-10 h-10 rounded overflow-hidden bg-surface-2 shrink-0 relative"
                       >
                         <CoverPlayOverlay />
                       </CoverArt>
@@ -127,7 +127,7 @@ export default function SearchView() {
             <section>
               <div className="flex items-center gap-2 mb-3">
                 <Disc3 size={18} className="text-accent" />
-                <h2 className="text-lg font-bold">Albums</h2>
+                <h2 className="text-heading font-semibold">Albums</h2>
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-5">
                 {results.albums.map(album => (
@@ -136,7 +136,6 @@ export default function SearchView() {
                     item={album}
                     onClick={() => navigate(`/album/${album.Id}`)}
                     subtitle={<>{album.AlbumArtist}{album.ProductionYear ? ` · ${album.ProductionYear}` : ''}</>}
-                    fallback={<span className="text-3xl">💿</span>}
                   />
                 ))}
               </div>
@@ -148,7 +147,7 @@ export default function SearchView() {
             <section>
               <div className="flex items-center gap-2 mb-3">
                 <Users size={18} className="text-accent" />
-                <h2 className="text-lg font-bold">Artists</h2>
+                <h2 className="text-heading font-semibold">Artists</h2>
               </div>
               <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-5">
                 {results.artists.map(artist => (
@@ -156,7 +155,6 @@ export default function SearchView() {
                     key={artist.Id}
                     item={artist}
                     onClick={() => navigate(`/artist/${artist.Id}`)}
-                    fallback={<span className="text-3xl">🎤</span>}
                   />
                 ))}
               </div>

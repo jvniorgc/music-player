@@ -6,6 +6,7 @@ import { Trash2, Play, HardDrive, Loader2 } from 'lucide-react'
 import { artistNames } from '../../lib/format'
 import TrackRow, { TrackDuration, CoverPlayOverlay } from '../UI/TrackRow'
 import CoverArt from '../UI/CoverArt'
+import { buttonClass } from '../UI/Button'
 import { useShallow } from 'zustand/react/shallow'
 
 export default function DownloadsView() {
@@ -31,7 +32,7 @@ export default function DownloadsView() {
     <div className="fade-in">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Downloads</h1>
+          <h1 className="text-title font-semibold">Downloads</h1>
           <p className="text-sm text-text-secondary mt-1">
             {completed.length} {completed.length === 1 ? 'downloaded song' : 'downloaded songs'}
           </p>
@@ -39,7 +40,7 @@ export default function DownloadsView() {
         {completed.length > 0 && (
           <button
             onClick={handlePlayAll}
-            className="flex items-center gap-2 bg-accent hover:bg-accent-hover text-white px-5 py-2 rounded-full text-sm font-semibold transition-colors"
+            className={buttonClass('primary')}
           >
             <Play size={15} fill="white" className="ml-0.5" />
             Play
@@ -50,8 +51,8 @@ export default function DownloadsView() {
       {/* In progress */}
       {inProgress.length > 0 && (
         <div className="mb-8">
-          <h3 className="text-sm font-semibold text-text-tertiary uppercase tracking-wider mb-3">Downloading</h3>
-          <div className="bg-bg-secondary/40 rounded-xl overflow-hidden space-y-0.5">
+          <h3 className="text-sm font-semibold text-text-tertiary mb-3">Downloading</h3>
+          <div className="space-y-0.5">
             {inProgress.map(dl => (
               <div key={dl.itemId} className="flex items-center gap-4 px-5 py-3">
                 <Loader2 size={18} className="animate-spin text-accent shrink-0" />
@@ -75,7 +76,7 @@ export default function DownloadsView() {
 
       {/* Completed */}
       {completed.length > 0 ? (
-        <div className="bg-bg-secondary/40 rounded-xl overflow-hidden">
+        <div>
           {completed.map((dl, i) => {
             return (
               <TrackRow
@@ -84,7 +85,7 @@ export default function DownloadsView() {
                 leading={
                   <CoverArt
                     src={dl.metadata?.AlbumId ? jellyfin.getImageUrl(dl.metadata.AlbumId, undefined, 80) : null}
-                    className="w-10 h-10 rounded overflow-hidden bg-bg-elevated shrink-0 relative"
+                    className="w-10 h-10 rounded overflow-hidden bg-surface-2 shrink-0 relative"
                   >
                     <CoverPlayOverlay />
                   </CoverArt>
@@ -99,7 +100,7 @@ export default function DownloadsView() {
                     e.stopPropagation()
                     removeDownload(dl.itemId)
                   }}
-                  className="p-1.5 rounded-lg text-text-tertiary opacity-0 group-hover:opacity-100 hover:text-red-400 hover:bg-red-400/10 transition-all"
+                  className="p-1.5 rounded-sm text-text-tertiary opacity-0 group-hover:opacity-100 hover:text-danger hover:bg-danger/10 transition-all"
                 >
                   <Trash2 size={14} />
                 </button>

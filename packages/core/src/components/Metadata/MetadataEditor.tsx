@@ -6,7 +6,7 @@ import {
 } from '../../services/musicbrainz'
 import { useToastStore } from '../../stores/toast'
 import { Search, Loader2, X, Disc3, Calendar, Tag, Music, ArrowLeft, ChevronRight, Download, Trash2 } from 'lucide-react'
-import { Button, Input } from '../UI/Button'
+import { Button, Input, buttonClass } from '../UI/Button'
 
 interface MetadataEditorProps {
   album: JellyfinItem
@@ -156,7 +156,7 @@ export default function MetadataEditor({ album, tracks, open, onClose, onApplied
         // Non-critical, ignore
       }
 
-      toast('Metadata updated successfully!', 'success')
+      toast('Metadata updated', 'success')
       onApplied()
       onClose()
     } catch (err) {
@@ -220,13 +220,13 @@ export default function MetadataEditor({ album, tracks, open, onClose, onApplied
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center" onClick={onClose}>
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+      <div className="absolute inset-0 bg-black/60" />
       <div
-        className="relative bg-bg-secondary rounded-2xl shadow-2xl w-full max-w-2xl mx-4 max-h-[85vh] flex flex-col fade-in"
+        className="relative bg-surface-1 rounded-lg shadow-lg w-full max-w-2xl mx-4 max-h-[85vh] flex flex-col fade-in"
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-border-subtle shrink-0">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-border shrink-0">
           <div className="flex items-center gap-3">
             {step !== 'search' && (
               <button
@@ -236,8 +236,8 @@ export default function MetadataEditor({ album, tracks, open, onClose, onApplied
                 <ArrowLeft size={18} />
               </button>
             )}
-            <h2 className="text-lg font-bold">
-              {step === 'search' && 'Search Metadata'}
+            <h2 className="text-lg font-semibold">
+              {step === 'search' && 'Search metadata'}
               {step === 'results' && 'Results'}
               {step === 'preview' && 'Preview'}
             </h2>
@@ -256,7 +256,7 @@ export default function MetadataEditor({ album, tracks, open, onClose, onApplied
                 Search MusicBrainz metadata to update this album.
               </p>
               <div>
-                <label className="text-xs text-text-tertiary uppercase tracking-wider mb-1.5 block">Album</label>
+                <label className="text-xs text-text-tertiary mb-1.5 block">Album</label>
                 <Input
                   type="text"
                   value={query}
@@ -268,7 +268,7 @@ export default function MetadataEditor({ album, tracks, open, onClose, onApplied
                 />
               </div>
               <div>
-                <label className="text-xs text-text-tertiary uppercase tracking-wider mb-1.5 block">Artist (optional)</label>
+                <label className="text-xs text-text-tertiary mb-1.5 block">Artist (optional)</label>
                 <Input
                   type="text"
                   value={artistQuery}
@@ -280,40 +280,40 @@ export default function MetadataEditor({ album, tracks, open, onClose, onApplied
               <button
                 onClick={handleSearch}
                 disabled={searching || !query.trim()}
-                className="flex items-center gap-2 bg-accent hover:bg-accent-hover text-white px-6 py-2.5 rounded-full font-semibold text-sm transition-colors disabled:opacity-40"
+                className={buttonClass('primary')}
               >
                 {searching ? <Loader2 size={16} className="animate-spin" /> : <Search size={16} />}
                 Search
               </button>
 
               {/* Separator */}
-              <div className="border-t border-border-subtle pt-4 mt-2">
-                <h4 className="text-xs text-text-tertiary uppercase tracking-wider mb-2">Actions</h4>
+              <div className="border-t border-border pt-4 mt-2">
+                <h4 className="text-xs text-text-tertiary mb-2">Actions</h4>
                 {!showClearConfirm ? (
                   <button
                     onClick={() => setShowClearConfirm(true)}
-                    className="flex items-center gap-2 text-red-400 hover:text-red-300 text-sm transition-colors"
+                    className="flex items-center gap-2 text-danger hover:text-danger text-sm transition-colors"
                   >
                     <Trash2 size={15} />
                     Clear all metadata
                   </button>
                 ) : (
-                  <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4">
-                    <p className="text-sm text-red-300 mb-3">
+                  <div className="bg-danger/10 border border-danger/30 rounded-md p-4">
+                    <p className="text-sm text-danger mb-3">
                       This will delete the title, artist, year, cover art, and track names. Do you want to continue?
                     </p>
                     <div className="flex gap-2">
                       <button
                         onClick={handleClear}
                         disabled={clearing}
-                        className="flex items-center gap-2 bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-full text-sm font-semibold transition-colors disabled:opacity-50"
+                        className={buttonClass('danger')}
                       >
                         {clearing ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
                         {clearing ? 'Clearing...' : 'Confirm'}
                       </button>
                       <button
                         onClick={() => setShowClearConfirm(false)}
-                        className="px-4 py-2 rounded-full text-sm text-text-secondary hover:text-text-primary hover:bg-white/10 transition-colors"
+                        className={buttonClass('secondary')}
                       >
                         Cancel
                       </button>
@@ -337,7 +337,7 @@ export default function MetadataEditor({ album, tracks, open, onClose, onApplied
                   <button
                     key={release.id}
                     onClick={() => handleSelect(release)}
-                    className="w-full flex items-center gap-4 px-4 py-3 rounded-xl hover:bg-white/5 transition-colors text-left"
+                    className="w-full flex items-center gap-4 px-4 py-3 rounded-sm hover:bg-white/5 transition-colors text-left"
                   >
                     <Disc3 size={20} className="text-text-tertiary shrink-0" />
                     <div className="min-w-0 flex-1">
@@ -370,17 +370,17 @@ export default function MetadataEditor({ album, tracks, open, onClose, onApplied
                     {coverAvailable ? (
                       <img
                         src={getCoverArtUrl(detailed.id, 250)}
-                        className="w-28 h-28 rounded-xl object-cover shadow-lg shrink-0"
+                        className="w-28 h-28 rounded-md object-cover shadow-lg shrink-0"
                         alt=""
                         onError={e => { (e.target as HTMLImageElement).style.display = 'none' }}
                       />
                     ) : (
-                      <div className="w-28 h-28 rounded-xl bg-bg-elevated flex items-center justify-center shrink-0">
+                      <div className="w-28 h-28 rounded-md bg-surface-2 flex items-center justify-center shrink-0">
                         <Disc3 size={32} className="text-text-tertiary" />
                       </div>
                     )}
                     <div className="min-w-0">
-                      <h3 className="text-lg font-bold truncate">{detailed.title}</h3>
+                      <h3 className="text-lg font-semibold truncate">{detailed.title}</h3>
                       <p className="text-sm text-accent truncate">{getArtistName(detailed)}</p>
                       <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-xs text-text-secondary">
                         {detailed.date && <span className="flex items-center gap-1"><Calendar size={12} /> {detailed.date}</span>}
@@ -392,7 +392,7 @@ export default function MetadataEditor({ album, tracks, open, onClose, onApplied
 
                   {/* Options */}
                   <div className="space-y-2">
-                    <h4 className="text-xs text-text-tertiary uppercase tracking-wider">What to update</h4>
+                    <h4 className="text-xs text-text-tertiary">What to update</h4>
                     <ToggleOption checked={applyTitle} onChange={setApplyTitle} label="Album title" value={detailed.title} />
                     <ToggleOption checked={applyArtist} onChange={setApplyArtist} label="Artist" value={getArtistName(detailed)} />
                     <ToggleOption checked={applyYear} onChange={setApplyYear} label="Year" value={formatMBDate(detailed.date)} />
@@ -403,9 +403,9 @@ export default function MetadataEditor({ album, tracks, open, onClose, onApplied
                   {/* Track comparison */}
                   {applyTracks && allTracks.length > 0 && (
                     <div>
-                      <h4 className="text-xs text-text-tertiary uppercase tracking-wider mb-2">Tracks</h4>
-                      <div className="bg-bg-elevated/50 rounded-xl overflow-hidden text-xs">
-                        <div className="flex px-4 py-2 border-b border-border-subtle text-text-tertiary">
+                      <h4 className="text-xs text-text-tertiary mb-2">Tracks</h4>
+                      <div className="bg-surface-2/50 rounded-md overflow-hidden text-xs">
+                        <div className="flex px-4 py-2 border-b border-border text-text-tertiary">
                           <span className="w-8">#</span>
                           <span className="flex-1">Current</span>
                           <span className="flex-1">MusicBrainz</span>
@@ -434,7 +434,7 @@ export default function MetadataEditor({ album, tracks, open, onClose, onApplied
 
         {/* Footer */}
         {step === 'preview' && detailed && !loadingDetails && (
-          <div className="px-6 py-4 border-t border-border-subtle flex justify-end gap-3 shrink-0">
+          <div className="px-6 py-4 border-t border-border flex justify-end gap-3 shrink-0">
             <Button
               variant="secondary"
               onClick={onClose}
@@ -444,10 +444,10 @@ export default function MetadataEditor({ album, tracks, open, onClose, onApplied
             <button
               onClick={handleApply}
               disabled={applying}
-              className="flex items-center gap-2 px-6 py-2 rounded-full text-sm font-semibold bg-accent hover:bg-accent-hover text-white transition-colors disabled:opacity-50"
+              className={buttonClass('primary')}
             >
               {applying ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
-              {applying ? 'Applying...' : 'Apply Metadata'}
+              {applying ? 'Applying...' : 'Apply metadata'}
             </button>
           </div>
         )}
@@ -464,7 +464,7 @@ function ToggleOption({ checked, onChange, label, value, disabled }: {
   disabled?: boolean
 }) {
   return (
-    <label className={`flex items-center gap-3 px-4 py-2.5 rounded-xl hover:bg-white/5 transition-colors cursor-pointer ${disabled ? 'opacity-40 cursor-not-allowed' : ''}`}>
+    <label className={`flex items-center gap-3 px-4 py-2.5 rounded-sm hover:bg-white/5 transition-colors cursor-pointer ${disabled ? 'opacity-40 cursor-not-allowed' : ''}`}>
       <input
         type="checkbox"
         checked={checked && !disabled}

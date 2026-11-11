@@ -278,22 +278,22 @@ export default function CollageModal({ userId, onClose }: { userId: string; onCl
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"
       onClick={onClose}
     >
       <div
-        className="bg-bg-secondary border border-border rounded-2xl shadow-2xl shadow-black/50 w-full max-w-3xl max-h-[90vh] overflow-y-auto"
+        className="bg-surface-1 border border-border rounded-lg shadow-lg w-full max-w-3xl max-h-[90vh] overflow-y-auto"
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-border">
           <div className="flex items-center gap-2">
             <Grid3x3 size={18} className="text-accent" />
-            <h2 className="text-lg font-bold">Create collage</h2>
+            <h2 className="text-lg font-semibold">Create collage</h2>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg hover:bg-white/10 transition-colors text-text-secondary hover:text-text-primary"
+            className="p-1.5 rounded-sm hover:bg-white/10 transition-colors text-text-secondary hover:text-text-primary"
           >
             <X size={18} />
           </button>
@@ -301,19 +301,19 @@ export default function CollageModal({ userId, onClose }: { userId: string; onCl
 
         <div className="p-6 grid md:grid-cols-[1fr_240px] gap-6">
           {/* Preview */}
-          <div className="flex items-center justify-center bg-bg-primary rounded-xl p-3 min-h-[260px] relative">
+          <div className="flex items-center justify-center bg-bg rounded-md p-3 min-h-[260px] relative">
             {previewUrl ? (
               <img
                 src={previewUrl}
                 alt="Collage preview"
-                className="max-w-full max-h-[60vh] rounded-md shadow-lg shadow-black/40"
+                className="max-w-full max-h-[60vh] rounded-md"
                 style={{ imageRendering: 'auto' }}
               />
             ) : (
               <div className="text-text-tertiary text-sm">No preview</div>
             )}
             {busy && (
-              <div className="absolute inset-0 flex items-center justify-center bg-black/40 rounded-xl">
+              <div className="absolute inset-0 flex items-center justify-center bg-black/40 rounded-md">
                 <Loader2 size={28} className="animate-spin text-text-secondary" />
               </div>
             )}
@@ -369,7 +369,7 @@ export default function CollageModal({ userId, onClose }: { userId: string; onCl
             <button
               onClick={handleDownload}
               disabled={!hasData || busy || downloading}
-              className="w-full flex items-center justify-center gap-2 bg-accent text-black font-semibold rounded-lg px-4 py-2.5 text-sm hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
+              className="w-full flex items-center justify-center gap-2 bg-accent text-black font-semibold rounded-sm px-4 py-2.5 text-sm hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
             >
               {downloading ? (
                 <><Loader2 size={16} className="animate-spin" /> Saving…</>

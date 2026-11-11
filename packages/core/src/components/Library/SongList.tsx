@@ -75,14 +75,14 @@ export default function SongList() {
   return (
     <div className="fade-in">
       <div className="mb-6">
-        <h1 className="text-3xl font-bold tracking-tight">Songs</h1>
+        <h1 className="text-title font-semibold">Songs</h1>
         {totalSongs > 0 && (
           <p className="text-sm text-text-secondary mt-1">{totalSongs} songs</p>
         )}
       </div>
 
       {/* Header row */}
-      <div className="flex items-center gap-4 px-5 py-2 text-xs text-text-tertiary uppercase tracking-wider border-b border-border-subtle mb-1">
+      <div className="flex items-center gap-4 px-5 py-2 text-xs text-text-tertiary border-b border-border mb-1">
         <span className="w-8 text-right">#</span>
         <span className="w-10" />
         <span className="flex-1">Title</span>
@@ -93,7 +93,7 @@ export default function SongList() {
 
       <div
         ref={listRef}
-        className="bg-bg-secondary/30 rounded-xl overflow-hidden relative"
+        className="relative"
         style={{ height: virtualizer.getTotalSize() }}
       >
         {virtualizer.getVirtualItems().map(row => {
@@ -119,7 +119,7 @@ export default function SongList() {
                     <TrackIndex number={i + 1} isCurrent={isCurrent} isPlaying={isPlaying} />
                     <CoverArt
                       src={song.AlbumId ? jellyfin.getImageUrl(song.AlbumId, undefined, 80) : null}
-                      className="w-10 h-10 rounded overflow-hidden bg-bg-elevated shrink-0"
+                      className="w-10 h-10 rounded overflow-hidden bg-surface-2 shrink-0"
                     />
                   </>
                 }

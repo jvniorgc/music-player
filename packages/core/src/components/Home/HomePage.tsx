@@ -9,6 +9,7 @@ import { artistNames } from '../../lib/format'
 import TrackRow, { TrackDuration, CoverPlayOverlay } from '../UI/TrackRow'
 import CoverArt from '../UI/CoverArt'
 import { AlbumCard } from '../UI/MediaCard'
+import { buttonClass } from '../UI/Button'
 import { useShallow } from 'zustand/react/shallow'
 
 export default function HomePage() {
@@ -39,13 +40,13 @@ export default function HomePage() {
   }
 
   return (
-    <div className="space-y-10 fade-in">
+    <div className="space-y-10">
       <div className="flex items-center justify-between gap-4">
-        <h1 className="text-3xl font-bold tracking-tight">Listen Now</h1>
+        <h1 className="text-title font-semibold">Listen now</h1>
         <button
           onClick={handleRadio}
           disabled={radioLoading}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-full bg-accent hover:bg-accent-hover text-white text-sm font-semibold transition-colors disabled:opacity-60 disabled:cursor-not-allowed shadow-lg shadow-black/20"
+          className={buttonClass('primary')}
           title="Toca um mix com base no que você andou ouvindo, com faixas em alta misturadas"
         >
           {radioLoading ? <Loader2 size={16} className="animate-spin" /> : <Radio size={16} />}
@@ -57,12 +58,12 @@ export default function HomePage() {
       {recentlyAdded.length > 0 && (
         <section>
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-bold">Recently Added</h2>
+            <h2 className="text-heading font-semibold">Recently added</h2>
             <button
               onClick={() => navigate('/albums?sort=recent')}
               className="text-sm text-accent hover:text-accent-hover transition-colors"
             >
-              See All
+              See all
             </button>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-5">
@@ -76,7 +77,7 @@ export default function HomePage() {
               else if (idx >= 4) cls = 'hidden sm:block'
               return (
                 <div key={item.Id} className={cls}>
-                  <AlbumCard item={item} onClick={() => navigate(`/album/${item.Id}`)} fallback={<span className="text-4xl">🎵</span>} />
+                  <AlbumCard item={item} onClick={() => navigate(`/album/${item.Id}`)} />
                 </div>
               )
             })}
@@ -88,19 +89,19 @@ export default function HomePage() {
       {recentlyPlayed.length > 0 && (
         <section>
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-bold">Recently Played</h2>
+            <h2 className="text-heading font-semibold">Recently played</h2>
           </div>
-          <div className="bg-bg-secondary/40 rounded-xl overflow-hidden">
+          <div className="-mx-4">
             {recentlyPlayed.slice(0, 10).map((item, i) => (
               <TrackRow
                 key={item.Id}
-                className="px-4 py-2.5 rounded-lg"
+                className="px-4 py-2 rounded-sm"
                 onClick={() => playItems(recentlyPlayed, i)}
                 leading={
                   <CoverArt
                     src={item.AlbumId ? jellyfin.getImageUrl(item.AlbumId, undefined, 80) : null}
-                    className="w-10 h-10 rounded overflow-hidden bg-bg-elevated shrink-0 relative"
-                    fallback={<span className="text-lg">🎵</span>}
+                    className="w-10 h-10 rounded-sm overflow-hidden bg-surface-2 shrink-0 relative"
+                    kind="track"
                   >
                     <CoverPlayOverlay />
                   </CoverArt>
@@ -117,7 +118,7 @@ export default function HomePage() {
 
       {!isLoading && recentlyAdded.length === 0 && recentlyPlayed.length === 0 && (
         <div className="flex flex-col items-center justify-center py-24 text-text-tertiary">
-          <Clock size={48} className="mb-4 opacity-50" />
+          <Clock size={40} strokeWidth={1.5} className="mb-4" />
           <h3 className="text-lg font-medium text-text-secondary mb-1">Your library is empty</h3>
           <p className="text-sm">Add songs to your Jellyfin server to get started</p>
         </div>

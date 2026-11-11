@@ -16,13 +16,13 @@ export default function ArtistGrid() {
   return (
     <div className="fade-in">
       <div className="mb-6">
-        <h1 className="text-3xl font-bold tracking-tight">Artists</h1>
+        <h1 className="text-title font-semibold">Artists</h1>
         {totalArtists > 0 && (
           <p className="text-sm text-text-secondary mt-1">{totalArtists} artistas</p>
         )}
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-5">
         {artists.map(artist => (
           <ArtistCard
             key={artist.Id}

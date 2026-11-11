@@ -6,6 +6,7 @@ import { jellyfin, JellyfinItem } from '../../services/jellyfin'
 import { ListMusic, Plus, MoreHorizontal, Pencil, Trash2 } from 'lucide-react'
 import { InputModal, ConfirmModal } from '../UI/Modal'
 import { useToastStore } from '../../stores/toast'
+import { buttonClass } from '../UI/Button'
 import { useShallow } from 'zustand/react/shallow'
 
 export default function PlaylistList() {
@@ -69,29 +70,28 @@ export default function PlaylistList() {
     <div className="fade-in">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Playlists</h1>
+          <h1 className="text-title font-semibold">Playlists</h1>
           {playlists.length > 0 && (
             <p className="text-sm text-text-secondary mt-1">{playlists.length} playlists</p>
           )}
         </div>
         <button
           onClick={() => setShowCreate(true)}
-          className="flex items-center gap-2 bg-accent hover:bg-accent-hover text-white px-4 py-2 rounded-full text-sm font-semibold transition-colors"
+          className={buttonClass('primary')}
         >
           <Plus size={16} />
-          New Playlist
+          New playlist
         </button>
       </div>
 
       {playlists.length > 0 ? (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-5">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-5">
           {playlists.map(pl => {
             return (
               <MediaCard
                 key={pl.Id}
                 imageUrl={pl.ImageTags?.Primary ? jellyfin.getImageUrl(pl.Id, pl.ImageTags.Primary) : null}
-                fallback={<ListMusic size={48} className="text-accent/60" />}
-                fallbackClassName="w-full h-full flex items-center justify-center bg-gradient-to-br from-accent/20 to-pink-600/20"
+                kind="playlist"
                 title={pl.Name}
                 onClick={() => navigate(`/playlist/${pl.Id}`)}
                 onContextMenu={e => {
@@ -120,7 +120,7 @@ export default function PlaylistList() {
                   {/* Context menu */}
                   {contextMenu?.id === pl.Id && (
                     <div
-                      className="fixed z-50 bg-bg-elevated border border-border rounded-xl shadow-2xl py-1.5 min-w-[160px]"
+                      className="fixed z-50 bg-surface-2 border border-border rounded-lg shadow-lg shadow-black/40 py-1.5 min-w-[160px]"
                       style={{ left: contextMenu.x, top: contextMenu.y }}
                       onClick={e => e.stopPropagation()}
                     >
@@ -133,7 +133,7 @@ export default function PlaylistList() {
                       </button>
                       <button
                         onClick={() => { setContextMenu(null); setDeleteTarget(pl) }}
-                        className="flex items-center gap-3 w-full px-4 py-2 text-sm text-red-400 hover:bg-white/10 transition-colors"
+                        className="flex items-center gap-3 w-full px-4 py-2 text-sm text-danger hover:bg-white/10 transition-colors"
                       >
                         <Trash2 size={14} />
                         Delete
@@ -152,7 +152,7 @@ export default function PlaylistList() {
           <p className="text-sm mb-4">Create your first playlist</p>
           <button
             onClick={() => setShowCreate(true)}
-            className="flex items-center gap-2 bg-accent hover:bg-accent-hover text-white px-5 py-2.5 rounded-full text-sm font-semibold transition-colors"
+            className={buttonClass('primary')}
           >
             <Plus size={16} />
             Create Playlist
@@ -162,7 +162,7 @@ export default function PlaylistList() {
 
       <InputModal
         open={showCreate}
-        title="New Playlist"
+        title="New playlist"
         placeholder="Playlist name"
         confirmLabel="Create"
         onClose={() => setShowCreate(false)}
@@ -171,7 +171,7 @@ export default function PlaylistList() {
 
       <InputModal
         open={!!renameTarget}
-        title="Rename Playlist"
+        title="Rename playlist"
         placeholder="New name"
         initialValue={renameTarget?.Name || ''}
         confirmLabel="Rename"
@@ -181,7 +181,7 @@ export default function PlaylistList() {
 
       <ConfirmModal
         open={!!deleteTarget}
-        title="Delete Playlist"
+        title="Delete playlist"
         message={`Are you sure you want to delete "${deleteTarget?.Name}"? This action cannot be undone.`}
         confirmLabel="Delete"
         destructive

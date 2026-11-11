@@ -33,7 +33,7 @@ export default function NowPlayingBar() {
 
   if (!currentTrack) {
     return (
-      <div className="h-14 bg-bg-secondary/90 backdrop-blur-xl border-b border-border-subtle flex items-center justify-center shrink-0">
+      <div className="h-14 bg-surface-1 border-b border-border flex items-center justify-center shrink-0">
         <p className="text-text-tertiary text-sm">No song playing</p>
       </div>
     )
@@ -47,7 +47,7 @@ export default function NowPlayingBar() {
       : null
 
   return (
-    <div className="h-14 bg-bg-secondary/90 backdrop-blur-xl border-b border-border-subtle flex flex-col relative shrink-0">
+    <div className="h-14 bg-surface-1 border-b border-border flex flex-col relative shrink-0">
       <ProgressLine />
 
       <div className="flex-1 flex items-center px-4 gap-4">
@@ -58,14 +58,14 @@ export default function NowPlayingBar() {
         >
           <CoverArt
             src={imageUrl}
-            className="w-9 h-9 rounded-md overflow-hidden bg-bg-elevated shadow-lg shrink-0"
-            fallback={<ListMusic size={16} className="text-text-tertiary" />}
+            className="w-9 h-9 rounded-md overflow-hidden bg-surface-2 shrink-0"
+            kind="track"
             loading="eager"
           />
           <div className="min-w-0">
             <p className="text-[13px] font-medium truncate">{item.Name}</p>
             <p className="text-[11px] text-text-secondary truncate">
-              {artistNames(item, 'Unknown Artist')}
+              {artistNames(item, 'Unknown artist')}
             </p>
           </div>
           <ChevronUp size={14} className="text-text-tertiary shrink-0 ml-1" />
@@ -87,7 +87,7 @@ export default function NowPlayingBar() {
           </button>
           <button
             onClick={togglePlay}
-            className="w-9 h-9 bg-white rounded-full flex items-center justify-center hover:scale-105 transition-transform"
+            className="w-9 h-9 bg-white rounded-full flex items-center justify-center hover:opacity-80 active:opacity-60 transition-opacity"
           >
             {isPlaying ? (
               <Pause size={18} className="text-black" fill="currentColor" />
