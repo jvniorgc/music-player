@@ -5,6 +5,7 @@ import type { LastfmStatus } from '../../platform'
 import { buttonClass } from '../UI/Button'
 import { useToastStore } from '../../stores/toast'
 import { useT } from '../../i18n'
+import { usePopularityStore, loadPopularitySettings, setPopularityEnabled } from '../../services/popularity'
 
 const EMPTY_STATUS: LastfmStatus = { configured: false, connected: false, enabled: false, username: null }
 
@@ -17,10 +18,12 @@ export function LastfmSettings() {
   const [apiSecret, setApiSecret] = useState('')
   const [pendingToken, setPendingToken] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  const showPopularity = usePopularityStore(s => s.enabled)
 
   const refresh = async () => {
     try {
       setStatus(await lastfm.getStatus())
+      await loadPopularitySettings(true)
     } catch {
       /* main not ready / not desktop — leave defaults */
     }
@@ -98,6 +101,33 @@ export function LastfmSettings() {
       setBusy(false)
     }
   }
+
+  const handleTogglePopularity = () => {
+    setPopularityEnabled(!showPopularity).catch(() => toast(t('lastfm.toggleFailed'), 'error'))
+  }
+
+  const popularityToggle = (
+    <div className="flex items-center justify-between gap-4 mt-4">
+      <div className="min-w-0">
+        <p className="text-sm text-text-secondary">{t('popularity.setting')}</p>
+        <p className="text-xs text-text-tertiary">
+          {status.configured ? t('popularity.settingHint') : t('popularity.needsApiKey')}
+        </p>
+      </div>
+      <button
+        role="switch"
+        aria-checked={status.configured && showPopularity}
+        aria-label={t('popularity.setting')}
+        onClick={handleTogglePopularity}
+        disabled={!status.configured}
+        className={`relative w-10 h-6 shrink-0 rounded-full transition-colors disabled:opacity-40 ${status.configured && showPopularity ? 'bg-accent' : 'bg-white/15'}`}
+      >
+        <span
+          className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform ${status.configured && showPopularity ? 'translate-x-4' : ''}`}
+        />
+      </button>
+    </div>
+  )
 
   return (
     <div className="w-full border-t border-border pt-5">
@@ -192,6 +222,7 @@ export function LastfmSettings() {
           </label>
         </div>
       )}
+      {popularityToggle}
     </div>
   )
 }

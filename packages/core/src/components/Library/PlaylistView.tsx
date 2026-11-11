@@ -16,6 +16,7 @@ import { buttonClass } from '../UI/Button'
 import { CoverFallbackIcon } from '../UI/CoverArt'
 import { useShallow } from 'zustand/react/shallow'
 import { useT } from '../../i18n'
+import { usePopularityActive, TrackPopularity } from '../UI/Popularity'
 
 export default function PlaylistView() {
   const { t, tn } = useT()
@@ -30,6 +31,7 @@ export default function PlaylistView() {
 
   const [showRename, setShowRename] = useState(false)
   const [showDelete, setShowDelete] = useState(false)
+  const showPopularity = usePopularityActive()
 
   const loadData = (signal?: AbortSignal) => {
     if (!id) return
@@ -186,6 +188,8 @@ export default function PlaylistView() {
                 title={track.Name}
                 subtitle={<TrackSubtitle item={track} />}
               >
+                {showPopularity && id && <TrackPopularity item={track} group={id} />}
+
                 <TrackDuration ticks={track.RunTimeTicks} />
 
                 <TrackMenu track={track} onRemove={track.PlaylistItemId ? () => handleRemoveTrack(track) : undefined} />

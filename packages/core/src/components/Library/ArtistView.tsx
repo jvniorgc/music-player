@@ -5,6 +5,8 @@ import { isAbortError } from '../../services/http'
 import { ImagePlus, Play, Shuffle } from 'lucide-react'
 import { usePlayerStore } from '../../stores/player'
 import type { PlaybackContext } from '../../services/playback'
+import { useHeaderStats, PopularitySummary } from '../UI/Popularity'
+import { getArtistStats, artistKey } from '../../services/popularity'
 import TrackRow, { TrackIndex, TrackDuration } from '../UI/TrackRow'
 import CoverArt from '../UI/CoverArt'
 import TrackMenu from '../UI/TrackMenu'
@@ -27,6 +29,7 @@ export default function ArtistView() {
   const shuffleItems = usePlayerStore(s => s.shuffleItems)
   const currentId = usePlayerStore(s => s.currentTrack?.id)
   const isPlaying = usePlayerStore(s => s.isPlaying)
+  const artistStats = useHeaderStats(artist?.Name ? artistKey(artist.Name) : null, () => getArtistStats(artist!.Name))
 
   const loadArtist = (signal?: AbortSignal) => {
     if (!id) return
@@ -109,6 +112,7 @@ export default function ArtistView() {
                   {imageUrl ? t('artist.changeImage') : t('artist.findImage')}
                 </button>
               </div>
+              <PopularitySummary stats={artistStats} />
               {topSongs.length > 0 && (
                 <div className="flex items-center gap-3 mt-4">
                   <button onClick={() => playItems(topSongs, 0, artistContext)} className={buttonClass('primary')}>

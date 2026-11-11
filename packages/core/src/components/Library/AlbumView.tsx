@@ -17,6 +17,8 @@ import { ArtistLinks } from '../UI/Links'
 import { buttonClass } from '../UI/Button'
 import { useShallow } from 'zustand/react/shallow'
 import { useT } from '../../i18n'
+import { usePopularityActive, useHeaderStats, PopularitySummary, TrackPopularity } from '../UI/Popularity'
+import { getAlbumStats, albumKey } from '../../services/popularity'
 
 export default function AlbumView() {
   const { t, tn } = useT()
@@ -29,6 +31,8 @@ export default function AlbumView() {
   const { isDownloaded, startDownload } = useDownloadStore(useShallow(s => ({ isDownloaded: s.isDownloaded, startDownload: s.startDownload, downloads: s.downloads })))
   const { playlists, fetchPlaylists } = useLibraryStore(useShallow(s => ({ playlists: s.playlists, fetchPlaylists: s.fetchPlaylists })))
   const [showMetadata, setShowMetadata] = useState(false)
+  const showPopularity = usePopularityActive()
+  const albumStats = useHeaderStats(album ? albumKey(album) : null, () => getAlbumStats(album!))
 
   const loadData = (signal?: AbortSignal) => {
     if (!id) return
@@ -128,6 +132,7 @@ export default function AlbumView() {
             {tracks.length > 0 && <span>·</span>}
             <span>{formatTotalDuration(tracks)}</span>
           </div>
+          <PopularitySummary stats={albumStats} />
 
           <div className="flex items-center gap-3 mt-5">
             <button
@@ -181,6 +186,8 @@ export default function AlbumView() {
               subtitle={track.Artists && track.Artists.length > 0 && track.Artists[0] !== album.AlbumArtist && <ArtistLinks item={track} />}
             >
               {downloaded && <Check size={14} className="text-accent shrink-0" />}
+
+              {showPopularity && <TrackPopularity item={track} group={album.Id} />}
 
               <TrackDuration ticks={track.RunTimeTicks} />
 
