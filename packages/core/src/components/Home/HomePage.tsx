@@ -9,9 +9,10 @@ import { artistNames } from '../../lib/format'
 import TrackRow, { TrackDuration, CoverPlayOverlay } from '../UI/TrackRow'
 import CoverArt from '../UI/CoverArt'
 import { AlbumCard } from '../UI/MediaCard'
+import { useShallow } from 'zustand/react/shallow'
 
 export default function HomePage() {
-  const { recentlyAdded, recentlyPlayed, isLoading, fetchHome } = useLibraryStore()
+  const { recentlyAdded, recentlyPlayed, isLoading, fetchHome } = useLibraryStore(useShallow(s => ({ recentlyAdded: s.recentlyAdded, recentlyPlayed: s.recentlyPlayed, isLoading: s.isLoading, fetchHome: s.fetchHome })))
   const startRadio = usePlayerStore(s => s.startRadio)
   const playItems = usePlayerStore(s => s.playItems)
   const showToast = useToastStore(s => s.show)

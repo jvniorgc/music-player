@@ -20,10 +20,11 @@ import UserProfileView from './components/Social/UserProfileView'
 import UpdateDialog from './components/UpdateDialog'
 import { Loader2, Music2 } from 'lucide-react'
 import { playback } from './services/playback'
+import { useShallow } from 'zustand/react/shallow'
 
 export default function App() {
-  const { isAuthenticated, isLoading, restoreSession } = useAuthStore()
-  const { loadDownloads, initListeners } = useDownloadStore()
+  const { isAuthenticated, isLoading, restoreSession } = useAuthStore(useShallow(s => ({ isAuthenticated: s.isAuthenticated, isLoading: s.isLoading, restoreSession: s.restoreSession })))
+  const { loadDownloads, initListeners } = useDownloadStore(useShallow(s => ({ loadDownloads: s.loadDownloads, initListeners: s.initListeners })))
 
   useEffect(() => {
     restoreSession()

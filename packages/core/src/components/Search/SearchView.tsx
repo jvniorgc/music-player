@@ -11,6 +11,7 @@ import { artistNames } from '../../lib/format'
 import TrackRow, { TrackDuration, CoverPlayOverlay } from '../UI/TrackRow'
 import CoverArt from '../UI/CoverArt'
 import { AlbumCard, ArtistCard } from '../UI/MediaCard'
+import { useShallow } from 'zustand/react/shallow'
 
 export default function SearchView() {
   const [query, setQuery] = useState('')
@@ -18,8 +19,8 @@ export default function SearchView() {
   const [loading, setLoading] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
   const navigate = useNavigate()
-  const { playItems } = usePlayerStore()
-  const { playlists, fetchPlaylists } = useLibraryStore()
+  const playItems = usePlayerStore(s => s.playItems)
+  const { playlists, fetchPlaylists } = useLibraryStore(useShallow(s => ({ playlists: s.playlists, fetchPlaylists: s.fetchPlaylists })))
   const debounceRef = useRef<ReturnType<typeof setTimeout>>()
 
   const [pickerSong, setPickerSong] = useState<JellyfinItem | null>(null)

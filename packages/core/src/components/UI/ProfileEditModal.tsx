@@ -7,6 +7,7 @@ import { useAuthStore } from '../../stores/auth'
 import { jellyfin } from '../../services/jellyfin'
 import { useToastStore } from '../../stores/toast'
 import { Button, Input } from './Button'
+import { useShallow } from 'zustand/react/shallow'
 
 interface ProfileEditModalProps {
   open: boolean
@@ -14,7 +15,7 @@ interface ProfileEditModalProps {
 }
 
 export function ProfileEditModal({ open, onClose }: ProfileEditModalProps) {
-  const { auth, primaryImageTag, updateProfile } = useAuthStore()
+  const { auth, primaryImageTag, updateProfile } = useAuthStore(useShallow(s => ({ auth: s.auth, primaryImageTag: s.primaryImageTag, updateProfile: s.updateProfile })))
   const toast = useToastStore(s => s.show)
   const fileInputRef = useRef<HTMLInputElement>(null)
 

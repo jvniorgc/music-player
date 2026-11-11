@@ -3,6 +3,7 @@ import { MoreHorizontal, ListEnd, ListStart, ListPlus } from 'lucide-react'
 import { JellyfinItem } from '../../services/jellyfin'
 import { usePlayerStore } from '../../stores/player'
 import { useToastStore } from '../../stores/toast'
+import { useShallow } from 'zustand/react/shallow'
 
 interface TrackMenuProps {
   track: JellyfinItem
@@ -15,7 +16,7 @@ export default function TrackMenu({ track, extraItems, onPlaylistAdd }: TrackMen
   const [position, setPosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 })
   const buttonRef = useRef<HTMLButtonElement>(null)
   const menuRef = useRef<HTMLDivElement>(null)
-  const { addToQueue, addNext } = usePlayerStore()
+  const { addToQueue, addNext } = usePlayerStore(useShallow(s => ({ addToQueue: s.addToQueue, addNext: s.addNext })))
   const toast = useToastStore(s => s.show)
 
   useEffect(() => {

@@ -2,28 +2,34 @@ import { useState } from 'react'
 import { usePlayerStore } from '../../stores/player'
 import { useDownloadStore } from '../../stores/download'
 import { useLibraryStore } from '../../stores/library'
-import { useToastStore } from '../../stores/toast'
-import { jellyfin } from '../../services/jellyfin'
+import { jellyfin, type JellyfinItem } from '../../services/jellyfin'
+import { useShallow } from 'zustand/react/shallow'
 import {
   Play, Pause, SkipBack, SkipForward, Volume2, VolumeX,
   Shuffle, Repeat, Repeat1, ListMusic, ChevronUp,
   Download, Check, ListPlus
 } from 'lucide-react'
-import { PlaylistPicker, InputModal } from '../UI/Modal'
+import AddToPlaylist from '../UI/AddToPlaylist'
+import CoverArt from '../UI/CoverArt'
 import { formatTime, artistNames } from '../../lib/format'
 
 export default function NowPlayingBar() {
   const {
-    currentTrack, isPlaying, currentTime, duration, volume, shuffle, repeat,
-    showQueue, togglePlay, next, previous, seek, setVolume, toggleShuffle,
+    currentTrack, isPlaying, volume, shuffle, repeat,
+    showQueue, togglePlay, next, previous, setVolume, toggleShuffle,
     toggleRepeat, setShowFullScreen, setShowQueue
-  } = usePlayerStore()
-  const { isDownloaded, startDownload } = useDownloadStore()
-  const { playlists, fetchPlaylists } = useLibraryStore()
+  } = usePlayerStore(useShallow(s => ({
+    currentTrack: s.currentTrack, isPlaying: s.isPlaying, volume: s.volume, shuffle: s.shuffle,
+    repeat: s.repeat, showQueue: s.showQueue, togglePlay: s.togglePlay, next: s.next,
+    previous: s.previous, setVolume: s.setVolume, toggleShuffle: s.toggleShuffle,
+    toggleRepeat: s.toggleRepeat, setShowFullScreen: s.setShowFullScreen, setShowQueue: s.setShowQueue,
+  })))
+  const itemId = currentTrack?.item.Id
+  const downloaded = useDownloadStore(s => (itemId ? s.isDownloaded(itemId) : false))
+  const startDownload = useDownloadStore(s => s.startDownload)
+  const fetchPlaylists = useLibraryStore(s => s.fetchPlaylists)
 
-  const [showPicker, setShowPicker] = useState(false)
-  const [showCreatePlaylist, setShowCreatePlaylist] = useState(false)
-  const toast = useToastStore(s => s.show)
+  const [pickerSong, setPickerSong] = useState<JellyfinItem | null>(null)
 
   if (!currentTrack) {
     return (
@@ -40,28 +46,9 @@ export default function NowPlayingBar() {
       ? jellyfin.getImageUrl(item.Id, item.ImageTags.Primary)
       : null
 
-  const progress = duration > 0 ? (currentTime / duration) * 100 : 0
-  const downloaded = isDownloaded(item.Id)
-
   return (
     <div className="h-14 bg-bg-secondary/90 backdrop-blur-xl border-b border-border-subtle flex flex-col relative shrink-0">
-      {/* Progress bar - thin line at bottom */}
-      <div className="absolute bottom-0 left-0 right-0 h-[3px] bg-white/10 cursor-pointer group"
-        onClick={(e) => {
-          const rect = e.currentTarget.getBoundingClientRect()
-          const pct = (e.clientX - rect.left) / rect.width
-          seek(pct * duration)
-        }}
-      >
-        <div
-          className="h-full bg-accent transition-[width] duration-100"
-          style={{ width: `${progress}%` }}
-        />
-        <div
-          className="absolute top-1/2 -translate-y-1/2 w-3 h-3 bg-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-          style={{ left: `${progress}%`, transform: `translate(-50%, -50%)` }}
-        />
-      </div>
+      <ProgressLine />
 
       <div className="flex-1 flex items-center px-4 gap-4">
         {/* Track info */}
@@ -69,17 +56,12 @@ export default function NowPlayingBar() {
           className="flex items-center gap-3 flex-1 min-w-0 overflow-hidden cursor-pointer"
           onClick={() => setShowFullScreen(true)}
         >
-          {imageUrl ? (
-            <img
-              src={imageUrl}
-              className="w-9 h-9 rounded-md object-cover shadow-lg"
-              alt=""
-            />
-          ) : (
-            <div className="w-9 h-9 rounded-md bg-bg-elevated flex items-center justify-center">
-              <ListMusic size={16} className="text-text-tertiary" />
-            </div>
-          )}
+          <CoverArt
+            src={imageUrl}
+            className="w-9 h-9 rounded-md overflow-hidden bg-bg-elevated shadow-lg shrink-0"
+            fallback={<ListMusic size={16} className="text-text-tertiary" />}
+            loading="eager"
+          />
           <div className="min-w-0">
             <p className="text-[13px] font-medium truncate">{item.Name}</p>
             <p className="text-[11px] text-text-secondary truncate">
@@ -129,12 +111,10 @@ export default function NowPlayingBar() {
 
         {/* Right side: time, volume, queue, download */}
         <div className="flex-1 flex items-center justify-end gap-3 min-w-0 overflow-hidden">
-          <span className="text-[11px] text-text-tertiary tabular-nums whitespace-nowrap shrink-0">
-            {formatTime(currentTime)} / {formatTime(duration)}
-          </span>
+          <TimeDisplay />
 
           <button
-            onClick={() => { fetchPlaylists(); setShowPicker(true) }}
+            onClick={() => { fetchPlaylists(); setPickerSong(item) }}
             className="p-1.5 transition-colors text-text-tertiary hover:text-text-secondary"
             title="Add to playlist"
           >
@@ -179,42 +159,44 @@ export default function NowPlayingBar() {
         </div>
       </div>
 
-      <PlaylistPicker
-        open={showPicker}
-        playlists={playlists}
-        onClose={() => setShowPicker(false)}
-        onSelect={async (playlistId) => {
-          try {
-            await jellyfin.addToPlaylist(playlistId, [item.Id])
-            toast('Added to playlist', 'success')
-          } catch (err) {
-            console.error('Failed to add to playlist:', err)
-            toast('Could not add to playlist', 'error')
-          }
-        }}
-        onCreate={() => {
-          setShowPicker(false)
-          setShowCreatePlaylist(true)
-        }}
-      />
+      <AddToPlaylist song={pickerSong} onClose={() => setPickerSong(null)} />
+    </div>
+  )
+}
 
-      <InputModal
-        open={showCreatePlaylist}
-        title="New Playlist"
-        placeholder="Playlist name"
-        confirmLabel="Create"
-        onClose={() => setShowCreatePlaylist(false)}
-        onConfirm={async (name) => {
-          try {
-            await jellyfin.createPlaylist(name, [item.Id])
-            fetchPlaylists()
-            toast('Playlist created', 'success')
-          } catch (err) {
-            console.error('Failed to create playlist:', err)
-            toast('Error creating playlist', 'error')
-          }
-        }}
+/** Thin seekable progress line; isolated so playback ticks only re-render this. */
+function ProgressLine() {
+  const currentTime = usePlayerStore(s => s.currentTime)
+  const duration = usePlayerStore(s => s.duration)
+  const seek = usePlayerStore(s => s.seek)
+  const progress = duration > 0 ? (currentTime / duration) * 100 : 0
+
+  return (
+    <div className="absolute bottom-0 left-0 right-0 h-[3px] bg-white/10 cursor-pointer group"
+      onClick={(e) => {
+        const rect = e.currentTarget.getBoundingClientRect()
+        const pct = (e.clientX - rect.left) / rect.width
+        seek(pct * duration)
+      }}
+    >
+      <div
+        className="h-full bg-accent transition-[width] duration-100"
+        style={{ width: `${progress}%` }}
+      />
+      <div
+        className="absolute top-1/2 -translate-y-1/2 w-3 h-3 bg-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+        style={{ left: `${progress}%`, transform: `translate(-50%, -50%)` }}
       />
     </div>
+  )
+}
+
+function TimeDisplay() {
+  const currentTime = usePlayerStore(s => Math.floor(s.currentTime))
+  const duration = usePlayerStore(s => s.duration)
+  return (
+    <span className="text-[11px] text-text-tertiary tabular-nums whitespace-nowrap shrink-0">
+      {formatTime(currentTime)} / {formatTime(duration)}
+    </span>
   )
 }

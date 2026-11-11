@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { usePlayerStore } from '../../stores/player'
+import { useShallow } from 'zustand/react/shallow'
 import { playback } from '../../services/playback'
 import { jellyfin } from '../../services/jellyfin'
 import {
@@ -18,10 +19,15 @@ interface LyricLine {
 export default function FullScreenPlayer() {
   const navigate = useNavigate()
   const {
-    currentTrack, isPlaying, currentTime, duration, volume, shuffle, repeat,
-    togglePlay, next, previous, seek, setVolume, toggleShuffle, toggleRepeat,
+    currentTrack, isPlaying, volume, shuffle, repeat,
+    togglePlay, next, previous, setVolume, toggleShuffle, toggleRepeat,
     setShowFullScreen
-  } = usePlayerStore()
+  } = usePlayerStore(useShallow(s => ({
+    currentTrack: s.currentTrack, isPlaying: s.isPlaying, volume: s.volume, shuffle: s.shuffle,
+    repeat: s.repeat, togglePlay: s.togglePlay, next: s.next, previous: s.previous,
+    setVolume: s.setVolume, toggleShuffle: s.toggleShuffle, toggleRepeat: s.toggleRepeat,
+    setShowFullScreen: s.setShowFullScreen,
+  })))
 
   const [lyrics, setLyrics] = useState<LyricLine[]>([])
   const [hasLyrics, setHasLyrics] = useState(false)
@@ -106,7 +112,6 @@ export default function FullScreenPlayer() {
       ? jellyfin.getImageUrl(item.Id, item.ImageTags.Primary, 600)
       : null
 
-  const progress = duration > 0 ? (currentTime / duration) * 100 : 0
   const isTimed = lyrics.length > 0 && lyrics[0].Start !== undefined
   const lyricsVisible = hasLyrics && showLyrics
 
@@ -182,25 +187,7 @@ export default function FullScreenPlayer() {
             )}
           </div>
 
-          {/* Progress */}
-          <div className="w-full mb-3 md:mb-5">
-            <input
-              type="range"
-              min={0}
-              max={duration || 0}
-              step={0.1}
-              value={currentTime}
-              onChange={e => seek(parseFloat(e.target.value))}
-              className="w-full h-1 accent-white cursor-pointer"
-              style={{
-                background: `linear-gradient(to right, rgba(255,255,255,0.9) ${progress}%, rgba(255,255,255,0.2) ${progress}%)`
-              }}
-            />
-            <div className="flex justify-between mt-2">
-              <span className="text-xs text-text-secondary tabular-nums">{formatTime(currentTime)}</span>
-              <span className="text-xs text-text-secondary tabular-nums">-{formatTime(duration - currentTime)}</span>
-            </div>
-          </div>
+          <SeekBar />
 
           {/* Controls */}
           <div className="flex items-center justify-center gap-6 mb-3 md:mb-6">
@@ -289,6 +276,35 @@ export default function FullScreenPlayer() {
             </div>
           </div>
         )}
+      </div>
+    </div>
+  )
+}
+
+/** Seek slider + elapsed/remaining time; isolated so playback ticks only re-render this. */
+function SeekBar() {
+  const currentTime = usePlayerStore(s => s.currentTime)
+  const duration = usePlayerStore(s => s.duration)
+  const seek = usePlayerStore(s => s.seek)
+  const progress = duration > 0 ? (currentTime / duration) * 100 : 0
+
+  return (
+    <div className="w-full mb-3 md:mb-5">
+      <input
+        type="range"
+        min={0}
+        max={duration || 0}
+        step={0.1}
+        value={currentTime}
+        onChange={e => seek(parseFloat(e.target.value))}
+        className="w-full h-1 accent-white cursor-pointer"
+        style={{
+          background: `linear-gradient(to right, rgba(255,255,255,0.9) ${progress}%, rgba(255,255,255,0.2) ${progress}%)`
+        }}
+      />
+      <div className="flex justify-between mt-2">
+        <span className="text-xs text-text-secondary tabular-nums">{formatTime(currentTime)}</span>
+        <span className="text-xs text-text-secondary tabular-nums">-{formatTime(duration - currentTime)}</span>
       </div>
     </div>
   )

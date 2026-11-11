@@ -12,6 +12,7 @@ import AddToPlaylist from '../UI/AddToPlaylist'
 import { artistNames } from '../../lib/format'
 import TrackRow, { TrackIndex, TrackDuration } from '../UI/TrackRow'
 import CoverArt from '../UI/CoverArt'
+import { useShallow } from 'zustand/react/shallow'
 
 export default function PlaylistView() {
   const { id } = useParams<{ id: string }>()
@@ -19,7 +20,7 @@ export default function PlaylistView() {
   const [playlist, setPlaylist] = useState<JellyfinItem | null>(null)
   const [tracks, setTracks] = useState<JellyfinItem[]>([])
   const [loading, setLoading] = useState(true)
-  const { playItems, currentTrack, isPlaying, togglePlay } = usePlayerStore()
+  const { playItems, currentTrack, isPlaying, togglePlay } = usePlayerStore(useShallow(s => ({ playItems: s.playItems, currentTrack: s.currentTrack, isPlaying: s.isPlaying, togglePlay: s.togglePlay })))
   const fetchPlaylists = useLibraryStore(s => s.fetchPlaylists)
   const toast = useToastStore(s => s.show)
 

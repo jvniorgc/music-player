@@ -3,9 +3,10 @@ import { useNavigate } from 'react-router-dom'
 import { useLibraryStore } from '../../stores/library'
 import { Loader2 } from 'lucide-react'
 import { ArtistCard } from '../UI/MediaCard'
+import { useShallow } from 'zustand/react/shallow'
 
 export default function ArtistGrid() {
-  const { artists, totalArtists, isLoading, fetchArtists } = useLibraryStore()
+  const { artists, totalArtists, isLoading, fetchArtists } = useLibraryStore(useShallow(s => ({ artists: s.artists, totalArtists: s.totalArtists, isLoading: s.isLoading, fetchArtists: s.fetchArtists })))
   const navigate = useNavigate()
 
   useEffect(() => {

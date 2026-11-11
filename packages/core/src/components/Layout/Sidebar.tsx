@@ -8,6 +8,7 @@ import { useEffect, useState } from 'react'
 import { jellyfin } from '../../services/jellyfin'
 import { usePlayerStore } from '../../stores/player'
 import { ProfileEditModal } from '../UI/ProfileEditModal'
+import { useShallow } from 'zustand/react/shallow'
 
 const navItems = [
   { to: '/', icon: Home, label: 'Home' },
@@ -25,9 +26,9 @@ const libraryItems = [
 
 export default function Sidebar() {
   const isMac = window.api.platform === 'darwin'
-  const { logout, auth, primaryImageTag } = useAuthStore()
-  const { playlists, fetchPlaylists, refreshAll } = useLibraryStore()
-  const { loadDownloads } = useDownloadStore()
+  const { logout, auth, primaryImageTag } = useAuthStore(useShallow(s => ({ logout: s.logout, auth: s.auth, primaryImageTag: s.primaryImageTag })))
+  const { playlists, fetchPlaylists, refreshAll } = useLibraryStore(useShallow(s => ({ playlists: s.playlists, fetchPlaylists: s.fetchPlaylists, refreshAll: s.refreshAll })))
+  const loadDownloads = useDownloadStore(s => s.loadDownloads)
   const shuffleAllSongs = usePlayerStore(s => s.shuffleAllSongs)
   const toast = useToastStore(s => s.show)
   const navigate = useNavigate()

@@ -1,5 +1,6 @@
 import { useToastStore } from '../../stores/toast'
 import { CheckCircle2, XCircle, Info, X } from 'lucide-react'
+import { useShallow } from 'zustand/react/shallow'
 
 const icons = {
   success: CheckCircle2,
@@ -14,7 +15,7 @@ const colors = {
 }
 
 export default function ToastContainer() {
-  const { toasts, dismiss } = useToastStore()
+  const { toasts, dismiss } = useToastStore(useShallow(s => ({ toasts: s.toasts, dismiss: s.dismiss })))
 
   if (toasts.length === 0) return null
 

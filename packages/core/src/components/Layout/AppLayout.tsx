@@ -6,9 +6,10 @@ import FullScreenPlayer from '../Player/FullScreenPlayer'
 import ToastContainer from '../UI/ToastContainer'
 import { usePlayerStore } from '../../stores/player'
 import { useEffect } from 'react'
+import { useShallow } from 'zustand/react/shallow'
 
 export default function AppLayout() {
-  const { showFullScreen, showQueue, initListeners } = usePlayerStore()
+  const { showFullScreen, showQueue, initListeners } = usePlayerStore(useShallow(s => ({ showFullScreen: s.showFullScreen, showQueue: s.showQueue, initListeners: s.initListeners })))
 
   useEffect(() => {
     const cleanup = initListeners()

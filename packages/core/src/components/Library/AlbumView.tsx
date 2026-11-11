@@ -11,6 +11,7 @@ import TrackMenu from '../UI/TrackMenu'
 import AddToPlaylist from '../UI/AddToPlaylist'
 import { formatTotalDuration } from '../../lib/format'
 import TrackRow, { TrackIndex, TrackDuration } from '../UI/TrackRow'
+import { useShallow } from 'zustand/react/shallow'
 
 export default function AlbumView() {
   const { id } = useParams<{ id: string }>()
@@ -18,9 +19,9 @@ export default function AlbumView() {
   const [album, setAlbum] = useState<JellyfinItem | null>(null)
   const [tracks, setTracks] = useState<JellyfinItem[]>([])
   const [loading, setLoading] = useState(true)
-  const { playItems, currentTrack, isPlaying, togglePlay } = usePlayerStore()
-  const { isDownloaded, startDownload } = useDownloadStore()
-  const { playlists, fetchPlaylists } = useLibraryStore()
+  const { playItems, currentTrack, isPlaying, togglePlay } = usePlayerStore(useShallow(s => ({ playItems: s.playItems, currentTrack: s.currentTrack, isPlaying: s.isPlaying, togglePlay: s.togglePlay })))
+  const { isDownloaded, startDownload } = useDownloadStore(useShallow(s => ({ isDownloaded: s.isDownloaded, startDownload: s.startDownload, downloads: s.downloads })))
+  const { playlists, fetchPlaylists } = useLibraryStore(useShallow(s => ({ playlists: s.playlists, fetchPlaylists: s.fetchPlaylists })))
   const [showMetadata, setShowMetadata] = useState(false)
   const [pickerSong, setPickerSong] = useState<JellyfinItem | null>(null)
 

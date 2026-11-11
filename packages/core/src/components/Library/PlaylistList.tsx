@@ -6,9 +6,10 @@ import { jellyfin, JellyfinItem } from '../../services/jellyfin'
 import { ListMusic, Plus, MoreHorizontal, Pencil, Trash2 } from 'lucide-react'
 import { InputModal, ConfirmModal } from '../UI/Modal'
 import { useToastStore } from '../../stores/toast'
+import { useShallow } from 'zustand/react/shallow'
 
 export default function PlaylistList() {
-  const { playlists, fetchPlaylists } = useLibraryStore()
+  const { playlists, fetchPlaylists } = useLibraryStore(useShallow(s => ({ playlists: s.playlists, fetchPlaylists: s.fetchPlaylists })))
   const navigate = useNavigate()
   const toast = useToastStore(s => s.show)
 

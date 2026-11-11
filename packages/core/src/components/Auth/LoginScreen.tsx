@@ -2,9 +2,10 @@ import { useState } from 'react'
 import { useAuthStore } from '../../stores/auth'
 import { Music2, Loader2, Server, AlertCircle } from 'lucide-react'
 import { Input } from '../UI/Button'
+import { useShallow } from 'zustand/react/shallow'
 
 export default function LoginScreen() {
-  const { login, isLoading, error } = useAuthStore()
+  const { login, isLoading, error } = useAuthStore(useShallow(s => ({ login: s.login, isLoading: s.isLoading, error: s.error })))
   const [serverUrl, setServerUrl] = useState('')
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')

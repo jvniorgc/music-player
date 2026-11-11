@@ -4,6 +4,7 @@ import { QueueTrack } from '../../services/playback'
 import CoverArt from '../UI/CoverArt'
 import { X, Music } from 'lucide-react'
 import { formatTicks, artistNames } from '../../lib/format'
+import { useShallow } from 'zustand/react/shallow'
 
 function TrackRow({ track, index, onPlay, onRemove }: {
   track: QueueTrack
@@ -43,11 +44,17 @@ function TrackRow({ track, index, onPlay, onRemove }: {
 }
 
 export default function QueueView() {
-  const {
-    currentTrack, userQueue, contextUpNext, contextName,
-    setShowQueue, playUserQueueAt, playContextAt,
-    removeFromUserQueue, removeFromContext
-  } = usePlayerStore()
+  const { currentTrack, userQueue, contextUpNext, contextName, setShowQueue, playUserQueueAt, playContextAt, removeFromUserQueue, removeFromContext } = usePlayerStore(useShallow(s => ({
+    currentTrack: s.currentTrack,
+    userQueue: s.userQueue,
+    contextUpNext: s.contextUpNext,
+    contextName: s.contextName,
+    setShowQueue: s.setShowQueue,
+    playUserQueueAt: s.playUserQueueAt,
+    playContextAt: s.playContextAt,
+    removeFromUserQueue: s.removeFromUserQueue,
+    removeFromContext: s.removeFromContext,
+  })))
 
   const isEmpty = userQueue.length === 0 && contextUpNext.length === 0
 

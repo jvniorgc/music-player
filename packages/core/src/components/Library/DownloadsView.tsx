@@ -6,10 +6,11 @@ import { Trash2, Play, HardDrive, Loader2 } from 'lucide-react'
 import { artistNames } from '../../lib/format'
 import TrackRow, { TrackDuration, CoverPlayOverlay } from '../UI/TrackRow'
 import CoverArt from '../UI/CoverArt'
+import { useShallow } from 'zustand/react/shallow'
 
 export default function DownloadsView() {
-  const { downloads, loadDownloads, removeDownload, initListeners } = useDownloadStore()
-  const { playItems } = usePlayerStore()
+  const { downloads, loadDownloads, removeDownload, initListeners } = useDownloadStore(useShallow(s => ({ downloads: s.downloads, loadDownloads: s.loadDownloads, removeDownload: s.removeDownload, initListeners: s.initListeners })))
+  const playItems = usePlayerStore(s => s.playItems)
 
   useEffect(() => {
     loadDownloads()

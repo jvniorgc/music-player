@@ -9,11 +9,20 @@ import AddToPlaylist from '../UI/AddToPlaylist'
 import { artistNames } from '../../lib/format'
 import TrackRow, { TrackIndex, TrackDuration } from '../UI/TrackRow'
 import CoverArt from '../UI/CoverArt'
+import { useShallow } from 'zustand/react/shallow'
 
 export default function SongList() {
-  const { songs, totalSongs, playlists, isLoading, fetchSongs, loadMoreSongs, fetchPlaylists } = useLibraryStore()
-  const { playItems, currentTrack, isPlaying } = usePlayerStore()
-  const { isDownloaded, startDownload } = useDownloadStore()
+  const { songs, totalSongs, playlists, isLoading, fetchSongs, loadMoreSongs, fetchPlaylists } = useLibraryStore(useShallow(s => ({
+    songs: s.songs,
+    totalSongs: s.totalSongs,
+    playlists: s.playlists,
+    isLoading: s.isLoading,
+    fetchSongs: s.fetchSongs,
+    loadMoreSongs: s.loadMoreSongs,
+    fetchPlaylists: s.fetchPlaylists,
+  })))
+  const { playItems, currentTrack, isPlaying } = usePlayerStore(useShallow(s => ({ playItems: s.playItems, currentTrack: s.currentTrack, isPlaying: s.isPlaying })))
+  const { isDownloaded, startDownload } = useDownloadStore(useShallow(s => ({ isDownloaded: s.isDownloaded, startDownload: s.startDownload, downloads: s.downloads })))
   const loaderRef = useRef<HTMLDivElement>(null)
 
   const [pickerSong, setPickerSong] = useState<JellyfinItem | null>(null)
