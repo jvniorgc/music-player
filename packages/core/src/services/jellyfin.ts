@@ -440,6 +440,12 @@ class JellyfinService {
     })
   }
 
+  /** Starts a full library scan. Resolves false when the server refuses (e.g. non-admin user). */
+  async refreshLibrary(): Promise<boolean> {
+    const res = await this.rawFetch('/Library/Refresh', { method: 'POST' })
+    return res.ok
+  }
+
   async addToPlaylist(playlistId: string, itemIds: string[]): Promise<void> {
     return this.request(`/Playlists/${playlistId}/Items?Ids=${itemIds.join(',')}&UserId=${this.userId}`, {
       method: 'POST'

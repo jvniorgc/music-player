@@ -1,17 +1,17 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import {
   startSearch, getSearch, getSearchResponses, deleteSearch, downloadFiles, getDownloads, removeDownload, removeCompletedDownloads,
   SlskdResponse, SlskdFile, SlskdSearch, SlskdTransferGroup,
   isAudioFile, getFileName, getFileExtension, formatFileSize, formatSpeed, formatDuration,
-  groupFilesByDirectory, configure, getConfig, deriveDefaultUrl, isConfigured
+  groupFilesByDirectory, configure, getConfig, deriveDefaultUrl, isConfigured, testConnection as slskdTestConnection
 } from '../../services/slskd'
 import { jellyfin } from '../../services/jellyfin'
-import { timeoutSignal } from '../../services/http'
 import { useToastStore } from '../../stores/toast'
 import {
   Search, Loader2, Download, FolderDown, ChevronDown, ChevronRight,
   User, HardDrive, Zap, Check, X, Music, AlertCircle, RefreshCw, Settings, Filter
 } from 'lucide-react'
+import { Input } from '../UI/Button'
 
 type Tab = 'search' | 'transfers'
 
@@ -52,7 +52,6 @@ export default function SoulseekView() {
   // Transfers state
   const [tab, setTab] = useState<Tab>('search')
   const [transfers, setTransfers] = useState<SlskdTransferGroup[]>([])
-  const [loadingTransfers, setLoadingTransfers] = useState(false)
   const transferPollRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   // Format filter state
@@ -187,11 +186,7 @@ export default function SoulseekView() {
     } catch {
       // Try alternative endpoint
       try {
-        const res = await fetch(`${jellyfin.serverUrl}/Library/Refresh`, {
-          method: 'POST',
-          headers: { Authorization: jellyfin.authHeader() }
-        })
-        if (res.ok) toast('Jellyfin library scan started', 'success')
+        if (await jellyfin.refreshLibrary()) toast('Jellyfin library scan started', 'success')
         else toast('No permission to scan the library', 'error')
       } catch {
         toast('Error updating library', 'error')
@@ -230,13 +225,7 @@ export default function SoulseekView() {
     try {
       configure({ url: settingsUrl, username: settingsUser, password: settingsPass })
       await window.api?.allowOrigin?.(settingsUrl)
-      const res = await fetch(`${settingsUrl.replace(/\/+$/, '')}/api/v0/session`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: settingsUser, password: settingsPass }),
-        signal: timeoutSignal(undefined, 10_000)
-      })
-      setConnected(res.ok)
+      setConnected(await slskdTestConnection({ url: settingsUrl, username: settingsUser, password: settingsPass }))
     } catch {
       setConnected(false)
     } finally {
@@ -295,33 +284,33 @@ export default function SoulseekView() {
           <div className="space-y-3">
             <div>
               <label className="block text-xs font-medium text-text-secondary mb-1 ml-1">Server address</label>
-              <input
+              <Input
+                variant="subtle"
                 type="text"
                 value={settingsUrl}
                 onChange={e => setSettingsUrl(e.target.value)}
                 placeholder="http://192.168.1.100:5030"
-                className="w-full bg-bg-primary border border-border rounded-lg px-4 py-2.5 text-sm text-text-primary placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-accent transition"
               />
             </div>
             <div className="flex gap-3">
               <div className="flex-1">
                 <label className="block text-xs font-medium text-text-secondary mb-1 ml-1">User</label>
-                <input
+                <Input
+                  variant="subtle"
                   type="text"
                   value={settingsUser}
                   onChange={e => setSettingsUser(e.target.value)}
                   placeholder="slskd"
-                  className="w-full bg-bg-primary border border-border rounded-lg px-4 py-2.5 text-sm text-text-primary placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-accent transition"
                 />
               </div>
               <div className="flex-1">
                 <label className="block text-xs font-medium text-text-secondary mb-1 ml-1">Password</label>
-                <input
+                <Input
+                  variant="subtle"
                   type="password"
                   value={settingsPass}
                   onChange={e => setSettingsPass(e.target.value)}
                   placeholder="password"
-                  className="w-full bg-bg-primary border border-border rounded-lg px-4 py-2.5 text-sm text-text-primary placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-accent transition"
                 />
               </div>
             </div>

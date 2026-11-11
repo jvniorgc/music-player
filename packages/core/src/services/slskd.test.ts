@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
 import {
   configure,
   getConfig,
@@ -12,6 +12,7 @@ import {
   formatDuration,
   isAudioFile,
   groupFilesByDirectory,
+  testConnection,
   type SlskdFile,
 } from './slskd'
 
@@ -107,5 +108,21 @@ describe('groupFilesByDirectory', () => {
     const grouped = groupFilesByDirectory(files)
     expect(grouped.get('C:/Album')).toHaveLength(2)
     expect(grouped.get('C:/Other')).toHaveLength(1)
+  })
+})
+
+describe('testConnection', () => {
+  it('opens a session at the normalized url with the given credentials', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response('{}', { status: 200 }))
+    vi.stubGlobal('fetch', fetchMock)
+    try {
+      await expect(testConnection({ url: 'http://h:5030//', username: 'u', password: 'p' })).resolves.toBe(true)
+      expect(fetchMock.mock.calls[0][0]).toBe('http://h:5030/api/v0/session')
+      expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual({ username: 'u', password: 'p' })
+      fetchMock.mockResolvedValue(new Response('', { status: 401 }))
+      await expect(testConnection({ url: 'http://h:5030', username: 'u', password: 'x' })).resolves.toBe(false)
+    } finally {
+      vi.unstubAllGlobals()
+    }
   })
 })

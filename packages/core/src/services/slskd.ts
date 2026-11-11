@@ -115,6 +115,18 @@ async function authenticate(): Promise<string> {
   return token
 }
 
+/** Checks that the given slskd URL and credentials can open a session. */
+export async function testConnection(config: SlskdConfig): Promise<boolean> {
+  const url = config.url.replace(/\/+$/, '')
+  const res = await fetch(`${url}/api/v0/session`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username: config.username, password: config.password }),
+    signal: timeoutSignal(undefined, 10_000)
+  })
+  return res.ok
+}
+
 async function getToken(): Promise<string> {
   if (token) return token
   return authenticate()

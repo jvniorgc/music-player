@@ -232,6 +232,20 @@ describe('renameItem', () => {
   })
 })
 
+describe('refreshLibrary', () => {
+  it('POSTs /Library/Refresh with auth and reports permission failures', async () => {
+    const fetchMock = mockFetchRouter([['/Library/Refresh', emptyRes(204)]])
+    await expect(jellyfin.refreshLibrary()).resolves.toBe(true)
+    const [url, init] = fetchMock.mock.calls[0]
+    expect(url).toBe('http://jf.local/Library/Refresh')
+    expect(init?.method).toBe('POST')
+    expect(String((init?.headers as Record<string, string>).Authorization)).toContain('Token="TKN"')
+
+    mockFetchRouter([['/Library/Refresh', emptyRes(403)]])
+    await expect(jellyfin.refreshLibrary()).resolves.toBe(false)
+  })
+})
+
 describe('session expiry and cancellation', () => {
   it('clears auth and notifies subscribers once on a 401', async () => {
     mockFetchRouter([['/Users/u1/Items', emptyRes(401)]])

@@ -1,15 +1,12 @@
 import { useState, useEffect } from 'react'
 import { JellyfinItem, jellyfin } from '../../services/jellyfin'
 import {
-  searchReleases, getReleaseDetails, getCoverArtUrl, getArtistName,
+  searchReleases, getReleaseDetails, getCoverArtUrl, hasCoverArt, getArtistName,
   formatMBDate, getLabel, MBRelease, MBTrack
 } from '../../services/musicbrainz'
 import { useToastStore } from '../../stores/toast'
-import { Modal } from '../UI/Modal'
-import {
-  Search, Loader2, Check, X, Disc3, User, Calendar, Tag, Image,
-  Music, ArrowLeft, ChevronRight, Download, Trash2
-} from 'lucide-react'
+import { Search, Loader2, X, Disc3, Calendar, Tag, Music, ArrowLeft, ChevronRight, Download, Trash2 } from 'lucide-react'
+import { Button, Input } from '../UI/Button'
 
 interface MetadataEditorProps {
   album: JellyfinItem
@@ -29,7 +26,6 @@ export default function MetadataEditor({ album, tracks, open, onClose, onApplied
   const [artistQuery, setArtistQuery] = useState(album.AlbumArtist || '')
   const [results, setResults] = useState<MBRelease[]>([])
   const [searching, setSearching] = useState(false)
-  const [selected, setSelected] = useState<MBRelease | null>(null)
   const [detailed, setDetailed] = useState<MBRelease | null>(null)
   const [loadingDetails, setLoadingDetails] = useState(false)
   const [applying, setApplying] = useState(false)
@@ -50,7 +46,6 @@ export default function MetadataEditor({ album, tracks, open, onClose, onApplied
       setQuery(album.Name || '')
       setArtistQuery(album.AlbumArtist || '')
       setResults([])
-      setSelected(null)
       setDetailed(null)
     }
   }, [open, album])
@@ -70,7 +65,6 @@ export default function MetadataEditor({ album, tracks, open, onClose, onApplied
   }
 
   const handleSelect = async (release: MBRelease) => {
-    setSelected(release)
     setLoadingDetails(true)
     setStep('preview')
     try {
@@ -78,13 +72,7 @@ export default function MetadataEditor({ album, tracks, open, onClose, onApplied
       setDetailed(details)
 
       // Check if cover art exists
-      const coverUrl = getCoverArtUrl(release.id)
-      try {
-        const res = await fetch(coverUrl, { method: 'HEAD' })
-        setCoverAvailable(res.ok)
-      } catch {
-        setCoverAvailable(false)
-      }
+      setCoverAvailable(await hasCoverArt(release.id))
     } catch (err) {
       console.error('Failed to get release details:', err)
       toast('Error loading details', 'error')
@@ -254,9 +242,9 @@ export default function MetadataEditor({ album, tracks, open, onClose, onApplied
               {step === 'preview' && 'Preview'}
             </h2>
           </div>
-          <button onClick={onClose} className="p-1.5 rounded-full hover:bg-white/10 text-text-tertiary transition-colors">
+          <Button variant="icon" onClick={onClose}>
             <X size={18} />
-          </button>
+          </Button>
         </div>
 
         {/* Content */}
@@ -269,25 +257,24 @@ export default function MetadataEditor({ album, tracks, open, onClose, onApplied
               </p>
               <div>
                 <label className="text-xs text-text-tertiary uppercase tracking-wider mb-1.5 block">Album</label>
-                <input
+                <Input
                   type="text"
                   value={query}
                   onChange={e => setQuery(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && handleSearch()}
                   placeholder="Album name"
-                  className="w-full bg-bg-elevated border border-border rounded-xl px-4 py-3 text-sm text-text-primary placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-accent transition"
+
                   autoFocus
                 />
               </div>
               <div>
                 <label className="text-xs text-text-tertiary uppercase tracking-wider mb-1.5 block">Artist (optional)</label>
-                <input
+                <Input
                   type="text"
                   value={artistQuery}
                   onChange={e => setArtistQuery(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && handleSearch()}
                   placeholder="Artist name"
-                  className="w-full bg-bg-elevated border border-border rounded-xl px-4 py-3 text-sm text-text-primary placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-accent transition"
                 />
               </div>
               <button
@@ -448,12 +435,12 @@ export default function MetadataEditor({ album, tracks, open, onClose, onApplied
         {/* Footer */}
         {step === 'preview' && detailed && !loadingDetails && (
           <div className="px-6 py-4 border-t border-border-subtle flex justify-end gap-3 shrink-0">
-            <button
+            <Button
+              variant="secondary"
               onClick={onClose}
-              className="px-5 py-2 rounded-full text-sm text-text-secondary hover:text-text-primary hover:bg-white/10 transition-colors"
             >
               Cancel
-            </button>
+            </Button>
             <button
               onClick={handleApply}
               disabled={applying}

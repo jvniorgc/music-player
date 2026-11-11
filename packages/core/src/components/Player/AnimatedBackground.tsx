@@ -1,3 +1,4 @@
+import { timeoutSignal } from '../../services/http'
 import { useEffect, useState, useRef } from 'react'
 
 const FALLBACK = ['#1a0a2e', '#0a1a3a', '#2e0a1a', '#0a2e1a']
@@ -54,7 +55,7 @@ function buildPalette(data: Uint8ClampedArray): string[] {
 async function extractColors(url: string): Promise<string[]> {
   if (paletteCache.has(url)) return paletteCache.get(url)!
   try {
-    const resp = await fetch(url)
+    const resp = await fetch(url, { signal: timeoutSignal() })
     const blob = await resp.blob()
     const objectUrl = URL.createObjectURL(blob)
     const colors = await new Promise<string[]>((resolve) => {
