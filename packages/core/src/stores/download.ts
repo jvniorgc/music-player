@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { JellyfinItem, jellyfin } from '../services/jellyfin'
 
-interface DownloadItem {
+export interface DownloadItem {
   itemId: string
   filename: string
   metadata: JellyfinItem

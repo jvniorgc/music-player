@@ -7,7 +7,7 @@ vi.mock('../services/jellyfin', () => ({
   },
 }))
 
-import { useDownloadStore } from './download'
+import { useDownloadStore, type DownloadItem } from './download'
 import { jellyfin } from '../services/jellyfin'
 
 const ITEM = { Id: 'it1', Name: 'Song', AlbumArtist: 'Artist', Type: 'Audio' }
@@ -37,7 +37,7 @@ describe('startDownload', () => {
 
 describe('isDownloaded / getDownload', () => {
   it('reports downloaded only when the status is completed', () => {
-    const map = new Map([['it1', { itemId: 'it1', filename: 'f', metadata: ITEM, status: 'downloading' as const, progress: 0.5 }]])
+    const map = new Map([['it1', { itemId: 'it1', filename: 'f', metadata: ITEM, status: 'downloading' as DownloadItem['status'], progress: 0.5 }]])
     useDownloadStore.setState({ downloads: map })
     expect(useDownloadStore.getState().isDownloaded('it1')).toBe(false)
     map.set('it1', { ...map.get('it1')!, status: 'completed' })

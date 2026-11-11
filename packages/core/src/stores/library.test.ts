@@ -26,7 +26,7 @@ beforeEach(() => {
 
 describe('fetchAlbums', () => {
   it('replaces albums on the first page and records the total', async () => {
-    vi.mocked(jellyfin.getAlbums).mockResolvedValue({ Items: [{ Id: 'a1', Name: 'A' }], TotalRecordCount: 1 })
+    vi.mocked(jellyfin.getAlbums).mockResolvedValue({ Items: [{ Id: 'a1', Name: 'A', Type: 'MusicAlbum' }], TotalRecordCount: 1 })
     await useLibraryStore.getState().fetchAlbums(0)
     const s = useLibraryStore.getState()
     expect(s.albums.map(a => a.Id)).toEqual(['a1'])
@@ -35,8 +35,8 @@ describe('fetchAlbums', () => {
   })
 
   it('appends albums when fetching a later page', async () => {
-    useLibraryStore.setState({ albums: [{ Id: 'a0', Name: 'A0' }] })
-    vi.mocked(jellyfin.getAlbums).mockResolvedValue({ Items: [{ Id: 'a1', Name: 'A1' }], TotalRecordCount: 2 })
+    useLibraryStore.setState({ albums: [{ Id: 'a0', Name: 'A0', Type: 'MusicAlbum' }] })
+    vi.mocked(jellyfin.getAlbums).mockResolvedValue({ Items: [{ Id: 'a1', Name: 'A1', Type: 'MusicAlbum' }], TotalRecordCount: 2 })
     await useLibraryStore.getState().fetchAlbums(1)
     expect(useLibraryStore.getState().albums.map(a => a.Id)).toEqual(['a0', 'a1'])
   })
@@ -51,7 +51,7 @@ describe('fetchAlbums', () => {
 describe('paginated fetches', () => {
   it('fetchArtists fetches all remaining pages on the first load', async () => {
     vi.mocked(jellyfin.getArtists).mockImplementation(async (start = 0) => ({
-      Items: [{ Id: `ar${start}`, Name: `Artist ${start}` }],
+      Items: [{ Id: `ar${start}`, Name: `Artist ${start}`, Type: 'MusicArtist' }],
       TotalRecordCount: 150,
     }))
     await useLibraryStore.getState().fetchArtists(0)
@@ -63,7 +63,7 @@ describe('paginated fetches', () => {
 
   it('fetchSongs paginates in 1000-item windows', async () => {
     vi.mocked(jellyfin.getSongs).mockImplementation(async (start = 0) => ({
-      Items: [{ Id: `s${start}`, Name: `Song ${start}` }],
+      Items: [{ Id: `s${start}`, Name: `Song ${start}`, Type: 'Audio' }],
       TotalRecordCount: 1500,
     }))
     await useLibraryStore.getState().fetchSongs(0)
@@ -71,8 +71,8 @@ describe('paginated fetches', () => {
   })
 
   it('fetchArtists appends when fetching a later page', async () => {
-    useLibraryStore.setState({ artists: [{ Id: 'ar0', Name: 'A0' }] })
-    vi.mocked(jellyfin.getArtists).mockResolvedValue({ Items: [{ Id: 'ar1', Name: 'A1' }], TotalRecordCount: 200 })
+    useLibraryStore.setState({ artists: [{ Id: 'ar0', Name: 'A0', Type: 'MusicAlbum' }] })
+    vi.mocked(jellyfin.getArtists).mockResolvedValue({ Items: [{ Id: 'ar1', Name: 'A1', Type: 'MusicAlbum' }], TotalRecordCount: 200 })
     await useLibraryStore.getState().fetchArtists(100)
     expect(useLibraryStore.getState().artists.map(a => a.Id)).toEqual(['ar0', 'ar1'])
   })
@@ -80,8 +80,8 @@ describe('paginated fetches', () => {
 
 describe('home, playlists & load-more guards', () => {
   it('fetchHome loads recently added and played in parallel', async () => {
-    vi.mocked(jellyfin.getRecentlyAdded).mockResolvedValue({ Items: [{ Id: 'ra', Name: 'RA' }], TotalRecordCount: 1 })
-    vi.mocked(jellyfin.getRecentlyPlayed).mockResolvedValue({ Items: [{ Id: 'rp', Name: 'RP' }], TotalRecordCount: 1 })
+    vi.mocked(jellyfin.getRecentlyAdded).mockResolvedValue({ Items: [{ Id: 'ra', Name: 'RA', Type: 'MusicAlbum' }], TotalRecordCount: 1 })
+    vi.mocked(jellyfin.getRecentlyPlayed).mockResolvedValue({ Items: [{ Id: 'rp', Name: 'RP', Type: 'MusicAlbum' }], TotalRecordCount: 1 })
     await useLibraryStore.getState().fetchHome()
     const s = useLibraryStore.getState()
     expect(s.recentlyAdded[0].Id).toBe('ra')
@@ -89,20 +89,20 @@ describe('home, playlists & load-more guards', () => {
   })
 
   it('fetchPlaylists stores playlists', async () => {
-    vi.mocked(jellyfin.getPlaylists).mockResolvedValue({ Items: [{ Id: 'pl', Name: 'PL' }], TotalRecordCount: 1 })
+    vi.mocked(jellyfin.getPlaylists).mockResolvedValue({ Items: [{ Id: 'pl', Name: 'PL', Type: 'MusicAlbum' }], TotalRecordCount: 1 })
     await useLibraryStore.getState().fetchPlaylists()
     expect(useLibraryStore.getState().playlists[0].Id).toBe('pl')
   })
 
   it('loadMoreAlbums does nothing once everything is loaded', async () => {
-    useLibraryStore.setState({ albums: [{ Id: 'a1', Name: 'A' }], totalAlbums: 1 })
+    useLibraryStore.setState({ albums: [{ Id: 'a1', Name: 'A', Type: 'MusicAlbum' }], totalAlbums: 1 })
     await useLibraryStore.getState().loadMoreAlbums()
     expect(jellyfin.getAlbums).not.toHaveBeenCalled()
   })
 
   it('loadMoreSongs fetches the next window when more remain', async () => {
-    useLibraryStore.setState({ songs: [{ Id: 's0', Name: 'S' }], totalSongs: 1500 })
-    vi.mocked(jellyfin.getSongs).mockResolvedValue({ Items: [{ Id: 's1', Name: 'S1' }], TotalRecordCount: 1500 })
+    useLibraryStore.setState({ songs: [{ Id: 's0', Name: 'S', Type: 'MusicAlbum' }], totalSongs: 1500 })
+    vi.mocked(jellyfin.getSongs).mockResolvedValue({ Items: [{ Id: 's1', Name: 'S1', Type: 'MusicAlbum' }], TotalRecordCount: 1500 })
     await useLibraryStore.getState().loadMoreSongs()
     expect(jellyfin.getSongs).toHaveBeenCalled()
   })
@@ -140,15 +140,15 @@ describe('error handling', () => {
 
 describe('load-more fetches', () => {
   it('loadMoreAlbums fetches the next page when more remain', async () => {
-    useLibraryStore.setState({ albums: [{ Id: 'a0', Name: 'A' }], totalAlbums: 200 })
-    vi.mocked(jellyfin.getAlbums).mockResolvedValue({ Items: [{ Id: 'a1', Name: 'A1' }], TotalRecordCount: 200 })
+    useLibraryStore.setState({ albums: [{ Id: 'a0', Name: 'A', Type: 'MusicAlbum' }], totalAlbums: 200 })
+    vi.mocked(jellyfin.getAlbums).mockResolvedValue({ Items: [{ Id: 'a1', Name: 'A1', Type: 'MusicAlbum' }], TotalRecordCount: 200 })
     await useLibraryStore.getState().loadMoreAlbums()
     expect(jellyfin.getAlbums).toHaveBeenCalledWith(1, 100)
     expect(useLibraryStore.getState().albums.map(a => a.Id)).toEqual(['a0', 'a1'])
   })
 
   it('loadMoreSongs does nothing once everything is loaded', async () => {
-    useLibraryStore.setState({ songs: [{ Id: 's0', Name: 'S' }], totalSongs: 1 })
+    useLibraryStore.setState({ songs: [{ Id: 's0', Name: 'S', Type: 'MusicAlbum' }], totalSongs: 1 })
     await useLibraryStore.getState().loadMoreSongs()
     expect(jellyfin.getSongs).not.toHaveBeenCalled()
   })
@@ -168,7 +168,7 @@ describe('refreshAll & reset', () => {
   })
 
   it('reset empties all collections and counts', () => {
-    useLibraryStore.setState({ albums: [{ Id: 'a', Name: 'A' }], totalAlbums: 5 })
+    useLibraryStore.setState({ albums: [{ Id: 'a', Name: 'A', Type: 'MusicAlbum' }], totalAlbums: 5 })
     useLibraryStore.getState().reset()
     const s = useLibraryStore.getState()
     expect(s.albums).toEqual([])

@@ -69,8 +69,11 @@ function invoke(channel: string, ...args: unknown[]) {
   return cb({}, ...args)
 }
 
+// Read through a function so TS doesn't narrow after `h.windowOpts = null`.
+const windowOpts = () => h.windowOpts
+
 function byteResponse(bytes: Uint8Array, status = 200) {
-  return new Response(status >= 200 && status < 300 ? bytes : null, { status })
+  return new Response(status >= 200 && status < 300 ? new Uint8Array(bytes) : null, { status })
 }
 
 // download:start returns before its write stream finishes flushing to disk.
@@ -477,15 +480,15 @@ describe('main process: window & lifecycle wiring', () => {
     try {
       h.windowOpts = null
       activate!()
-      expect(h.windowOpts?.titleBarStyle).toBe('hiddenInset')
-      expect(h.windowOpts?.trafficLightPosition).toEqual({ x: 16, y: 20 })
+      expect(windowOpts()?.titleBarStyle).toBe('hiddenInset')
+      expect(windowOpts()?.trafficLightPosition).toEqual({ x: 16, y: 20 })
 
       // non-darwin: keep the OS default frame (no titlebar overrides).
       Object.defineProperty(process, 'platform', { value: 'linux', configurable: true })
       h.windowOpts = null
       activate!()
-      expect(h.windowOpts?.titleBarStyle).toBeUndefined()
-      expect(h.windowOpts?.trafficLightPosition).toBeUndefined()
+      expect(windowOpts()?.titleBarStyle).toBeUndefined()
+      expect(windowOpts()?.trafficLightPosition).toBeUndefined()
     } finally {
       Object.defineProperty(process, 'platform', { value: original, configurable: true })
     }

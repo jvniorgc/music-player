@@ -7,6 +7,7 @@ import type { PlatformApi } from '@music-player/core/platform'
 //   vi.mocked(window.api.getDownloadPath).mockResolvedValue('/x.audio')
 export function makeApiStub(): PlatformApi {
   return {
+    platform: 'linux',
     // Auth
     getAuth: vi.fn().mockResolvedValue(null),
     saveAuth: vi.fn().mockResolvedValue(undefined),

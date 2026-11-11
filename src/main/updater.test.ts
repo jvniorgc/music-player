@@ -17,7 +17,7 @@ const h = vi.hoisted(() => {
       emit(ev: string, payload?: any) {
         for (const cb of listeners.get(ev) ?? []) cb(payload)
       },
-      checkForUpdates: vi.fn(async () => ({ updateInfo: null })),
+      checkForUpdates: vi.fn(async (): Promise<{ updateInfo: { version: string } | null } | null> => ({ updateInfo: null })),
       downloadUpdate: vi.fn(),
       quitAndInstall: vi.fn()
     }

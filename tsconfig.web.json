@@ -16,9 +16,10 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["src/renderer/*"],
+      "@test/*": ["test/*"],
       "@music-player/core": ["packages/core/src/index.ts"],
       "@music-player/core/*": ["packages/core/src/*"]
     }
   },
-  "include": ["src/renderer/**/*", "packages/core/src/**/*"]
+  "include": ["src/renderer/**/*", "packages/core/src/**/*", "test/**/*"]
 }

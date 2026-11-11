@@ -66,6 +66,9 @@ export type DownloadRecord = {
  * over Electron IPC; the mobile client implements it over Capacitor plugins.
  */
 export interface PlatformApi {
+  /** Host OS identifier (e.g. 'darwin', 'win32', 'linux'). */
+  platform: string
+
   // Auth
   getAuth: () => Promise<AuthRecord | null>
   saveAuth: (data: AuthData) => Promise<void>
