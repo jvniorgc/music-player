@@ -70,6 +70,11 @@ export function formatNumber(value: number, locale: Locale = useI18nStore.getSta
   return new Intl.NumberFormat(locale).format(value)
 }
 
+/** Locale-aware compact number, e.g. 1.2M / 1,2 mi. */
+export function formatCompact(value: number, locale: Locale = useI18nStore.getState().locale): string {
+  return new Intl.NumberFormat(locale, { notation: 'compact', maximumFractionDigits: 1 }).format(value)
+}
+
 export function formatDate(
   value: Date | string | number,
   options: Intl.DateTimeFormatOptions = { dateStyle: 'medium' },
