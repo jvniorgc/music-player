@@ -10,6 +10,7 @@ import { LastfmSettings } from './LastfmSettings'
 import { SlskdSettings } from './SlskdSettings'
 import { SocialServerSettings } from './SocialServerSettings'
 import { EqualizerSettings } from './EqualizerSettings'
+import { InterfaceSettings } from './InterfaceSettings'
 import { shortcutList } from '../../lib/shortcuts'
 import { LANGUAGE_OPTIONS, type LanguagePreference } from '../../lib/language'
 import { useI18nStore, useT } from '../../i18n'
@@ -165,6 +166,10 @@ export default function SettingsView() {
         <button onClick={handleClearCache} disabled={clearing} className={buttonClass('secondary')}>
           {clearing ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />} {t('settings.clearCache')}
         </button>
+      </Section>
+
+      <Section id="interface" title={t('prefs.ui.section')}>
+        <InterfaceSettings />
       </Section>
 
       <Section id="language" title={t('settings.language')}>

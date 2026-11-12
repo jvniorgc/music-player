@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useLayoutEffect } from 'react'
 import { HashRouter, Routes, Route } from 'react-router-dom'
 import './app.css'
 import './i18n'
@@ -26,10 +26,13 @@ import UpdateDialog from './components/UpdateDialog'
 import { Loader2 } from 'lucide-react'
 import AppIcon from './components/UI/AppIcon'
 import { useShallow } from 'zustand/react/shallow'
+import { initInterfacePrefs } from './stores/prefs/interface'
 
 export default function App() {
   const { isAuthenticated, isLoading, restoreSession } = useAuthStore(useShallow(s => ({ isAuthenticated: s.isAuthenticated, isLoading: s.isLoading, restoreSession: s.restoreSession })))
   const { loadDownloads, initListeners } = useDownloadStore(useShallow(s => ({ loadDownloads: s.loadDownloads, initListeners: s.initListeners })))
+
+  useLayoutEffect(() => initInterfacePrefs(), [])
 
   useEffect(() => {
     restoreSession()

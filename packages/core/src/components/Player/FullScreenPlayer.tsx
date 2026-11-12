@@ -12,6 +12,7 @@ import ArtworkBackground from './ArtworkBackground'
 import { ArtistLinks, AlbumLink, PlayingFrom } from '../UI/Links'
 import { formatTime, TICKS_PER_SECOND } from '../../lib/format'
 import { useT } from '../../i18n'
+import { useInterfacePrefs, LYRICS_SIZE_CLASS } from '../../stores/prefs/interface'
 
 interface LyricLine {
   Text: string
@@ -21,6 +22,7 @@ interface LyricLine {
 export default function FullScreenPlayer() {
   const navigate = useNavigate()
   const { t } = useT()
+  const lyricsSize = useInterfacePrefs(s => s.values.lyricsSize)
   const {
     currentTrack, isPlaying, volume, shuffle, repeat,
     togglePlay, next, previous, setVolume, toggleShuffle, toggleRepeat,
@@ -119,7 +121,7 @@ export default function FullScreenPlayer() {
   const lyricsVisible = hasLyrics && showLyrics
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center fade-in">
+    <div className="theme-dark fixed inset-0 z-50 flex items-center justify-center fade-in">
       <ArtworkBackground imageUrl={imageUrl} />
 
 
@@ -256,7 +258,7 @@ export default function FullScreenPlayer() {
                   <p
                     key={i}
                     ref={isActive ? activeLyricRef : undefined}
-                    className={`text-2xl font-semibold leading-relaxed transition-all duration-500 ${
+                    className={`${LYRICS_SIZE_CLASS[lyricsSize]} font-semibold leading-relaxed transition-all duration-500 ${
                       isTimed
                         ? isActive
                           ? 'text-white scale-[1.02] origin-left'

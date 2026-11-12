@@ -5,6 +5,7 @@ import FullScreenPlayer from './FullScreenPlayer'
 import { usePlayerStore } from '../../stores/player'
 import { jellyfin } from '../../services/jellyfin'
 import type { QueueTrack } from '../../services/playback'
+import { useInterfacePrefs } from '../../stores/prefs/interface'
 
 function makeTrack(id = 's1', name = 'Song'): QueueTrack {
   return {
@@ -102,5 +103,24 @@ describe('FullScreenPlayer responsive layout', () => {
     const panel = screen.getByTestId('lyrics-panel')
     expect(panel.className).toContain('hidden')
     expect(panel.className).toContain('md:block')
+  })
+})
+
+describe('FullScreenPlayer interface prefs', () => {
+  afterEach(() => useInterfacePrefs.getState().reset())
+
+  it('applies the lyrics font size and can disable the artwork-tinted background', async () => {
+    useInterfacePrefs.getState().set({ lyricsSize: 'xl', artworkBackground: false })
+    vi.spyOn(jellyfin, 'getLyricsWithCache').mockResolvedValue([{ Text: 'first line' }])
+    const { container } = renderPlayer()
+    expect((await screen.findByText('first line')).className).toContain('text-4xl')
+    expect(container.querySelector('img[src="http://img/x.jpg"].blur-\\[80px\\]')).toBeNull()
+  })
+
+  it('shows the tinted artwork backdrop by default', async () => {
+    vi.spyOn(jellyfin, 'getLyricsWithCache').mockResolvedValue([{ Text: 'first line' }])
+    const { container } = renderPlayer()
+    expect((await screen.findByText('first line')).className).toContain('text-2xl')
+    expect(container.querySelector('img.blur-\\[80px\\]')).not.toBeNull()
   })
 })

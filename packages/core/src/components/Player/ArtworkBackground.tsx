@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useInterfacePrefs } from '../../stores/prefs/interface'
 
 interface Layer { url: string; key: number }
 
@@ -18,9 +19,11 @@ export default function ArtworkBackground({ imageUrl }: { imageUrl: string | nul
     })
   }, [imageUrl])
 
+  const enabled = useInterfacePrefs(s => s.values.artworkBackground)
+
   return (
     <div className="absolute inset-0 overflow-hidden pointer-events-none bg-black" aria-hidden="true">
-      {layers.map((layer, i) => (
+      {enabled && layers.map((layer, i) => (
         <img
           key={layer.key}
           src={layer.url}
