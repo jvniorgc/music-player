@@ -1,5 +1,6 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { jellyfin } from './jellyfin'
+import { useStreamingPrefs } from '../stores/prefs/streaming'
 import { jsonRes, emptyRes, textRes, mockFetchRouter } from '@test/http'
 
 const AUTH = {
@@ -130,6 +131,42 @@ describe('toggleFavorite', () => {
     expect(fetchMock.mock.calls[0][1]?.method).toBe('DELETE')
     expect(fetchMock.mock.calls[1][1]?.method).toBe('POST')
     expect(fetchMock.mock.calls[0][0]).toContain('/Users/u1/FavoriteItems/it1')
+  })
+})
+
+describe('URL builders: quality preferences', () => {
+  afterEach(() => useStreamingPrefs.getState().reset())
+
+  it('transcodes via the universal endpoint when a bitrate applies (jf.local is local)', () => {
+    useStreamingPrefs.getState().set({ localQuality: '192' })
+    const url = new URL(jellyfin.getStreamUrl('it1'))
+    expect(url.pathname).toBe('/Audio/it1/universal')
+    expect(url.searchParams.get('MaxStreamingBitrate')).toBe('192000')
+    expect(url.searchParams.get('AudioCodec')).toBe('mp3')
+    expect(url.searchParams.get('TranscodingContainer')).toBe('mp3')
+    expect(url.searchParams.get('ApiKey')).toBe('TKN')
+  })
+
+  it('keeps the original download unless a transcode is chosen', () => {
+    useStreamingPrefs.getState().set({ downloadQuality: 'mp3-320' })
+    expect(jellyfin.getDownloadUrl('it1')).toBe('http://jf.local/Audio/it1/stream.mp3?ApiKey=TKN&audioCodec=mp3&audioBitRate=320000')
+    useStreamingPrefs.getState().set({ downloadQuality: 'aac-256' })
+    expect(jellyfin.getDownloadUrl('it1')).toBe('http://jf.local/Audio/it1/stream.aac?ApiKey=TKN&audioCodec=aac&audioBitRate=256000')
+    useStreamingPrefs.getState().set({ downloadQuality: 'nope' })
+    expect(jellyfin.getDownloadUrl('it1')).toBe('http://jf.local/Items/it1/Download?ApiKey=TKN')
+  })
+})
+
+describe('onFavoriteAdded', () => {
+  it('notifies listeners only when an item is liked, until unsubscribed', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(null, { status: 204 })))
+    const cb = vi.fn()
+    const off = jellyfin.onFavoriteAdded(cb)
+    await jellyfin.toggleFavorite('a', false)
+    await jellyfin.toggleFavorite('b', true)
+    off()
+    await jellyfin.toggleFavorite('c', false)
+    expect(cb.mock.calls).toEqual([['a']])
   })
 })
 

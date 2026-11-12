@@ -52,6 +52,17 @@ describe('preload bridge', () => {
 
     api.checkForUpdates()
     expect(h.invoke).toHaveBeenCalledWith('updater:check')
+
+    api.getCacheInfo()
+    expect(h.invoke).toHaveBeenCalledWith('cache:get-info')
+    api.setCacheLimit(1024)
+    expect(h.invoke).toHaveBeenCalledWith('cache:set-limit', 1024)
+    api.getDownloadsDir()
+    expect(h.invoke).toHaveBeenCalledWith('downloads:get-dir')
+    api.chooseDownloadsDir()
+    expect(h.invoke).toHaveBeenCalledWith('downloads:choose-dir')
+    api.openDownloadsDir()
+    expect(h.invoke).toHaveBeenCalledWith('downloads:open-dir')
   })
 
   it('forwards arguments to invoke', () => {

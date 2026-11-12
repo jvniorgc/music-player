@@ -1,5 +1,5 @@
-import { app, BrowserWindow, ipcMain, shell, session, net, Menu, protocol } from 'electron'
-import { join, resolve, sep } from 'path'
+import { app, BrowserWindow, ipcMain, shell, session, net, Menu, protocol, dialog } from 'electron'
+import { join, resolve, sep, isAbsolute } from 'path'
 import { pathToFileURL } from 'url'
 import { initDatabase, getDatabase } from './database'
 import { existsSync, mkdirSync, createWriteStream, unlinkSync, statSync, readdirSync } from 'fs'
@@ -29,12 +29,14 @@ const corsOrigins = new Set<string>()
 app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required')
 
 let DOWNLOADS_DIR = ''
+let DEFAULT_DOWNLOADS_DIR = ''
 let CACHE_DIR = ''
 let CACHE_ART_DIR = ''
 let CACHE_AUDIO_DIR = ''
 
 function initPaths() {
-  DOWNLOADS_DIR = join(app.getPath('userData'), 'downloads')
+  DEFAULT_DOWNLOADS_DIR = join(app.getPath('userData'), 'downloads')
+  DOWNLOADS_DIR = DEFAULT_DOWNLOADS_DIR
   CACHE_DIR = join(app.getPath('userData'), 'cache')
   CACHE_ART_DIR = join(CACHE_DIR, 'artwork')
   CACHE_AUDIO_DIR = join(CACHE_DIR, 'audio')
@@ -44,6 +46,45 @@ function ensureDirs() {
   for (const dir of [DOWNLOADS_DIR, CACHE_DIR, CACHE_ART_DIR, CACHE_AUDIO_DIR]) {
     if (!existsSync(dir)) mkdirSync(dir, { recursive: true })
   }
+}
+
+const KEY_DOWNLOADS_DIR = 'downloads.dir'
+const KEY_DOWNLOADS_DIR_HISTORY = 'downloads.previousDirs'
+const KEY_CACHE_MAX = 'cache.maxBytes'
+/** Settings only the main process may write (they widen file access / control eviction). */
+const MAIN_ONLY_SETTING_KEYS = [KEY_DOWNLOADS_DIR, KEY_DOWNLOADS_DIR_HISTORY, KEY_CACHE_MAX]
+
+function readSetting(key: string): string | null {
+  const row = getDatabase().prepare('SELECT value FROM settings WHERE key = ?').get(key) as { value: string } | undefined
+  return row?.value ?? null
+}
+
+function writeSetting(key: string, value: string) {
+  getDatabase().prepare('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)').run(key, value)
+}
+
+/** The user-chosen downloads folder (absolute), or the default under userData. */
+function loadDownloadsDir() {
+  const saved = readSetting(KEY_DOWNLOADS_DIR)
+  DOWNLOADS_DIR = saved && isAbsolute(saved) ? saved : DEFAULT_DOWNLOADS_DIR
+}
+
+function previousDownloadDirs(): string[] {
+  try {
+    const list = JSON.parse(readSetting(KEY_DOWNLOADS_DIR_HISTORY) ?? '[]')
+    return Array.isArray(list) ? list.filter((d): d is string => typeof d === 'string' && isAbsolute(d)) : []
+  } catch {
+    return []
+  }
+}
+
+/**
+ * Roots that downloaded files may live in: the default and current folders plus
+ * every folder chosen before (rows store absolute paths, so files saved before
+ * the folder changed keep resolving and stay removable).
+ */
+function downloadRoots(): string[] {
+  return [...new Set([DEFAULT_DOWNLOADS_DIR, DOWNLOADS_DIR, ...previousDownloadDirs()])]
 }
 
 function clearSessionCaches() {
@@ -213,6 +254,7 @@ function setupIPC() {
     }
     const filePath = join(DOWNLOADS_DIR, `${data.itemId}.audio`)
     try {
+      if (!existsSync(DOWNLOADS_DIR)) mkdirSync(DOWNLOADS_DIR, { recursive: true })
       db.prepare(`INSERT OR REPLACE INTO downloads (item_id, file_path, filename, metadata, status) VALUES (?, ?, ?, ?, 'downloading')`).run(
         data.itemId, filePath, String(data.filename ?? ''), typeof data.metadata === 'string' ? data.metadata : null
       )
@@ -255,7 +297,7 @@ function setupIPC() {
   ipcMain.handle('download:remove', (_e, itemId: string) => {
     if (typeof itemId !== 'string') return
     const row = db.prepare('SELECT file_path FROM downloads WHERE item_id = ?').get(itemId) as { file_path: string } | undefined
-    safeUnlink(row?.file_path, [DOWNLOADS_DIR])
+    safeUnlink(row?.file_path, downloadRoots())
     db.prepare('DELETE FROM downloads WHERE item_id = ?').run(itemId)
     db.prepare('DELETE FROM downloaded_lyrics WHERE item_id = ?').run(itemId)
   })
@@ -337,6 +379,40 @@ function setupIPC() {
     db.prepare('DELETE FROM audio_cache').run()
   })
 
+  ipcMain.handle('cache:get-info', () => {
+    const row = db.prepare('SELECT COALESCE(SUM(file_size), 0) as total FROM audio_cache').get() as { total: number }
+    return { usedBytes: row.total, limitBytes: getCacheLimit() }
+  })
+
+  ipcMain.handle('cache:set-limit', (_e, bytes: unknown) => {
+    if (typeof bytes !== 'number' || !CACHE_LIMIT_OPTIONS.includes(bytes)) throw new Error('Invalid cache limit')
+    writeSetting(KEY_CACHE_MAX, String(bytes))
+    enforceCacheLimit()
+  })
+
+  // --- Downloads folder ---
+  ipcMain.handle('downloads:get-dir', () => {
+    loadDownloadsDir()
+    return DOWNLOADS_DIR
+  })
+
+  ipcMain.handle('downloads:choose-dir', async () => {
+    const opts = { defaultPath: DOWNLOADS_DIR, properties: ['openDirectory', 'createDirectory'] as ('openDirectory' | 'createDirectory')[] }
+    const res = mainWindow ? await dialog.showOpenDialog(mainWindow, opts) : /* v8 ignore next */ await dialog.showOpenDialog(opts)
+    const dir = res.filePaths[0]
+    if (res.canceled || !dir || !isAbsolute(dir)) return null
+    if (!existsSync(dir)) mkdirSync(dir, { recursive: true })
+    writeSetting(KEY_DOWNLOADS_DIR_HISTORY, JSON.stringify([...new Set([...previousDownloadDirs(), DOWNLOADS_DIR])]))
+    writeSetting(KEY_DOWNLOADS_DIR, dir)
+    DOWNLOADS_DIR = dir
+    return dir
+  })
+
+  ipcMain.handle('downloads:open-dir', async () => {
+    if (!existsSync(DOWNLOADS_DIR)) mkdirSync(DOWNLOADS_DIR, { recursive: true })
+    await shell.openPath(DOWNLOADS_DIR)
+  })
+
   // --- Settings ---
   ipcMain.handle('settings:get', (_e, key: string) => {
     if (typeof key !== 'string' || lastfm.SECRET_SETTING_KEYS.includes(key)) return null
@@ -346,7 +422,7 @@ function setupIPC() {
 
   ipcMain.handle('settings:set', (_e, key: string, value: string) => {
     if (typeof key !== 'string' || typeof value !== 'string') throw new Error('Invalid setting')
-    if (lastfm.SECRET_SETTING_KEYS.includes(key)) throw new Error('Protected setting')
+    if (lastfm.SECRET_SETTING_KEYS.includes(key) || MAIN_ONLY_SETTING_KEYS.includes(key)) throw new Error('Protected setting')
     db.prepare('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)').run(key, value)
   })
 
@@ -389,7 +465,7 @@ function setupIPC() {
 
   // --- File protocol for cached/downloaded audio ---
   ipcMain.handle('file:get-url', (_e, filePath: unknown) => {
-    const safe = resolveInside(filePath, [DOWNLOADS_DIR, CACHE_DIR])
+    const safe = resolveInside(filePath, [...downloadRoots(), CACHE_DIR])
     if (safe && existsSync(safe)) return toLocalAudioUrl(safe)
     return null
   })
@@ -409,10 +485,19 @@ function safeUnlink(filePath: string | undefined, roots: string[]) {
   }
 }
 
-const MAX_CACHE_SIZE = 2 * 1024 * 1024 * 1024 // 2GB
+const MB = 1024 * 1024
+const GB = 1024 * MB
+const DEFAULT_CACHE_LIMIT = 2 * GB
+const CACHE_LIMIT_OPTIONS = [512 * MB, 1 * GB, 2 * GB, 5 * GB, 10 * GB]
+
+function getCacheLimit(): number {
+  const v = Number(readSetting(KEY_CACHE_MAX))
+  return CACHE_LIMIT_OPTIONS.includes(v) ? v : DEFAULT_CACHE_LIMIT
+}
 
 function enforceCacheLimit() {
   const db = getDatabase()
+  const MAX_CACHE_SIZE = getCacheLimit()
   const totalRow = db.prepare('SELECT COALESCE(SUM(file_size), 0) as total FROM audio_cache').get() as { total: number }
   if (totalRow.total <= MAX_CACHE_SIZE) return
 
@@ -434,6 +519,7 @@ app.whenReady().then(() => {
   initPaths()
   ensureDirs()
   initDatabase()
+  loadDownloadsDir()
   clearSessionCaches()
   setupIPC()
   setupCors()
@@ -447,7 +533,7 @@ app.whenReady().then(() => {
     } catch {
       return new Response('Bad request', { status: 400 })
     }
-    const filePath = resolveInside(decoded, [DOWNLOADS_DIR, CACHE_DIR])
+    const filePath = resolveInside(decoded, [...downloadRoots(), CACHE_DIR])
     if (!filePath) return new Response('Forbidden', { status: 403 })
     const res = await net.fetch(pathToFileURL(filePath).toString(), { headers: request.headers })
     // Audio elements are crossOrigin="anonymous" so the Web Audio equalizer can read them.

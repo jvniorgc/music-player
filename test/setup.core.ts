@@ -25,6 +25,11 @@ export function makeApiStub(): PlatformApi {
     cacheAudio: vi.fn().mockResolvedValue({ success: true }),
     getCachedAudio: vi.fn().mockResolvedValue(null),
     clearCache: vi.fn().mockResolvedValue(undefined),
+    getCacheInfo: vi.fn().mockResolvedValue({ usedBytes: 0, limitBytes: 2 * 1024 ** 3 }),
+    setCacheLimit: vi.fn().mockResolvedValue(undefined),
+    getDownloadsDir: vi.fn().mockResolvedValue('/data/downloads'),
+    chooseDownloadsDir: vi.fn().mockResolvedValue(null),
+    openDownloadsDir: vi.fn().mockResolvedValue(undefined),
     getAppVersion: vi.fn().mockResolvedValue('0.0.0-test'),
     // Settings
     getSetting: vi.fn().mockResolvedValue(null),

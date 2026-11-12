@@ -101,6 +101,17 @@ export interface PlatformApi {
   cacheAudio: (data: { itemId: string; url: string; quality: string }) => Promise<{ success: boolean; error?: string }>
   getCachedAudio: (itemId: string) => Promise<string | null>
   clearCache: () => Promise<void>
+  /** Current audio-cache usage and LRU size limit, in bytes. */
+  getCacheInfo: () => Promise<{ usedBytes: number; limitBytes: number }>
+  /** Set the audio-cache size limit (one of the supported options) and evict down to it. */
+  setCacheLimit: (bytes: number) => Promise<void>
+
+  // Downloads folder
+  /** Absolute path where new downloads are saved. */
+  getDownloadsDir: () => Promise<string>
+  /** Native folder picker; returns the new path, or null if cancelled. */
+  chooseDownloadsDir: () => Promise<string | null>
+  openDownloadsDir: () => Promise<void>
   getAppVersion: () => Promise<string>
 
   // Settings

@@ -68,4 +68,14 @@ describe('LikedView', () => {
     renderView()
     expect(await screen.findByText('Songs you like will appear here')).toBeInTheDocument()
   })
+
+  it('hands the loaded liked songs to auto-download', async () => {
+    const items = [song('a', 'One')]
+    vi.spyOn(jellyfin, 'getFavoriteSongs').mockResolvedValue({ Items: items, TotalRecordCount: 1 } as never)
+    const autoDownloadLiked = vi.fn().mockResolvedValue(undefined)
+    useDownloadStore.setState({ autoDownloadLiked } as never)
+    renderView()
+    await screen.findByText('One')
+    expect(autoDownloadLiked).toHaveBeenCalledWith(items)
+  })
 })

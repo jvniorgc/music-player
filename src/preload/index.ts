@@ -38,6 +38,13 @@ const api = {
     ipcRenderer.invoke('cache:audio:save', data),
   getCachedAudio: (itemId: string) => ipcRenderer.invoke('cache:audio:get', itemId),
   clearCache: () => ipcRenderer.invoke('cache:clear'),
+  getCacheInfo: () => ipcRenderer.invoke('cache:get-info'),
+  setCacheLimit: (bytes: number) => ipcRenderer.invoke('cache:set-limit', bytes),
+
+  // Downloads folder
+  getDownloadsDir: () => ipcRenderer.invoke('downloads:get-dir'),
+  chooseDownloadsDir: () => ipcRenderer.invoke('downloads:choose-dir'),
+  openDownloadsDir: () => ipcRenderer.invoke('downloads:open-dir'),
   getAppVersion: () => ipcRenderer.invoke('app:get-version'),
 
   // Settings
