@@ -25,6 +25,7 @@ import UserProfileView from './components/Social/UserProfileView'
 import SettingsView from './components/Settings/SettingsView'
 import RankingsView from './components/Rankings/RankingsView'
 import { initPlayScrobbler } from './services/plays'
+import FeedView from './components/Feed/Feed'
 import UpdateDialog from './components/UpdateDialog'
 import { Loader2 } from 'lucide-react'
 import AppIcon from './components/UI/AppIcon'
@@ -92,6 +93,7 @@ export default function App() {
           <Route path="/soulseek" element={<SoulseekView />} />
           <Route path="/requests" element={<RequestsView />} />
           <Route path="/inbox" element={<InboxView />} />
+          <Route path="/feed" element={<FeedView />} />
           <Route path="/social" element={<SocialView />} />
           <Route path="/social/user/:id" element={<UserProfileView />} />
           <Route path="/rankings" element={<RankingsView />} />

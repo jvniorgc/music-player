@@ -693,4 +693,18 @@ export const ptBR: Messages = {
   'rankings.ach.loyal_fan.desc': "100 plays de um mesmo artista",
   'rankings.ach.streak': "Sequência",
   'rankings.ach.streak.desc': "Ouviu música 7 dias seguidos",
+  // feed
+  'feed.title': "Novidades",
+  'feed.seeAll': "Ver tudo",
+  'feed.soulseekOne': "{name} baixou {album} pelo Soulseek",
+  'feed.soulseekMany': "{name} adicionou {count} álbuns pelo Soulseek",
+  'feed.fulfilled': "O pedido de {name} “{title}” foi atendido",
+  'feed.libraryOne': "Novo na biblioteca: {album}",
+  'feed.libraryMany': "{count} novos álbuns na biblioteca",
+  'feed.loadMore': "Carregar mais",
+  'feed.loading': "Carregando novidades",
+  'feed.error': "Não foi possível carregar as novidades",
+  'feed.empty': "Nada de novo por enquanto",
+  'feed.notConfigured': "O servidor social não está configurado",
+  'feed.openSettings': "Abrir configurações",
 }

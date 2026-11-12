@@ -7,6 +7,8 @@ import {
   groupFilesByDirectory, configure, deriveDefaultUrl, isConfigured
 } from '../../services/slskd'
 import { jellyfin } from '../../services/jellyfin'
+import { isConfigured as isSocialConfigured } from '../../services/social'
+import { watchSoulseekDownload } from '../../services/feed'
 import { useToastStore } from '../../stores/toast'
 import {
   Search, Loader2, Download, FolderDown, ChevronDown, ChevronRight,
@@ -152,6 +154,7 @@ export default function SoulseekView() {
   const handleDownloadFile = async (username: string, file: SlskdFile) => {
     try {
       await downloadFiles(username, [{ filename: file.filename, size: file.size }])
+      if (isSocialConfigured()) watchSoulseekDownload(username, [file.filename])
       toast(t('slsk.started', { name: getFileName(file.filename) }), 'success')
     } catch (err) {
       console.error('Download error:', err)
@@ -163,6 +166,7 @@ export default function SoulseekView() {
     try {
       const audioFiles = files.filter(f => isAudioFile(f.filename))
       await downloadFiles(username, audioFiles.map(f => ({ filename: f.filename, size: f.size })))
+      if (isSocialConfigured()) watchSoulseekDownload(username, audioFiles.map(f => f.filename))
       toast(tn('slsk.startedMany', audioFiles.length), 'success')
     } catch (err) {
       console.error('Folder download error:', err)

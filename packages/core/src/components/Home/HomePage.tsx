@@ -13,6 +13,7 @@ import { AlbumCard } from '../UI/MediaCard'
 import { buttonClass } from '../UI/Button'
 import { useShallow } from 'zustand/react/shallow'
 import { useT } from '../../i18n'
+import { HomeFeedSection } from '../Feed/Feed'
 
 function HomeSkeleton() {
   const { t } = useT()
@@ -133,6 +134,8 @@ export default function HomePage() {
           </div>
         </section>
       )}
+
+      <HomeFeedSection />
 
       {/* Recently Played */}
       {recentlyPlayed.length > 0 && (

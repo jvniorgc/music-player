@@ -694,6 +694,20 @@ export const en = {
   'rankings.ach.loyal_fan.desc': "100 plays of one artist",
   'rankings.ach.streak': "Streak",
   'rankings.ach.streak.desc': "Listened 7 days in a row",
+  // feed
+  'feed.title': "What's new",
+  'feed.seeAll': "See all",
+  'feed.soulseekOne': "{name} downloaded {album} via Soulseek",
+  'feed.soulseekMany': "{name} added {count} albums via Soulseek",
+  'feed.fulfilled': "{name}'s request “{title}” was fulfilled",
+  'feed.libraryOne': "New in the library: {album}",
+  'feed.libraryMany': "{count} new albums in the library",
+  'feed.loadMore': "Load more",
+  'feed.loading': "Loading feed",
+  'feed.error': "Could not load the feed",
+  'feed.empty': "Nothing new yet",
+  'feed.notConfigured': "The social server is not configured",
+  'feed.openSettings': "Open settings",
 } as const
 
 export type Messages = { [K in keyof typeof en]: (typeof en)[K] extends string ? string : Plural }
