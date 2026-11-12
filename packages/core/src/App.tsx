@@ -22,6 +22,7 @@ import RequestsView from './components/Requests/RequestsView'
 import InboxView from './components/Inbox/InboxView'
 import SocialView from './components/Social/SocialView'
 import UserProfileView from './components/Social/UserProfileView'
+import ReviewsView from './components/Reviews/ReviewsView'
 import SettingsView from './components/Settings/SettingsView'
 import RankingsView from './components/Rankings/RankingsView'
 import { initPlayScrobbler } from './services/plays'
@@ -97,6 +98,7 @@ export default function App() {
           <Route path="/social" element={<SocialView />} />
           <Route path="/social/user/:id" element={<UserProfileView />} />
           <Route path="/rankings" element={<RankingsView />} />
+          <Route path="/reviews" element={<ReviewsView />} />
         </Route>
       </Routes>
     </HashRouter>
