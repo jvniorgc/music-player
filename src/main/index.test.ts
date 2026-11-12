@@ -512,13 +512,16 @@ describe('main process: window & lifecycle wiring', () => {
   it('serves local-audio:// only for files inside the app dirs', async () => {
     expect(h.protocolHandler).toBeTypeOf('function')
     const inside = join(h.paths.userData, 'cache', 'audio', 'song.audio')
-    h.protocolHandler!({ url: `local-audio://${encodeURIComponent(inside)}` })
+    const ok = await h.protocolHandler!({ url: `local-audio://${encodeURIComponent(inside)}` }) as Response
     expect(h.netFetch).toHaveBeenCalledWith(pathToFileURL(inside).toString(), expect.anything())
+    // CORS header lets crossOrigin="anonymous" elements feed the Web Audio equalizer.
+    expect(ok.headers.get('Access-Control-Allow-Origin')).toBe('*')
+    expect(ok.status).toBe(200)
     const denied = await h.protocolHandler!({ url: 'local-audio://%2Fetc%2Fpasswd' }) as Response
     expect(denied.status).toBe(403)
     const bad = await h.protocolHandler!({ url: 'local-audio://%E0%A4%A' }) as Response
     expect(bad.status).toBe(400)
-    expect(h.privileged).toContainEqual(expect.objectContaining({ scheme: 'local-audio' }))
+    expect(h.privileged).toContainEqual(expect.objectContaining({ scheme: 'local-audio', privileges: expect.objectContaining({ corsEnabled: true }) }))
   })
 
   it('re-creates the window on activate, honoring the renderer dev URL branch', () => {

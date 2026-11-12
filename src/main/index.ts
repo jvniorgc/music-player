@@ -18,7 +18,7 @@ let mainWindow: BrowserWindow | null = null
 // for range requests/seeking) so it works with webSecurity enabled, instead of
 // exposing raw file:// URLs to the renderer.
 protocol.registerSchemesAsPrivileged([
-  { scheme: 'local-audio', privileges: { stream: true, supportFetchAPI: true } }
+  { scheme: 'local-audio', privileges: { stream: true, supportFetchAPI: true, corsEnabled: true } }
 ])
 
 /** Origins of user-configured servers (Jellyfin, slskd) the renderer may call cross-origin. */
@@ -434,7 +434,7 @@ app.whenReady().then(() => {
   lastfm.startScrobbleQueue()
 
   // Serve cached/downloaded audio; only files inside the app's own dirs.
-  session.defaultSession.protocol.handle('local-audio', (request) => {
+  session.defaultSession.protocol.handle('local-audio', async (request) => {
     let decoded = ''
     try {
       decoded = decodeURIComponent(request.url.replace('local-audio://', ''))
@@ -443,7 +443,11 @@ app.whenReady().then(() => {
     }
     const filePath = resolveInside(decoded, [DOWNLOADS_DIR, CACHE_DIR])
     if (!filePath) return new Response('Forbidden', { status: 403 })
-    return net.fetch(pathToFileURL(filePath).toString(), { headers: request.headers })
+    const res = await net.fetch(pathToFileURL(filePath).toString(), { headers: request.headers })
+    // Audio elements are crossOrigin="anonymous" so the Web Audio equalizer can read them.
+    const headers = new Headers(res.headers)
+    headers.set('Access-Control-Allow-Origin', '*')
+    return new Response(res.body, { status: res.status, statusText: res.statusText, headers })
   })
 
   createWindow()

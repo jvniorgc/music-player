@@ -55,6 +55,8 @@ export interface JellyfinItem {
   Container?: string
   Path?: string
   ProviderIds?: Record<string, string>
+  /** ReplayGain-style track gain in dB (Jellyfin 10.9+, computed by the library scan). */
+  NormalizationGain?: number
 }
 
 /** Full item DTO as returned by /Users/{id}/Items/{id}, round-tripped on updates. */

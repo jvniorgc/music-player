@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { usePlayerStore } from '../../stores/player'
 import { useDownloadStore } from '../../stores/download'
 import { useLibraryStore } from '../../stores/library'
@@ -7,7 +8,7 @@ import { useShallow } from 'zustand/react/shallow'
 import {
   Play, Pause, SkipBack, SkipForward, Volume2, VolumeX,
   Shuffle, Repeat, Repeat1, ListMusic, ChevronUp,
-  Download, Check, ListPlus
+  Download, Check, ListPlus, SlidersHorizontal
 } from 'lucide-react'
 import AddToPlaylist from '../UI/AddToPlaylist'
 import CoverArt from '../UI/CoverArt'
@@ -17,6 +18,7 @@ import { useT } from '../../i18n'
 
 export default function NowPlayingBar() {
   const { t } = useT()
+  const navigate = useNavigate()
   const {
     currentTrack, isPlaying, volume, shuffle, repeat,
     showQueue, togglePlay, next, previous, setVolume, toggleShuffle,
@@ -170,6 +172,15 @@ export default function NowPlayingBar() {
               }}
             />
           </div>
+
+          <button
+            onClick={() => navigate('/settings#equalizer')}
+            aria-label={t('eq.open')}
+            title={t('eq.open')}
+            className="p-1.5 transition-colors text-text-tertiary hover:text-text-secondary"
+          >
+            <SlidersHorizontal size={15} />
+          </button>
 
           <button
             onClick={() => setShowQueue(!showQueue)}
