@@ -30,6 +30,8 @@ export interface AlbumRequest {
 
 export interface Me extends SocialUser { isAdmin: boolean }
 
+export interface KnownUser extends SocialUser { lastSeen: string }
+
 export interface NewAlbumRequest {
   title: string
   artist: string
@@ -113,7 +115,8 @@ export async function testConnection(url: string): Promise<boolean> {
   }
 }
 
-async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
+/** Authenticated JSON call to the social API; feature clients build on this. */
+export async function socialRequest<T>(path: string, options: RequestInit = {}): Promise<T> {
   if (!socialUrl) throw new Error('Social server not configured')
   const res = await fetch(`${socialUrl}${path}`, {
     ...options,
@@ -131,30 +134,35 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 }
 
 export function getMe(): Promise<Me> {
-  return request<Me>('/me')
+  return socialRequest<Me>('/me')
 }
 
 export async function listRequests(status?: RequestStatus): Promise<AlbumRequest[]> {
   const q = status ? `?status=${encodeURIComponent(status)}` : ''
-  return (await request<{ items: AlbumRequest[] }>(`/requests${q}`)).items
+  return (await socialRequest<{ items: AlbumRequest[] }>(`/requests${q}`)).items
 }
 
 export function createRequest(body: NewAlbumRequest): Promise<AlbumRequest> {
-  return request<AlbumRequest>('/requests', { method: 'POST', body: JSON.stringify(body) })
+  return socialRequest<AlbumRequest>('/requests', { method: 'POST', body: JSON.stringify(body) })
 }
 
 export function vote(id: number): Promise<AlbumRequest> {
-  return request<AlbumRequest>(`/requests/${id}/vote`, { method: 'POST' })
+  return socialRequest<AlbumRequest>(`/requests/${id}/vote`, { method: 'POST' })
 }
 
 export function unvote(id: number): Promise<AlbumRequest> {
-  return request<AlbumRequest>(`/requests/${id}/vote`, { method: 'DELETE' })
+  return socialRequest<AlbumRequest>(`/requests/${id}/vote`, { method: 'DELETE' })
 }
 
 export function updateRequest(id: number, body: { status: RequestStatus; adminNote?: string }): Promise<AlbumRequest> {
-  return request<AlbumRequest>(`/requests/${id}`, { method: 'PATCH', body: JSON.stringify(body) })
+  return socialRequest<AlbumRequest>(`/requests/${id}`, { method: 'PATCH', body: JSON.stringify(body) })
 }
 
 export function deleteRequest(id: number): Promise<void> {
-  return request<void>(`/requests/${id}`, { method: 'DELETE' })
+  return socialRequest<void>(`/requests/${id}`, { method: 'DELETE' })
+}
+
+/** Everyone who has used the social server (friends you can recommend to, etc.). */
+export async function listUsers(): Promise<KnownUser[]> {
+  return (await socialRequest<{ items: KnownUser[] }>('/users')).items
 }

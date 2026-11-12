@@ -149,4 +149,10 @@ describe('api', () => {
     social.configure('')
     await expect(social.getMe()).rejects.toThrow('not configured')
   })
+
+  it('listUsers returns everyone known to the social server', async () => {
+    const f = mockFetchRouter([['/users', jsonRes({ items: [{ id: 'u1', name: 'Ana', lastSeen: '2026-01-01' }] })]])
+    expect(await social.listUsers()).toEqual([{ id: 'u1', name: 'Ana', lastSeen: '2026-01-01' }])
+    expect(f.mock.calls[0][0]).toBe('http://social:8099/users')
+  })
 })
