@@ -21,6 +21,7 @@ import SoulseekView from './components/Soulseek/SoulseekView'
 import RequestsView from './components/Requests/RequestsView'
 import SocialView from './components/Social/SocialView'
 import UserProfileView from './components/Social/UserProfileView'
+import ReviewsView from './components/Reviews/ReviewsView'
 import SettingsView from './components/Settings/SettingsView'
 import UpdateDialog from './components/UpdateDialog'
 import { Loader2 } from 'lucide-react'
@@ -88,6 +89,7 @@ export default function App() {
           <Route path="/requests" element={<RequestsView />} />
           <Route path="/social" element={<SocialView />} />
           <Route path="/social/user/:id" element={<UserProfileView />} />
+          <Route path="/reviews" element={<ReviewsView />} />
         </Route>
       </Routes>
     </HashRouter>

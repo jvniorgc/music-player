@@ -8,6 +8,7 @@ import { CoverFallbackIcon } from '../UI/CoverArt'
 import MediaCard from '../UI/MediaCard'
 import { artistNames } from '../../lib/format'
 import { useT, type MessageKey } from '../../i18n'
+import UserReviews from '../Reviews/UserReviews'
 
 type ViewMode = 'artists' | 'albums' | 'songs'
 export type TimePeriod = '7d' | '30d' | '3m' | '1y' | 'all'
@@ -241,6 +242,8 @@ export default function UserProfileView() {
           </div>
         )}
       </section>
+
+      <UserReviews userId={user.Id} name={user.Name} />
 
       {collageOpen && id && (
         <CollageModal userId={id} onClose={() => setCollageOpen(false)} />

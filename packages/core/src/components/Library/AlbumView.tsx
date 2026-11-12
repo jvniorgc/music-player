@@ -11,6 +11,7 @@ import MetadataEditor from '../Metadata/MetadataEditor'
 import { AlbumHeaderMenu } from '../UI/AlbumMenu'
 import TrackMenu from '../UI/TrackMenu'
 import { formatTotalDuration } from '../../lib/format'
+import AlbumReviews, { AlbumRatingSummary } from '../Reviews/AlbumReviews'
 import TrackRow, { TrackIndex, TrackDuration } from '../UI/TrackRow'
 import { CoverFallbackIcon } from '../UI/CoverArt'
 import { ArtistLinks } from '../UI/Links'
@@ -133,6 +134,7 @@ export default function AlbumView() {
             <span>{formatTotalDuration(tracks)}</span>
           </div>
           <PopularitySummary stats={albumStats} />
+          <AlbumRatingSummary albumId={album.Id} />
 
           <div className="flex items-center gap-3 mt-5">
             <button
@@ -196,6 +198,8 @@ export default function AlbumView() {
           )
         })}
       </div>
+
+      <AlbumReviews album={album} />
 
       <MetadataEditor
         album={album}
