@@ -606,4 +606,9 @@ export const ptBR: Messages = {
   'prefs.system.trayPrevious': "Anterior",
   'prefs.system.trayShow': "Mostrar",
   'prefs.system.trayQuit': "Sair",
+  // now-playing
+  'nowPlaying.title': "Ouvindo agora",
+  'nowPlaying.join': "Ouvir junto com {name}",
+  'nowPlaying.paused': "Pausado",
+  'nowPlaying.showPref': "Mostrar \"Ouvindo agora\" dos amigos",
 }

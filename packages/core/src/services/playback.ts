@@ -591,7 +591,7 @@ class PlaybackService {
   }
 
   /** Starts playing a new context (album/playlist). The user queue is preserved. */
-  setQueue(items: JellyfinItem[], startIndex = 0, context: PlaybackContext | string = '', opts: { shuffle?: boolean } = {}) {
+  setQueue(items: JellyfinItem[], startIndex = 0, context: PlaybackContext | string = '', opts: { shuffle?: boolean; startAt?: number } = {}) {
     this._context = items.map(item => ({ id: item.Id, item }))
     this._contextInfo = toContext(context)
     this._history = []
@@ -607,7 +607,7 @@ class PlaybackService {
     this._current = this._orderPos >= 0 ? this._context[this._order[this._orderPos]] : null
     this.invalidatePreload()
     this.emit('queuechange')
-    this.loadAndPlayCurrent()
+    this.loadAndPlayCurrent(opts.startAt)
   }
 
   /** Appends to the end of the user queue ("Add to queue"). */

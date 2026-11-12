@@ -119,6 +119,12 @@ describe('queue setup', () => {
     await flush()
   })
 
+  it('setQueue can start at a position (startAt seconds)', async () => {
+    playback.setQueue(makeItems(1), 0, 'x', { startAt: 42 })
+    await flush()
+    expect(playback.currentTime).toBe(42)
+  })
+
   it('clamps an out-of-range start index to the last track', () => {
     playback.setQueue(makeItems(3), 99)
     expect(playback.currentTrack?.id).toBe('t2')

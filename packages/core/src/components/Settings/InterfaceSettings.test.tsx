@@ -23,6 +23,8 @@ describe('InterfaceSettings', () => {
     fireEvent.click(art)
     expect(v().artworkBackground).toBe(false)
     expect(art).toHaveAttribute('aria-checked', 'false')
+    fireEvent.click(screen.getByRole('switch', { name: "Show friends' \"Listening now\"" }))
+    expect(v().showNowPlaying).toBe(false)
   })
 
   it('picks accent presets and custom colors', () => {

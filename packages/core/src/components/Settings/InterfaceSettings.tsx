@@ -28,6 +28,22 @@ function Select<T extends string>({ label, value, options, onChange }: {
   )
 }
 
+function Switch({ label, checked, onToggle }: { label: string; checked: boolean; onToggle: () => void }) {
+  return (
+    <Row label={label}>
+      <button
+        role="switch"
+        aria-checked={checked}
+        aria-label={label}
+        onClick={onToggle}
+        className={`relative w-10 h-6 shrink-0 rounded-full transition-colors ${checked ? 'bg-accent' : 'bg-white/15'}`}
+      >
+        <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform ${checked ? 'translate-x-4' : ''}`} />
+      </button>
+    </Row>
+  )
+}
+
 export function InterfaceSettings() {
   const { t } = useT()
   const values = useInterfacePrefs(s => s.values)
@@ -67,17 +83,7 @@ export function InterfaceSettings() {
         ['comfortable', t('prefs.ui.densityComfortable')], ['compact', t('prefs.ui.densityCompact')],
       ]} />
 
-      <Row label={t('prefs.ui.artworkBackground')}>
-        <button
-          role="switch"
-          aria-checked={values.artworkBackground}
-          aria-label={t('prefs.ui.artworkBackground')}
-          onClick={() => set({ artworkBackground: !values.artworkBackground })}
-          className={`relative w-10 h-6 shrink-0 rounded-full transition-colors ${values.artworkBackground ? 'bg-accent' : 'bg-white/15'}`}
-        >
-          <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform ${values.artworkBackground ? 'translate-x-4' : ''}`} />
-        </button>
-      </Row>
+      <Switch label={t('prefs.ui.artworkBackground')} checked={values.artworkBackground} onToggle={() => set({ artworkBackground: !values.artworkBackground })} />
 
       <Select<LyricsSize> label={t('prefs.ui.lyricsSize')} value={values.lyricsSize} onChange={lyricsSize => set({ lyricsSize })} options={[
         ['s', t('prefs.ui.sizeS')], ['m', t('prefs.ui.sizeM')], ['l', t('prefs.ui.sizeL')], ['xl', t('prefs.ui.sizeXL')],
@@ -86,6 +92,8 @@ export function InterfaceSettings() {
       <Select<ReduceMotion> label={t('prefs.ui.reduceMotion')} value={values.reduceMotion} onChange={reduceMotion => set({ reduceMotion })} options={[
         ['system', t('prefs.ui.system')], ['on', t('prefs.ui.on')], ['off', t('prefs.ui.off')],
       ]} />
+
+      <Switch label={t('nowPlaying.showPref')} checked={values.showNowPlaying} onToggle={() => set({ showNowPlaying: !values.showNowPlaying })} />
     </div>
   )
 }

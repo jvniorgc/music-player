@@ -607,6 +607,11 @@ export const en = {
   'prefs.system.trayPrevious': "Previous",
   'prefs.system.trayShow': "Show",
   'prefs.system.trayQuit': "Quit",
+  // now-playing
+  'nowPlaying.title': "Listening now",
+  'nowPlaying.join': "Join {name}",
+  'nowPlaying.paused': "Paused",
+  'nowPlaying.showPref': "Show friends' \"Listening now\"",
 } as const
 
 export type Messages = { [K in keyof typeof en]: (typeof en)[K] extends string ? string : Plural }

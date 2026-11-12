@@ -13,6 +13,7 @@ export const useInterfacePrefs = createPreferences('interface', {
   artworkBackground: true as boolean,
   lyricsSize: 'm' as LyricsSize,
   reduceMotion: 'system' as ReduceMotion,
+  showNowPlaying: true as boolean,
 })
 
 export type InterfacePrefs = ReturnType<typeof useInterfacePrefs.getState>['values']

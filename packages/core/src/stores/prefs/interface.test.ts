@@ -25,7 +25,7 @@ describe('interface prefs', () => {
   it('defaults preserve the current look', () => {
     mockMedia(false, false)
     expect(useInterfacePrefs.getState().values).toEqual({
-      theme: 'dark', accent: '', density: 'comfortable', artworkBackground: true, lyricsSize: 'm', reduceMotion: 'system',
+      theme: 'dark', accent: '', density: 'comfortable', artworkBackground: true, lyricsSize: 'm', reduceMotion: 'system', showNowPlaying: true,
     })
     applyInterfacePrefs(useInterfacePrefs.getState().values)
     expect(html.dataset.theme).toBe('dark')
