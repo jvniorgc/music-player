@@ -11,6 +11,7 @@ import { t } from '../../i18n'
 import { isConfigured } from '../../services/social'
 import { itemFromJellyfin, type RecItem } from '../../services/friendRecs'
 import RecommendModal from '../Inbox/RecommendModal'
+import { usePickAlbum } from '../Picks/usePickAlbum'
 
 /** Album actions for cards and headers. Pass `tracks` when already loaded to skip the fetch. */
 export function useAlbumEntries(album: JellyfinItem, tracks?: JellyfinItem[]) {
@@ -18,6 +19,7 @@ export function useAlbumEntries(album: JellyfinItem, tracks?: JellyfinItem[]) {
   const [recItem, setRecItem] = useState<RecItem | null>(null)
   const toast = useToastStore(s => s.show)
   const goTo = useGoTo()
+  const pick = usePickAlbum(album)
   const ctx = { type: 'album' as const, id: album.Id, name: album.Name }
 
   const withTracks = (fn: (items: JellyfinItem[]) => void) => async () => {
@@ -57,6 +59,11 @@ export function useAlbumEntries(album: JellyfinItem, tracks?: JellyfinItem[]) {
       <RecommendModal item={recItem} onClose={() => setRecItem(null)} />
     </>
   )
+      pick.entry,
+    ]
+  }
+
+  const picker = <><AddToPlaylist song={pickerSongs} onClose={() => setPickerSongs(null)} />{pick.modals}</>
   return { entries, picker }
 }
 

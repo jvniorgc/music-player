@@ -32,6 +32,7 @@ import { Loader2 } from 'lucide-react'
 import AppIcon from './components/UI/AppIcon'
 import { useShallow } from 'zustand/react/shallow'
 import { initInterfacePrefs } from './stores/prefs/interface'
+import PicksHistoryView from './components/Picks/PicksHistoryView'
 
 export default function App() {
   const { isAuthenticated, isLoading, restoreSession } = useAuthStore(useShallow(s => ({ isAuthenticated: s.isAuthenticated, isLoading: s.isLoading, restoreSession: s.restoreSession })))
@@ -95,6 +96,7 @@ export default function App() {
           <Route path="/requests" element={<RequestsView />} />
           <Route path="/inbox" element={<InboxView />} />
           <Route path="/feed" element={<FeedView />} />
+          <Route path="/picks" element={<PicksHistoryView />} />
           <Route path="/social" element={<SocialView />} />
           <Route path="/social/user/:id" element={<UserProfileView />} />
           <Route path="/rankings" element={<RankingsView />} />

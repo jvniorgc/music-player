@@ -14,6 +14,7 @@ import { buttonClass } from '../UI/Button'
 import { useShallow } from 'zustand/react/shallow'
 import { useT } from '../../i18n'
 import { HomeFeedSection } from '../Feed/Feed'
+import PicksRow from '../Picks/PicksRow'
 
 function HomeSkeleton() {
   const { t } = useT()
@@ -90,6 +91,8 @@ export default function HomePage() {
           {radioLoading ? t('home.instantMixLoading') : t('home.instantMix')}
         </button>
       </div>
+
+      <PicksRow />
 
       {!hasContent && (homeStatus === 'idle' || homeStatus === 'loading') && <HomeSkeleton />}
 
