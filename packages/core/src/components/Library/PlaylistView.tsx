@@ -1,12 +1,12 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { jellyfin, JellyfinItem } from '../../services/jellyfin'
+import { jellyfin, JellyfinItem, JellyfinFullItem } from '../../services/jellyfin'
 import { isAbortError } from '../../services/http'
 import { usePlayerStore } from '../../stores/player'
 import type { PlaybackContext } from '../../services/playback'
 import { useLibraryStore } from '../../stores/library'
 import { useToastStore } from '../../stores/toast'
-import { Play, Pause, Shuffle, ListMusic, Pencil, Trash2, X as XIcon } from 'lucide-react'
+import { Play, Pause, Shuffle, ListMusic, Pencil, Trash2, Camera, X as XIcon } from 'lucide-react'
 import { InputModal, ConfirmModal } from '../UI/Modal'
 import TrackMenu from '../UI/TrackMenu'
 import { TrackSubtitle } from '../UI/Links'
@@ -31,6 +31,9 @@ export default function PlaylistView() {
 
   const [showRename, setShowRename] = useState(false)
   const [showDelete, setShowDelete] = useState(false)
+  const [isOwner, setIsOwner] = useState(false)
+  const [uploadingCover, setUploadingCover] = useState(false)
+  const coverInputRef = useRef<HTMLInputElement>(null)
   const showPopularity = usePopularityActive()
 
   const loadData = (signal?: AbortSignal) => {
@@ -44,6 +47,8 @@ export default function PlaylistView() {
         if (signal?.aborted) return
         setTracks(res.Items)
         setPlaylist(item)
+        jellyfin.isPlaylistOwner(item.Id, (item as JellyfinFullItem).Tags)
+          .then(owner => { if (!signal?.aborted) setIsOwner(owner) })
       })
       .catch(err => {
         if (!isAbortError(err) && !signal?.aborted) console.warn('[PlaylistView] failed to load', id, err)
@@ -67,6 +72,25 @@ export default function PlaylistView() {
     } catch (err) {
       console.error('Failed to rename playlist:', err)
       toast(t('playlist.renameThisFailed'), 'error')
+    }
+  }
+
+  const handleCoverChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!id || !file) return
+    setUploadingCover(true)
+    try {
+      await jellyfin.uploadImageBlob(id, file)
+      const updated = await jellyfin.getItem(id)
+      setPlaylist(updated)
+      fetchPlaylists()
+      toast(t('playlist.coverUpdated'), 'success')
+    } catch (err) {
+      console.error('Failed to update playlist cover:', err)
+      toast(t('playlist.coverUpdateFailed'), 'error')
+    } finally {
+      setUploadingCover(false)
     }
   }
 
@@ -110,13 +134,35 @@ export default function PlaylistView() {
     <div className="fade-in">
 
       <div className="flex gap-8 mb-8">
-        <div className="w-56 h-56 rounded-lg overflow-hidden bg-surface-2 shadow-lg shrink-0">
+        <div className="relative group w-56 h-56 rounded-lg overflow-hidden bg-surface-2 shadow-lg shrink-0">
           {imageUrl ? (
             <img src={imageUrl} className="w-full h-full object-cover" alt="" />
           ) : (
             <div className="w-full h-full flex items-center justify-center bg-surface-2">
               <CoverFallbackIcon kind="playlist" size={64} />
             </div>
+          )}
+          {isOwner && (
+            <>
+              <button
+                onClick={() => coverInputRef.current?.click()}
+                disabled={uploadingCover}
+                className={`absolute inset-0 flex flex-col items-center justify-center bg-black/50 transition-opacity focus:outline-none focus-visible:opacity-100 ${uploadingCover ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}
+                title={t('playlist.changeCover')}
+                aria-label={t('playlist.changeCover')}
+              >
+                <Camera size={28} className="text-white" />
+                <span className="text-xs text-white mt-2">{uploadingCover ? t('playlist.coverUploading') : t('playlist.changeCover')}</span>
+              </button>
+              <input
+                ref={coverInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                data-testid="playlist-cover-input"
+                onChange={handleCoverChange}
+              />
+            </>
           )}
         </div>
 

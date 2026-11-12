@@ -381,6 +381,18 @@ class JellyfinService {
     })
   }
 
+  /** Whether the logged-in user owns the playlist (mp-owner tag, else the owner-only /Users probe). */
+  async isPlaylistOwner(playlistId: string, tags?: string[]): Promise<boolean> {
+    const ownerTags = (tags ?? []).filter(t => t.startsWith('mp-owner:'))
+    if (ownerTags.length > 0) return ownerTags.includes(this.ownerTag(this.userId))
+    try {
+      const r = await this.rawFetch(`/Playlists/${playlistId}/Users`)
+      return r.status === 200
+    } catch {
+      return false
+    }
+  }
+
   async deleteItem(itemId: string): Promise<void> {
     return this.request(`/Items/${itemId}`, { method: 'DELETE' })
   }

@@ -294,6 +294,26 @@ describe('getUserPlaylists', () => {
   })
 })
 
+describe('isPlaylistOwner', () => {
+  it('trusts the mp-owner tag without hitting the network', async () => {
+    const fetchMock = mockFetchRouter([])
+    await expect(jellyfin.isPlaylistOwner('pl1', ['mp-owner:u1'])).resolves.toBe(true)
+    await expect(jellyfin.isPlaylistOwner('pl1', ['mp-owner:other'])).resolves.toBe(false)
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it('falls back to the playlist users probe when untagged', async () => {
+    mockFetchRouter([
+      ['/Playlists/mine/Users', () => emptyRes(200)],
+      ['/Playlists/theirs/Users', () => emptyRes(403)],
+      ['/Playlists/down/Users', () => { throw new Error('network down') }],
+    ])
+    await expect(jellyfin.isPlaylistOwner('mine')).resolves.toBe(true)
+    await expect(jellyfin.isPlaylistOwner('theirs', [])).resolves.toBe(false)
+    await expect(jellyfin.isPlaylistOwner('down')).resolves.toBe(false)
+  })
+})
+
 describe('listening stats', () => {
   it('getUserTopArtists (all-time) aggregates play counts by artist', async () => {
     mockFetchRouter([
