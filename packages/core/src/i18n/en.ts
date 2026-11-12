@@ -650,6 +650,17 @@ export const en = {
   "inbox.sendFailed": "Couldn't send the recommendation",
   "inbox.unreadBadge": "{count} unread",
   'inbox.sentToast': { one: "Sent to {count} friend", other: "Sent to {count} friends" } as Plural,
+  'reactions.title': "Reactions & comments",
+  'reactions.open': "Reactions and comments",
+  'reactions.react': "React with {emoji}",
+  'reactions.placeholder': "Add a comment…",
+  'reactions.post': "Post",
+  'reactions.delete': "Delete comment",
+  'reactions.empty': "No comments yet",
+  'reactions.loadFailed': "Couldn't load reactions",
+  'reactions.actionFailed': "Couldn't save, try again",
+  'reactions.attachTime': "At {time}",
+  'reactions.summary': { one: '{count} reaction', other: '{count} reactions' } as Plural,
 } as const
 
 export type Messages = { [K in keyof typeof en]: (typeof en)[K] extends string ? string : Plural }

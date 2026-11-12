@@ -124,3 +124,25 @@ describe('FullScreenPlayer interface prefs', () => {
     expect(container.querySelector('img.blur-\\[80px\\]')).not.toBeNull()
   })
 })
+
+describe('FullScreenPlayer reactions', () => {
+  it('shows a reactions button for the current track when the social server is configured', async () => {
+    const social = await import('../../services/social')
+    const reactions = await import('../../services/reactions')
+    vi.spyOn(jellyfin, 'getLyricsWithCache').mockResolvedValue([])
+    vi.spyOn(social, 'loadConfig').mockResolvedValue()
+    vi.spyOn(social, 'autoDetect').mockResolvedValue(false)
+    vi.spyOn(social, 'isConfigured').mockReturnValue(true)
+    vi.spyOn(social, 'getMe').mockResolvedValue({ id: 'u1', name: 'Ana', isAdmin: false })
+    vi.spyOn(reactions, 'getSocial').mockResolvedValue({ reactions: [], comments: [
+      { id: 1, itemId: 's1', itemType: 'track', user: { id: 'u2', name: 'Bia' }, body: 'x', positionSeconds: 30, createdAt: '' },
+    ] })
+    const seek = vi.fn()
+    usePlayerStore.setState({ seek })
+    renderPlayer()
+    fireEvent.click(await screen.findByRole('button', { name: 'Reactions and comments' }))
+    fireEvent.click(await screen.findByText('0:30'))
+    expect(reactions.getSocial).toHaveBeenCalledWith('s1')
+    expect(seek).toHaveBeenCalledWith(30)
+  })
+})
