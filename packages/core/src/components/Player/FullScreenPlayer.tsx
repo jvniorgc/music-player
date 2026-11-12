@@ -9,6 +9,7 @@ import {
   ChevronDown, Volume2, VolumeX, ListMusic, Captions, CaptionsOff
 } from 'lucide-react'
 import ArtworkBackground from './ArtworkBackground'
+import { TrackReactionsButton } from '../Reactions/ItemSocial'
 import { ArtistLinks, AlbumLink, PlayingFrom } from '../UI/Links'
 import { formatTime, TICKS_PER_SECOND } from '../../lib/format'
 import { useT } from '../../i18n'
@@ -148,6 +149,14 @@ export default function FullScreenPlayer() {
           {showLyrics ? <Captions size={20} /> : <CaptionsOff size={20} />}
         </button>
       )}
+
+      <TrackReactionsButton
+        key={currentTrack.id}
+        trackId={currentTrack.id}
+        getPosition={() => playback.currentTime}
+        onSeek={s => usePlayerStore.getState().seek(s)}
+        className="absolute top-6 right-20 z-20"
+      />
 
       {/* Main content: side by side when lyrics, centered when not */}
       <div className={`relative z-10 flex items-center gap-6 md:gap-12 w-full px-6 md:px-12 h-[80vh] ${lyricsVisible ? 'max-w-5xl' : 'max-w-lg justify-center'}`}>

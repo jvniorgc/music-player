@@ -19,6 +19,7 @@ import { useShallow } from 'zustand/react/shallow'
 import { useT } from '../../i18n'
 import { usePopularityActive, useHeaderStats, PopularitySummary, TrackPopularity } from '../UI/Popularity'
 import { getAlbumStats, albumKey } from '../../services/popularity'
+import { AlbumSocialSection, ReactionBadge, useReactionSummary } from '../Reactions/ItemSocial'
 
 export default function AlbumView() {
   const { t, tn } = useT()
@@ -32,6 +33,7 @@ export default function AlbumView() {
   const { playlists, fetchPlaylists } = useLibraryStore(useShallow(s => ({ playlists: s.playlists, fetchPlaylists: s.fetchPlaylists })))
   const [showMetadata, setShowMetadata] = useState(false)
   const showPopularity = usePopularityActive()
+  const reactionSummary = useReactionSummary(tracks.map(t => t.Id))
   const albumStats = useHeaderStats(album ? albumKey(album) : null, () => getAlbumStats(album!))
 
   const loadData = (signal?: AbortSignal) => {
@@ -189,6 +191,8 @@ export default function AlbumView() {
 
               {showPopularity && <TrackPopularity item={track} group={album.Id} />}
 
+              <ReactionBadge summary={reactionSummary[track.Id]} />
+
               <TrackDuration ticks={track.RunTimeTicks} />
 
               <TrackMenu track={track} hideAlbum />
@@ -196,6 +200,8 @@ export default function AlbumView() {
           )
         })}
       </div>
+
+      <AlbumSocialSection albumId={album.Id} />
 
       <MetadataEditor
         album={album}
