@@ -866,3 +866,38 @@ describe('session snapshot', () => {
     expect(audio.currentTime).toBe(0)
   })
 })
+
+describe('audio effects integration', () => {
+  const effects = async () => (await import('./audioEffects')).audioEffects
+
+  it('registers the main and preloaded elements and applies each track normalization gain', async () => {
+    const fx = await effects()
+    const setTrackGain = vi.spyOn(fx, 'setTrackGain')
+    const items = makeItems(3).map((it, i) => ({ ...it, NormalizationGain: -i - 1 }))
+    playback.setQueue(items, 0)
+    await flush()
+    const main = (playback as any).audio
+    expect(main.crossOrigin).toBe('anonymous')
+    expect(setTrackGain).toHaveBeenCalledWith(main, -1)
+    const pre = (playback as any)._preloadAudio
+    expect(pre.crossOrigin).toBe('anonymous')
+    expect(setTrackGain).toHaveBeenCalledWith(pre, -2)
+  })
+
+  it('unregisters discarded elements and resumes the context on play', async () => {
+    const fx = await effects()
+    const unregister = vi.spyOn(fx, 'unregister')
+    const resume = vi.spyOn(fx, 'resume')
+    playback.setQueue(makeItems(3), 0)
+    await flush()
+    const first = (playback as any).audio
+    ;(playback as any).audio.dispatch('ended') // gapless swap discards the old element
+    await flush()
+    expect(unregister).toHaveBeenCalledWith(first)
+    const pre = (playback as any)._preloadAudio
+    ;(playback as any).invalidatePreload()
+    expect(unregister).toHaveBeenCalledWith(pre)
+    await playback.play()
+    expect(resume).toHaveBeenCalled()
+  })
+})

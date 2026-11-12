@@ -1,5 +1,6 @@
 import { JellyfinItem, jellyfin } from './jellyfin'
 import * as lastfm from './lastfm'
+import { audioEffects } from './audioEffects'
 import { t } from '../i18n'
 import { secondsToTicks, ticksToSeconds } from '../lib/format'
 
@@ -107,6 +108,7 @@ class PlaybackService {
     this.audio = new Audio()
     this.audio.preload = 'auto'
     this.attachAudioListeners(this.audio)
+    audioEffects.register(this.audio)
 
     // Load persisted volume
     const savedVol = localStorage.getItem('player_volume')
@@ -272,6 +274,7 @@ class PlaybackService {
     try {
       const url = await this.resolveSource(track)
 
+      audioEffects.setTrackGain(this.audio, track.item.NormalizationGain)
       this.audio.src = url
       this.audio.load()
 
@@ -343,6 +346,7 @@ class PlaybackService {
     const oldAudio = this.audio
     oldAudio.pause()
     oldAudio.src = ''
+    audioEffects.unregister(oldAudio)
 
     // Swap to the preloaded audio element
     this.audio = this._preloadAudio
@@ -446,12 +450,14 @@ class PlaybackService {
     audio.preload = 'auto'
     audio.volume = this._volume
     this.attachAudioListeners(audio)
+    audioEffects.register(audio)
     this._preloadAudio = audio
     this._preloadTrack = next
 
     this.resolveSource(next).then(url => {
       if (this._preloadAudio !== audio) return
 
+      audioEffects.setTrackGain(audio, next.item.NormalizationGain)
       audio.src = url
       audio.load()
 
@@ -478,6 +484,7 @@ class PlaybackService {
   private invalidatePreload() {
     if (this._preloadAudio) {
       this._preloadAudio.src = ''
+      audioEffects.unregister(this._preloadAudio)
       this._preloadAudio = null
     }
     this._preloadTrack = null
@@ -630,6 +637,7 @@ class PlaybackService {
         if (time > 0) audio.currentTime = time
         this.emit('timeupdate', { currentTime: time, duration: audio.duration || 0 })
       }, { once: true })
+      audioEffects.setTrackGain(audio, track.item.NormalizationGain)
       audio.src = url
       audio.load()
       this.emit('timeupdate', {
@@ -704,6 +712,7 @@ class PlaybackService {
 
   async play() {
     if (!this.audio.src) return
+    audioEffects.resume()
     await this.audio.play()
     const track = this._current
     if (this._pendingStart && track) {
