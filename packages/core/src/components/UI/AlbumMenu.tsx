@@ -50,6 +50,7 @@ export function useAlbumEntries(album: JellyfinItem, tracks?: JellyfinItem[]) {
         }),
       },
       isConfigured() && { label: t('inbox.recommend'), icon: Send, onSelect: () => setRecItem(itemFromJellyfin(album)) },
+      pick.entry,
     ]
   }
 
@@ -57,13 +58,9 @@ export function useAlbumEntries(album: JellyfinItem, tracks?: JellyfinItem[]) {
     <>
       <AddToPlaylist song={pickerSongs} onClose={() => setPickerSongs(null)} />
       <RecommendModal item={recItem} onClose={() => setRecItem(null)} />
+      {pick.modals}
     </>
   )
-      pick.entry,
-    ]
-  }
-
-  const picker = <><AddToPlaylist song={pickerSongs} onClose={() => setPickerSongs(null)} />{pick.modals}</>
   return { entries, picker }
 }
 
