@@ -5,7 +5,7 @@ import type { DiscordPresence } from '@music-player/core/platform'
 // PLACEHOLDER — replace with the real Discord application ID from
 // https://discord.com/developers/applications before shipping. The app must
 // also upload a Rich Presence art asset named LARGE_IMAGE_KEY.
-export const DISCORD_CLIENT_ID = '000000000000000000'
+export const DISCORD_CLIENT_ID = '1570431140270055615'
 /** Static Rich Presence asset; Jellyfin artwork URLs carry the API key and must never be sent. */
 export const LARGE_IMAGE_KEY = 'app_icon'
 export const RETRY_BASE_MS = 5_000
