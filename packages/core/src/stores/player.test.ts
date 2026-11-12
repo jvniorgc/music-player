@@ -313,3 +313,31 @@ describe('initListeners event mapping', () => {
     vi.unstubAllGlobals()
   })
 })
+
+describe('playFromList (song click preference)', () => {
+  const items = [{ Id: 't0', Name: 'T0', Type: 'Audio' }, { Id: 't1', Name: 'T1', Type: 'Audio' }]
+  const prefs = () => import('./prefs/playback').then(m => m.usePlaybackPrefs.getState())
+
+  it('replaces the queue by default and when nothing is playing', async () => {
+    usePlayerStore.getState().playFromList(items, 1, 'Album')
+    expect(playback.setQueue).toHaveBeenCalledWith(items, 1, 'Album')
+    ;(await prefs()).set({ songClick: 'next' })
+    usePlayerStore.getState().playFromList(items, 0)
+    expect(playback.setQueue).toHaveBeenCalledWith(items, 0, '')
+    expect(playback.addNext).not.toHaveBeenCalled()
+    ;(await prefs()).reset()
+  })
+
+  it('plays next or appends when something is playing', async () => {
+    usePlayerStore.setState({ currentTrack: { id: 'x', item: items[0] } })
+    ;(await prefs()).set({ songClick: 'next' })
+    usePlayerStore.getState().playFromList(items, 1)
+    expect(playback.addNext).toHaveBeenCalledWith(items[1])
+    ;(await prefs()).set({ songClick: 'end' })
+    usePlayerStore.getState().playFromList(items, 0)
+    expect(playback.addToQueue).toHaveBeenCalledWith(items[0])
+    expect(playback.setQueue).not.toHaveBeenCalled()
+    expect(useToastStore.getState().toasts.map(t => t.message)).toEqual(expect.arrayContaining(['Playing next: T1', 'Added to queue: T0']))
+    ;(await prefs()).reset()
+  })
+})

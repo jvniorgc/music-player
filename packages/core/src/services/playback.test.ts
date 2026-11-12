@@ -11,6 +11,7 @@ vi.mock('./jellyfin', () => ({
     reportPlaybackStopped: () => Promise.resolve(),
     getLyricsWithCache: () => Promise.resolve([]),
     getImageUrl: (id: string) => `img://${id}`,
+    getInstantMix: (id: string) => Promise.resolve({ Items: [{ Id: id, Name: id, Type: 'Audio' }, { Id: 'mix1', Name: 'Mix 1', Type: 'Audio' }] }),
     serverUrl: 'http://jf',
     userId: 'u',
     token: 't',
@@ -899,5 +900,134 @@ describe('audio effects integration', () => {
     expect(unregister).toHaveBeenCalledWith(pre)
     await playback.play()
     expect(resume).toHaveBeenCalled()
+  })
+})
+
+async function setPrefs(patch: Record<string, unknown>) {
+  const { usePlaybackPrefs } = await import('../stores/prefs/playback')
+  usePlaybackPrefs.getState().set(patch)
+}
+
+describe('playback preferences', () => {
+  it('previous threshold: restarts only past the configured seconds', async () => {
+    await setPrefs({ previousThreshold: 10 })
+    playback.setQueue(makeItems(3), 0)
+    playback.next()
+    ;(playback as any).audio.currentTime = 5
+    playback.previous()
+    expect(playback.currentTrack?.id).toBe('t0')
+  })
+
+  it('previous threshold 0 always goes back', async () => {
+    await setPrefs({ previousThreshold: 0 })
+    playback.setQueue(makeItems(3), 0)
+    playback.next()
+    ;(playback as any).audio.currentTime = 50
+    playback.previous()
+    expect(playback.currentTrack?.id).toBe('t0')
+  })
+
+  it('gapless off does a full load instead of swapping the preloaded element', async () => {
+    await setPrefs({ gapless: false })
+    playback.setQueue(makeItems(3), 0)
+    await flush()
+    const preloaded = (playback as any)._preloadAudio
+    ;(playback as any).audio.dispatch('ended')
+    await flush()
+    expect(playback.currentTrack?.id).toBe('t1')
+    expect((playback as any).audio).not.toBe(preloaded)
+  })
+
+  it('queue end "repeat" wraps back to the first track', async () => {
+    await setPrefs({ queueEnd: 'repeat' })
+    playback.setQueue(makeItems(2), 1)
+    await flush()
+    ;(playback as any).audio.dispatch('ended')
+    await flush()
+    expect(playback.currentTrack?.id).toBe('t0')
+  })
+
+  it('queue end "radio" continues with an instant mix of the last track', async () => {
+    await setPrefs({ queueEnd: 'radio' })
+    playback.setQueue(makeItems(2), 1)
+    await flush()
+    ;(playback as any).audio.dispatch('ended')
+    await flush()
+    await flush()
+    expect(playback.currentTrack?.id).toBe('mix1')
+    expect(playback.context?.type).toBe('radio')
+  })
+
+  it('queue end "radio" stays put when the mix is empty or fails', async () => {
+    await setPrefs({ queueEnd: 'radio' })
+    const jf = (await import('./jellyfin')).jellyfin as any
+    jf.getInstantMix = () => Promise.reject(new Error('down'))
+    playback.setQueue(makeItems(1), 0)
+    await flush()
+    ;(playback as any).audio.dispatch('ended')
+    await flush()
+    expect(playback.currentTrack?.id).toBe('t0')
+    jf.getInstantMix = () => Promise.resolve({ Items: [item('t0')] })
+    ;(playback as any).audio.dispatch('ended')
+    await flush()
+    expect(playback.currentTrack?.id).toBe('t0')
+  })
+
+  describe('crossfade', () => {
+    beforeEach(() => { vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] }) })
+    afterEach(() => { vi.useRealTimers() })
+
+    it('fades the next track in while the current one fades out', async () => {
+      await setPrefs({ crossfade: 4 })
+      playback.setVolume(0.8)
+      playback.setQueue(makeItems(3), 0)
+      await flush()
+      const oldAudio = (playback as any).audio
+      const next = (playback as any)._preloadAudio
+      oldAudio.currentTime = 97
+      oldAudio.dispatch('timeupdate')
+      expect(playback.currentTrack?.id).toBe('t1')
+      expect((playback as any).audio).toBe(next)
+      expect(next.volume).toBe(0)
+      oldAudio.dispatch('timeupdate') // ignored: no longer current
+      vi.advanceTimersByTime(1500)
+      expect(next.volume).toBeGreaterThan(0)
+      expect(oldAudio.volume).toBeLessThan(0.8)
+      vi.advanceTimersByTime(2000)
+      expect(next.volume).toBeCloseTo(0.8)
+      expect(oldAudio.src).toBe('')
+      await flush()
+    })
+
+    it('does not crossfade when off, when nothing is preloaded, or too early', async () => {
+      playback.setQueue(makeItems(3), 0)
+      await flush()
+      const a = (playback as any).audio
+      a.currentTime = 99
+      a.dispatch('timeupdate')
+      expect(playback.currentTrack?.id).toBe('t0')
+      await setPrefs({ crossfade: 4 })
+      a.currentTime = 10
+      a.dispatch('timeupdate')
+      expect(playback.currentTrack?.id).toBe('t0')
+      a.currentTime = 99
+      ;(playback as any).invalidatePreload()
+      a.dispatch('timeupdate')
+      expect(playback.currentTrack?.id).toBe('t0')
+    })
+
+    it('a manual skip cancels a running fade', async () => {
+      await setPrefs({ crossfade: 4 })
+      playback.setQueue(makeItems(3), 0)
+      await flush()
+      const oldAudio = (playback as any).audio
+      oldAudio.currentTime = 97
+      oldAudio.dispatch('timeupdate')
+      playback.next()
+      expect(oldAudio.src).toBe('')
+      expect((playback as any).audio.volume).toBe(1)
+      vi.advanceTimersByTime(5000)
+      await flush()
+    })
   })
 })

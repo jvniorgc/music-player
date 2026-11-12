@@ -10,6 +10,7 @@ import { LastfmSettings } from './LastfmSettings'
 import { SlskdSettings } from './SlskdSettings'
 import { SocialServerSettings } from './SocialServerSettings'
 import { EqualizerSettings } from './EqualizerSettings'
+import { PlaybackPrefsSettings } from './PlaybackPrefsSettings'
 import { shortcutList } from '../../lib/shortcuts'
 import { LANGUAGE_OPTIONS, type LanguagePreference } from '../../lib/language'
 import { useI18nStore, useT } from '../../i18n'
@@ -127,6 +128,10 @@ export default function SettingsView() {
             </div>
           ))}
         </dl>
+      </Section>
+
+      <Section id="playback-prefs" title={t('prefs.playback.title')}>
+        <PlaybackPrefsSettings />
       </Section>
 
       <Section id="equalizer" title={t('settings.equalizer')}>

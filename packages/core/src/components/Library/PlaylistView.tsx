@@ -25,7 +25,7 @@ export default function PlaylistView() {
   const [playlist, setPlaylist] = useState<JellyfinItem | null>(null)
   const [tracks, setTracks] = useState<JellyfinItem[]>([])
   const [loading, setLoading] = useState(true)
-  const { playItems, shuffleItems, currentTrack, isPlaying, togglePlay } = usePlayerStore(useShallow(s => ({ playItems: s.playItems, shuffleItems: s.shuffleItems, currentTrack: s.currentTrack, isPlaying: s.isPlaying, togglePlay: s.togglePlay })))
+  const { playItems, playFromList, shuffleItems, currentTrack, isPlaying, togglePlay } = usePlayerStore(useShallow(s => ({ playItems: s.playItems, playFromList: s.playFromList, shuffleItems: s.shuffleItems, currentTrack: s.currentTrack, isPlaying: s.isPlaying, togglePlay: s.togglePlay })))
   const fetchPlaylists = useLibraryStore(s => s.fetchPlaylists)
   const toast = useToastStore(s => s.show)
 
@@ -220,7 +220,7 @@ export default function PlaylistView() {
               <TrackRow
                 key={`${track.Id}-${i}`}
                 isCurrent={isCurrent}
-                onClick={() => playItems(tracks, i, playlistContext)}
+                onClick={() => playFromList(tracks, i, playlistContext)}
                 leading={
                   <>
                     <TrackIndex number={i + 1} isCurrent={isCurrent} isPlaying={isPlaying} className="w-7" />

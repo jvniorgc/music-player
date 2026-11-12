@@ -29,7 +29,7 @@ export default function SearchView() {
   const [recent, setRecent] = useState(loadRecentSearches)
   const inputRef = useRef<HTMLInputElement>(null)
   const navigate = useNavigate()
-  const playItems = usePlayerStore(s => s.playItems)
+  const playFromList = usePlayerStore(s => s.playFromList)
   const { playlists, fetchPlaylists } = useLibraryStore(useShallow(s => ({ playlists: s.playlists, fetchPlaylists: s.fetchPlaylists })))
   const trimmed = query.trim()
 
@@ -137,7 +137,7 @@ export default function SearchView() {
                   <TrackRow
                     key={song.Id}
                     className="px-5 py-2.5"
-                    onClick={() => { remember(); playItems(results.songs, i, { type: 'search', id: trimmed, name: t('search.context', { query: trimmed }) }) }}
+                    onClick={() => { remember(); playFromList(results.songs, i, { type: 'search', id: trimmed, name: t('search.context', { query: trimmed }) }) }}
                     leading={
                       <CoverArt
                         src={song.AlbumId ? jellyfin.getImageUrl(song.AlbumId, undefined, 80) : null}

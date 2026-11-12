@@ -14,6 +14,7 @@ export default function DownloadsView() {
   const { t, tn } = useT()
   const { downloads, loadDownloads, removeDownload, initListeners } = useDownloadStore(useShallow(s => ({ downloads: s.downloads, loadDownloads: s.loadDownloads, removeDownload: s.removeDownload, initListeners: s.initListeners })))
   const playItems = usePlayerStore(s => s.playItems)
+  const playFromList = usePlayerStore(s => s.playFromList)
 
   useEffect(() => {
     loadDownloads()
@@ -83,7 +84,7 @@ export default function DownloadsView() {
             return (
               <TrackRow
                 key={dl.itemId}
-                onClick={() => playItems(completed.map(d => d.metadata), i, { type: 'downloads', name: t('nav.downloads') })}
+                onClick={() => playFromList(completed.map(d => d.metadata), i, { type: 'downloads', name: t('nav.downloads') })}
                 leading={
                   <CoverArt
                     src={dl.metadata?.AlbumId ? jellyfin.getImageUrl(dl.metadata.AlbumId, undefined, 80) : null}
