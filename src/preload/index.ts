@@ -10,6 +10,9 @@ import type {
   LastfmInfoMethod,
   DiscordPresence,
   GlobalShortcutAction,
+  SystemSettings,
+  TrayLabels,
+  TrayCommand,
 } from '@music-player/core/platform'
 
 const api = {
@@ -134,6 +137,16 @@ const api = {
     return () => ipcRenderer.removeListener('shortcuts:global', handler)
   },
   focusWindow: () => ipcRenderer.invoke('window:focus'),
+  // System integration
+  systemGetSettings: () => ipcRenderer.invoke('system:get-settings'),
+  systemSetSettings: (patch: Partial<SystemSettings>) => ipcRenderer.invoke('system:set-settings', patch),
+  systemRelaunch: () => ipcRenderer.invoke('system:relaunch'),
+  systemSetTrayLabels: (labels: TrayLabels) => ipcRenderer.invoke('system:set-tray-labels', labels),
+  onTrayCommand: (cb: (command: TrayCommand) => void) => {
+    const handler = (_e: Electron.IpcRendererEvent, command: TrayCommand) => cb(command)
+    ipcRenderer.on('system:tray-command', handler)
+    return () => ipcRenderer.removeListener('system:tray-command', handler)
+  }
 } satisfies PlatformApi
 
 contextBridge.exposeInMainWorld('api', api)

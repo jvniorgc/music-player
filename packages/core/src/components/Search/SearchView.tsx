@@ -6,6 +6,7 @@ import { usePlayerStore } from '../../stores/player'
 import { useLibraryStore } from '../../stores/library'
 import { Search, X, Disc3, Users, Music, Loader2, AlertCircle, RefreshCw, History } from 'lucide-react'
 import { buttonClass } from '../UI/Button'
+import { isPrivateSession } from '../../stores/prefs/privacy'
 import { loadRecentSearches, addRecentSearch, removeRecentSearch, clearRecentSearches } from '../../lib/recentSearches'
 import TrackMenu from '../UI/TrackMenu'
 import { TrackSubtitle } from '../UI/Links'
@@ -74,7 +75,7 @@ export default function SearchView() {
     }
   }, [trimmed, attempt])
 
-  const remember = () => setRecent(addRecentSearch(trimmed))
+  const remember = () => { if (!isPrivateSession()) setRecent(addRecentSearch(trimmed)) }
   const clear = () => { setQuery(''); inputRef.current?.focus() }
 
   return (

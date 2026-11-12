@@ -170,6 +170,18 @@ describe('preload bridge', () => {
     expect(h.invoke).toHaveBeenCalledWith('lastfm:get-info', 'album.getInfo', { artist: 'A', album: 'B' })
   })
 
+  it('maps the system methods to their channels', () => {
+    api.systemGetSettings()
+    expect(h.invoke).toHaveBeenCalledWith('system:get-settings')
+    api.systemSetSettings({ closeToTray: true })
+    expect(h.invoke).toHaveBeenCalledWith('system:set-settings', { closeToTray: true })
+    api.systemRelaunch()
+    expect(h.invoke).toHaveBeenCalledWith('system:relaunch')
+    const labels = { playPause: 'a', next: 'b', previous: 'c', show: 'd', quit: 'e' }
+    api.systemSetTrayLabels(labels)
+    expect(h.invoke).toHaveBeenCalledWith('system:set-tray-labels', labels)
+  })
+
   it('wires download:progress listeners and returns an unsubscribe', () => {
     const cb = vi.fn()
     const unsub = api.onDownloadProgress(cb)
@@ -192,7 +204,8 @@ describe('preload bridge', () => {
       ['onUpdateDownloadProgress', 'updater:download-progress'],
       ['onUpdateDownloaded', 'updater:update-downloaded'],
       ['onUpdateError', 'updater:error'],
-      ['onGlobalShortcut', 'shortcuts:global']
+      ['onGlobalShortcut', 'shortcuts:global'],
+      ['onTrayCommand', 'system:tray-command']
     ]
     for (const [method, channel] of channels) {
       h.on.mockClear()

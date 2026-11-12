@@ -167,4 +167,22 @@ describe('startSessionPersistence', () => {
     expect(localStorage.getItem(SESSION_KEY)).toBeNull()
     stop()
   })
+
+  it('can skip restoring, or resume playing after restore', async () => {
+    saveSession(snap(), owner)
+    const off = fakeEngine(null)
+    startSessionPersistence(off, owner, { restore: false })()
+    expect(off.restoreSnapshot).not.toHaveBeenCalled()
+
+    const auto = { ...fakeEngine(null), play: vi.fn() }
+    startSessionPersistence(auto, owner, { autoplay: true })()
+    await tick()
+    expect(auto.play).toHaveBeenCalled()
+
+    const failed = { ...fakeEngine(null), play: vi.fn() }
+    failed.restoreSnapshot.mockResolvedValue(false)
+    startSessionPersistence(failed, owner, { autoplay: true })()
+    await tick()
+    expect(failed.play).not.toHaveBeenCalled()
+  })
 })

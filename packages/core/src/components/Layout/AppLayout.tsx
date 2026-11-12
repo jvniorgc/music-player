@@ -11,6 +11,8 @@ import { useEffect } from 'react'
 import { playback } from '../../services/playback'
 import { jellyfin } from '../../services/jellyfin'
 import { startSessionPersistence } from '../../lib/session'
+import { useSystemPrefs } from '../../stores/prefs/system'
+import { initTrayIntegration } from '../../services/tray'
 import { useShallow } from 'zustand/react/shallow'
 import { initGlobalShortcuts } from '../../services/globalShortcuts'
 import { initNotifications } from '../../services/notifications'
@@ -22,13 +24,16 @@ export default function AppLayout() {
 
   useEffect(() => {
     const cleanup = initListeners()
-    // Resume the last session (paused) once the store mirrors the engine.
-    const stopPersistence = startSessionPersistence(playback, { serverUrl: jellyfin.serverUrl, userId: jellyfin.userId })
+    // Resume the last session (if enabled) once the store mirrors the engine.
+    const { resumeSession, resumeAutoplay } = useSystemPrefs.getState().values
+    const stopPersistence = startSessionPersistence(playback, { serverUrl: jellyfin.serverUrl, userId: jellyfin.userId }, { restore: resumeSession, autoplay: resumeAutoplay })
+    const stopTray = initTrayIntegration({ playPause: () => playback.togglePlay(), next: () => playback.next(), previous: () => playback.previous() })
     const stopGlobalShortcuts = initGlobalShortcuts()
     const stopNotifications = initNotifications()
     return () => {
       stopNotifications()
       stopGlobalShortcuts()
+      stopTray()
       stopPersistence()
       cleanup()
     }

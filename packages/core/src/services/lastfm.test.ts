@@ -129,3 +129,18 @@ describe('status and auth passthroughs', () => {
     expect(window.api.lastfmDisconnect).toHaveBeenCalled()
   })
 })
+
+describe('private session', () => {
+  it('sends no now-playing or scrobbles while a private session is on', async () => {
+    const { setPrivateSession } = await import('../stores/prefs/privacy')
+    setPrivateSession(true)
+    try {
+      await nowPlaying(makeItem())
+      await scrobble(makeItem(), 123)
+      expect(window.api.lastfmNowPlaying).not.toHaveBeenCalled()
+      expect(window.api.lastfmScrobble).not.toHaveBeenCalled()
+    } finally {
+      setPrivateSession(false)
+    }
+  })
+})

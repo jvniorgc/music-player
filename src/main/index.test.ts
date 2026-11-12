@@ -82,6 +82,12 @@ vi.mock('./globalShortcuts', () => ({
   clearGlobalShortcuts: vi.fn(),
 }))
 vi.mock('./updater', () => ({ initAutoUpdater: vi.fn() }))
+vi.mock('./system', () => ({
+  applyHardwareAcceleration: vi.fn(),
+  windowOptions: vi.fn(() => ({})),
+  attachWindow: vi.fn(),
+  setupSystem: vi.fn(),
+}))
 vi.mock('./discord', () => ({
   isEnabled: vi.fn(() => true),
   setEnabled: vi.fn(),
@@ -702,5 +708,16 @@ describe('main process: downloads folder', () => {
     getDatabase().prepare(`INSERT OR REPLACE INTO settings (key, value) VALUES ('downloads.previousDirs', '{}')`).run()
     expect(invoke('file:get-url', '/etc/passwd')).toBeNull()
     expect(invoke('downloads:get-dir')).toBe(defaultDir())
+  })
+})
+
+describe('main process: system integration', () => {
+  it('applies startup system settings and wires the main window', async () => {
+    const system = await import('./system')
+    expect(system.applyHardwareAcceleration).toHaveBeenCalled()
+    expect(system.setupSystem).toHaveBeenCalledWith(expect.any(Function))
+    expect(system.attachWindow).toHaveBeenCalled()
+    const getWindow = vi.mocked(system.setupSystem).mock.calls[0][0]
+    expect(getWindow()).not.toBeNull()
   })
 })

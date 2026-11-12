@@ -72,6 +72,12 @@ export function makeApiStub(): PlatformApi {
     setGlobalShortcuts: vi.fn().mockResolvedValue({ failed: [] }),
     onGlobalShortcut: vi.fn().mockReturnValue(() => {}),
     focusWindow: vi.fn().mockResolvedValue(undefined),
+    // System
+    systemGetSettings: vi.fn().mockResolvedValue({ launchAtLogin: false, startMinimized: false, closeToTray: false, hardwareAcceleration: true, restartRequired: false }),
+    systemSetSettings: vi.fn().mockResolvedValue({ launchAtLogin: false, startMinimized: false, closeToTray: false, hardwareAcceleration: true, restartRequired: false }),
+    systemRelaunch: vi.fn().mockResolvedValue(undefined),
+    systemSetTrayLabels: vi.fn().mockResolvedValue(undefined),
+    onTrayCommand: vi.fn().mockReturnValue(() => {}),
   }
 }
 

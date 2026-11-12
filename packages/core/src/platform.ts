@@ -175,6 +175,38 @@ export interface PlatformApi {
   onGlobalShortcut?: (cb: (action: GlobalShortcutAction) => void) => () => void
   /** Bring the app window to the front (e.g. when a notification is clicked). */
   focusWindow?: () => Promise<void>
+
+  // System integration (desktop only; optional so other clients can omit it)
+  systemGetSettings?: () => Promise<SystemSettingsState>
+  systemSetSettings?: (patch: Partial<SystemSettings>) => Promise<SystemSettingsState>
+  /** Restart the app (e.g. to apply the hardware-acceleration setting). */
+  systemRelaunch?: () => Promise<void>
+  /** Localized labels for the tray context menu. */
+  systemSetTrayLabels?: (labels: TrayLabels) => Promise<void>
+  onTrayCommand?: (cb: (command: TrayCommand) => void) => () => void
 }
+
+export interface SystemSettings {
+  launchAtLogin: boolean
+  startMinimized: boolean
+  /** Closing the window hides it to the tray instead of quitting. */
+  closeToTray: boolean
+  hardwareAcceleration: boolean
+}
+
+export interface SystemSettingsState extends SystemSettings {
+  /** A saved setting only applies after relaunching the app. */
+  restartRequired: boolean
+}
+
+export interface TrayLabels {
+  playPause: string
+  next: string
+  previous: string
+  show: string
+  quit: string
+}
+
+export type TrayCommand = 'playpause' | 'next' | 'previous'
 
 export type GlobalShortcutAction = 'togglePlay' | 'next' | 'previous' | 'volumeUp' | 'volumeDown'

@@ -16,6 +16,8 @@ import { AudioOutputSettings } from './AudioOutputSettings'
 import { StreamingSettings } from './StreamingSettings'
 import { ShortcutSettings } from './ShortcutSettings'
 import { NotificationSettings } from './NotificationSettings'
+import { PrivacySettings } from './PrivacySettings'
+import { SystemSettings } from './SystemSettings'
 import { LANGUAGE_OPTIONS, type LanguagePreference } from '../../lib/language'
 import { useI18nStore, useT } from '../../i18n'
 import { getDiscordEnabled, setDiscordEnabled } from '../../services/discord'
@@ -161,6 +163,10 @@ export default function SettingsView() {
         </div>
       </Section>
 
+      <Section id="privacy" title={t('prefs.privacy.title')}>
+        <PrivacySettings />
+      </Section>
+
       <Section id="soulseek" title={t('settings.soulseek')}>
         <SlskdSettings />
       </Section>
@@ -196,6 +202,10 @@ export default function SettingsView() {
         >
           {LANGUAGE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.value === 'system' ? t('settings.languageSystem') : o.label}</option>)}
         </select>
+      </Section>
+
+      <Section id="system" title={t('prefs.system.title')}>
+        <SystemSettings />
       </Section>
 
       <Section id="about" title={t('settings.about')}>

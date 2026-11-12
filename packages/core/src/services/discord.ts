@@ -2,6 +2,7 @@ import type { DiscordPresence } from '../platform'
 import type { QueueTrack } from './playback'
 import { usePlayerStore } from '../stores/player'
 import { TICKS_PER_SECOND } from '../lib/format'
+import { isPrivateSession, usePrivacyPrefs } from '../stores/prefs/privacy'
 
 /** Minimum interval between Rich Presence pushes (Discord rate-limits updates). */
 export const THROTTLE_MS = 2000
@@ -47,7 +48,7 @@ export function initDiscordPresence(): () => void {
     if (!enabled) { lastSent = null; return }
     lastPushAt = Date.now()
     const s = usePlayerStore.getState()
-    const presence = toPresence(s)
+    const presence = isPrivateSession() ? null : toPresence(s)
     lastSent = { trackId: s.currentTrack?.id ?? null, playing: !!presence, position: s.currentTime, at: lastPushAt }
     window.api.discordSetActivity(presence).catch(() => {})
   }
@@ -59,7 +60,7 @@ export function initDiscordPresence(): () => void {
 
   const changed = (s: PlayerSnapshot) => {
     if (!lastSent) return true
-    const playing = !!toPresence(s)
+    const playing = !isPrivateSession() && !!toPresence(s)
     if (playing !== lastSent.playing) return true
     if (!playing) return false
     if ((s.currentTrack?.id ?? null) !== lastSent.trackId) return true
@@ -71,6 +72,9 @@ export function initDiscordPresence(): () => void {
     if (enabled && changed(s)) request()
   })
   schedule = () => { lastSent = null; request() }
+  const unsubscribePrivacy = usePrivacyPrefs.subscribe((s, prev) => {
+    if (enabled && s.values.privateSession !== prev.values.privateSession) request()
+  })
 
   window.api.discordGetEnabled().then(v => {
     enabled = v
@@ -79,6 +83,7 @@ export function initDiscordPresence(): () => void {
 
   return () => {
     unsubscribe()
+    unsubscribePrivacy()
     if (timer) clearTimeout(timer)
     timer = null
     schedule = null
