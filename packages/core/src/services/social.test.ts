@@ -155,4 +155,12 @@ describe('api', () => {
     expect(await social.listUsers()).toEqual([{ id: 'u1', name: 'Ana', lastSeen: '2026-01-01' }])
     expect(f.mock.calls[0][0]).toBe('http://social:8099/users')
   })
+
+  it('sends Content-Type only when there is a body', async () => {
+    const f = mockFetchRouter([['/requests/1/vote', jsonRes({})], ['/requests', jsonRes({ id: 1 })]])
+    await social.unvote(1)
+    expect(new Headers(f.mock.calls[0][1]?.headers).has('Content-Type')).toBe(false)
+    await social.createRequest({ title: 'A', artist: 'B' })
+    expect(new Headers(f.mock.calls[1][1]?.headers).get('Content-Type')).toBe('application/json')
+  })
 })

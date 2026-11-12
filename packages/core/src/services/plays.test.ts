@@ -106,22 +106,10 @@ describe('initPlayScrobbler', () => {
 })
 
 describe('queries', () => {
-  it('fetches rankings, discoveries and achievements', async () => {
-    const fetch = mockFetchRouter([
-      ['/rankings/week', () => jsonRes({ start: 's', tracks: [] })],
-      ['/discoveries/recent', jsonRes({ items: [{ albumId: 'r' }] })],
-      ['/discoveries?', jsonRes({ items: [{ albumId: 'a b' }] })],
-      ['/achievements/me', jsonRes({ items: [{ id: 'me' }] })],
-      ['/achievements', jsonRes({ items: [{ id: 'all' }] })],
-    ])
+  it('fetches the weekly ranking', async () => {
+    const fetch = mockFetchRouter([['/rankings/week', () => jsonRes({ start: 's', tracks: [] })]])
     expect(await plays.getWeekRanking(1)).toMatchObject({ start: 's' })
     expect(fetch.mock.calls[0][0]).toContain('/rankings/week?offset=1')
     expect(await plays.getWeekRanking()).toMatchObject({ start: 's' })
-    expect(await plays.getDiscoveries(['a b', 'c'])).toEqual([{ albumId: 'a b' }])
-    expect(fetch.mock.calls[2][0]).toContain('/discoveries?albumIds=a%20b,c')
-    expect(await plays.getDiscoveries([])).toEqual([])
-    expect(await plays.getRecentDiscoveries()).toEqual([{ albumId: 'r' }])
-    expect(await plays.getMyAchievements()).toEqual([{ id: 'me' }])
-    expect(await plays.getAchievements()).toEqual([{ id: 'all' }])
   })
 })

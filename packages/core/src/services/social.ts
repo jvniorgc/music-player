@@ -122,7 +122,8 @@ export async function socialRequest<T>(path: string, options: RequestInit = {}):
     ...options,
     headers: {
       Authorization: `MediaBrowser Token="${jellyfin.token}"`,
-      'Content-Type': 'application/json',
+      // Fastify rejects a JSON content type with an empty body.
+      ...(options.body !== undefined && { 'Content-Type': 'application/json' }),
     },
     signal: timeoutSignal(),
   })

@@ -21,9 +21,6 @@ export interface WeekRanking {
   start: string; end: string
   tracks: RankedItem[]; albums: RankedItem[]; artists: RankedItem[]; listeners: Listener[]
 }
-export interface Discovery { albumId: string; albumName: string; artists: string; user: SocialUser; playedAt: string }
-export interface AchievementSummary { id: string; threshold: number; unlocked: { user: SocialUser; value: number }[] }
-export interface MyAchievement { id: string; threshold: number; value: number; unlocked: boolean }
 
 export function playThreshold(durationS: number): number {
   return durationS > 0 ? Math.min(durationS / 2, PLAY_THRESHOLD_SECONDS) : PLAY_THRESHOLD_SECONDS
@@ -83,21 +80,4 @@ export function initPlayScrobbler(): () => void {
 
 export function getWeekRanking(offset = 0): Promise<WeekRanking> {
   return socialRequest<WeekRanking>(`/rankings/week?offset=${offset}`)
-}
-
-export async function getDiscoveries(albumIds: string[]): Promise<Discovery[]> {
-  if (!albumIds.length) return []
-  return (await socialRequest<{ items: Discovery[] }>(`/discoveries?albumIds=${albumIds.map(encodeURIComponent).join(',')}`)).items
-}
-
-export async function getRecentDiscoveries(): Promise<Discovery[]> {
-  return (await socialRequest<{ items: Discovery[] }>('/discoveries/recent')).items
-}
-
-export async function getAchievements(): Promise<AchievementSummary[]> {
-  return (await socialRequest<{ items: AchievementSummary[] }>('/achievements')).items
-}
-
-export async function getMyAchievements(): Promise<MyAchievement[]> {
-  return (await socialRequest<{ items: MyAchievement[] }>('/achievements/me')).items
 }

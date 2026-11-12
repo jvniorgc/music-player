@@ -1,21 +1,21 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Trophy, Loader2, Settings, Lock } from 'lucide-react'
+import { Trophy, Loader2, Settings } from 'lucide-react'
 import { jellyfin } from '../../services/jellyfin'
 import { isConfigured, loadConfig, autoDetect } from '../../services/social'
 import {
-  getWeekRanking, getAchievements, getRecentDiscoveries,
-  type WeekRanking, type RankedItem, type AchievementSummary, type Discovery,
+  getWeekRanking,
+  type WeekRanking, type RankedItem,
 } from '../../services/plays'
 import { buttonClass } from '../UI/Button'
-import { formatDate, formatNumber, useT, type MessageKey } from '../../i18n'
+import { formatNumber, useT, type MessageKey } from '../../i18n'
 
 const WEEKS = [0, 1] as const
 
-interface Data { week: WeekRanking; achievements: AchievementSummary[]; discoveries: Discovery[] }
+interface Data { week: WeekRanking }
 
 export default function RankingsView() {
-  const { t, locale } = useT()
+  const { t } = useT()
   const [ready, setReady] = useState(false)
   const [configured, setConfigured] = useState(false)
   const [offset, setOffset] = useState(0)
@@ -33,8 +33,7 @@ export default function RankingsView() {
     setData(null)
     setError(false)
     try {
-      const [week, achievements, discoveries] = await Promise.all([getWeekRanking(offset), getAchievements(), getRecentDiscoveries()])
-      setData({ week, achievements, discoveries })
+      setData({ week: await getWeekRanking(offset) })
     } catch {
       setError(true)
     }
@@ -135,41 +134,6 @@ export default function RankingsView() {
             {list('rankings.topArtists', data.week.artists, i => (i.id ? `/artist/${i.id}` : null))}
           </div>
 
-          <section>
-            <h2 className="font-semibold mb-3">{t('rankings.achievements')}</h2>
-            <div className="grid gap-3 grid-cols-2 md:grid-cols-3">
-              {data.achievements.map(a => (
-                <div key={a.id} data-testid={`achievement-${a.id}`} className="bg-surface-1 rounded-lg p-4">
-                  <p className="font-medium flex items-center gap-2">
-                    {a.unlocked.length ? <Trophy size={14} className="text-accent" /> : <Lock size={14} className="text-text-tertiary" />}
-                    {t(`rankings.ach.${a.id}` as MessageKey)}
-                  </p>
-                  <p className="text-xs text-text-secondary mt-1">{t(`rankings.ach.${a.id}.desc` as MessageKey)}</p>
-                  <p className="text-xs mt-2 text-text-tertiary">
-                    {a.unlocked.length ? a.unlocked.map(u => u.user.name).join(', ') : t('rankings.nobodyYet')}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </section>
-
-          <section className="bg-surface-1 rounded-lg p-4">
-            <h2 className="font-semibold mb-3">{t('rankings.discoveries')}</h2>
-            {data.discoveries.length === 0 ? <p className="text-sm text-text-tertiary">{t('rankings.empty')}</p> : (
-              <ul className="space-y-2">
-                {data.discoveries.map(d => (
-                  <li key={d.albumId} className="flex items-center gap-3 text-sm">
-                    <Link to={`/album/${d.albumId}`} className="flex-1 min-w-0 truncate hover:underline">
-                      {d.albumName} <span className="text-text-secondary">· {d.artists}</span>
-                    </Link>
-                    <span className="text-xs text-text-tertiary whitespace-nowrap">
-                      {t('rankings.discoveredBy', { name: d.user.name })} · {formatDate(d.playedAt, { dateStyle: 'medium' }, locale)}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
         </div>
       )}
     </div>
