@@ -51,7 +51,7 @@ export default function HomePage() {
   const { recentlyAdded, recentlyPlayed, homeStatus, fetchHome } = useLibraryStore(useShallow(s => ({ recentlyAdded: s.recentlyAdded, recentlyPlayed: s.recentlyPlayed, homeStatus: s.homeStatus, fetchHome: s.fetchHome })))
   const hasContent = recentlyAdded.length > 0 || recentlyPlayed.length > 0
   const startRadio = usePlayerStore(s => s.startRadio)
-  const playItems = usePlayerStore(s => s.playItems)
+  const playFromList = usePlayerStore(s => s.playFromList)
   const showToast = useToastStore(s => s.show)
   const [radioLoading, setRadioLoading] = useState(false)
   const navigate = useNavigate()
@@ -145,7 +145,7 @@ export default function HomePage() {
               <TrackRow
                 key={item.Id}
                 className="px-4 py-2 rounded-sm"
-                onClick={() => playItems(recentlyPlayed, i, { type: 'home', name: t('home.recentlyPlayed') })}
+                onClick={() => playFromList(recentlyPlayed, i, { type: 'home', name: t('home.recentlyPlayed') })}
                 leading={
                   <CoverArt
                     src={item.AlbumId ? jellyfin.getImageUrl(item.AlbumId, undefined, 80) : null}

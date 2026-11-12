@@ -18,7 +18,7 @@ export default function LikedView() {
   const { t, tn } = useT()
   const [tracks, setTracks] = useState<JellyfinItem[]>([])
   const [loading, setLoading] = useState(true)
-  const { playItems, shuffleItems, currentTrack, isPlaying, togglePlay } = usePlayerStore(useShallow(s => ({ playItems: s.playItems, shuffleItems: s.shuffleItems, currentTrack: s.currentTrack, isPlaying: s.isPlaying, togglePlay: s.togglePlay })))
+  const { playItems, playFromList, shuffleItems, currentTrack, isPlaying, togglePlay } = usePlayerStore(useShallow(s => ({ playItems: s.playItems, playFromList: s.playFromList, shuffleItems: s.shuffleItems, currentTrack: s.currentTrack, isPlaying: s.isPlaying, togglePlay: s.togglePlay })))
   const { isDownloaded, startDownload } = useDownloadStore(useShallow(s => ({ isDownloaded: s.isDownloaded, startDownload: s.startDownload, downloads: s.downloads })))
   const toast = useToastStore(s => s.show)
 
@@ -95,7 +95,7 @@ export default function LikedView() {
               <TrackRow
                 key={track.Id}
                 isCurrent={isCurrent}
-                onClick={() => playItems(tracks, i, context)}
+                onClick={() => playFromList(tracks, i, context)}
                 leading={
                   <>
                     <TrackIndex number={i + 1} isCurrent={isCurrent} isPlaying={isPlaying} className="w-7" />

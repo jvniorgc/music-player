@@ -27,7 +27,7 @@ export default function AlbumView() {
   const [album, setAlbum] = useState<JellyfinItem | null>(null)
   const [tracks, setTracks] = useState<JellyfinItem[]>([])
   const [loading, setLoading] = useState(true)
-  const { playItems, shuffleItems, currentTrack, isPlaying, togglePlay } = usePlayerStore(useShallow(s => ({ playItems: s.playItems, shuffleItems: s.shuffleItems, currentTrack: s.currentTrack, isPlaying: s.isPlaying, togglePlay: s.togglePlay })))
+  const { playItems, playFromList, shuffleItems, currentTrack, isPlaying, togglePlay } = usePlayerStore(useShallow(s => ({ playItems: s.playItems, playFromList: s.playFromList, shuffleItems: s.shuffleItems, currentTrack: s.currentTrack, isPlaying: s.isPlaying, togglePlay: s.togglePlay })))
   const { isDownloaded, startDownload } = useDownloadStore(useShallow(s => ({ isDownloaded: s.isDownloaded, startDownload: s.startDownload, downloads: s.downloads })))
   const { playlists, fetchPlaylists } = useLibraryStore(useShallow(s => ({ playlists: s.playlists, fetchPlaylists: s.fetchPlaylists })))
   const [showMetadata, setShowMetadata] = useState(false)
@@ -180,7 +180,7 @@ export default function AlbumView() {
             <TrackRow
               key={track.Id}
               isCurrent={isCurrent}
-              onClick={() => playItems(tracks, i, albumContext)}
+              onClick={() => playFromList(tracks, i, albumContext)}
               leading={<TrackIndex number={track.IndexNumber || i + 1} isCurrent={isCurrent} isPlaying={isPlaying} className="w-7" />}
               title={track.Name}
               subtitle={track.Artists && track.Artists.length > 0 && track.Artists[0] !== album.AlbumArtist && <ArtistLinks item={track} />}

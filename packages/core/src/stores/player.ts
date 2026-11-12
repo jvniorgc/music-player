@@ -5,6 +5,7 @@ import { JellyfinItem, jellyfin } from '../services/jellyfin'
 import { t } from '../i18n'
 import { getRecommendations } from '../services/recommendations'
 import { initDiscordPresence } from '../services/discord'
+import { usePlaybackPrefs } from './prefs/playback'
 
 interface PlayerState {
   currentTrack: QueueTrack | null
@@ -27,6 +28,8 @@ interface PlayerState {
   // Actions
   /** Plays `items` as the current context, starting at `startIndex`. */
   playItems: (items: JellyfinItem[], startIndex?: number, context?: PlaybackContext | string) => void
+  /** A song row was clicked: replace the queue, play next, or append, per the user's preference. */
+  playFromList: (items: JellyfinItem[], index: number, context?: PlaybackContext | string) => void
   /** Plays `items` with shuffle turned on, from a random track. */
   shuffleItems: (items: JellyfinItem[], context?: PlaybackContext | string) => void
   /** "Shuffle all": random songs from the whole library. */
@@ -56,7 +59,7 @@ interface PlayerState {
   initListeners: () => () => void
 }
 
-export const usePlayerStore = create<PlayerState>((set) => ({
+export const usePlayerStore = create<PlayerState>((set, get) => ({
   currentTrack: null,
   userQueue: [],
   contextUpNext: [],
@@ -74,6 +77,20 @@ export const usePlayerStore = create<PlayerState>((set) => ({
 
   playItems: (items, startIndex = 0, context = '') => {
     playback.setQueue(items, startIndex, context)
+  },
+
+  playFromList: (items, index, context = '') => {
+    const mode = usePlaybackPrefs.getState().values.songClick
+    const item = items[index]
+    if (mode === 'replace' || !get().currentTrack) {
+      playback.setQueue(items, index, context)
+    } else if (mode === 'next') {
+      playback.addNext(item)
+      useToastStore.getState().show(t('prefs.playback.queuedNext', { name: item.Name }))
+    } else {
+      playback.addToQueue(item)
+      useToastStore.getState().show(t('prefs.playback.queuedEnd', { name: item.Name }))
+    }
   },
 
   shuffleItems: (items, context = '') => {

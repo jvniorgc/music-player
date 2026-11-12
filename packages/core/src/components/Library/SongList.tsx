@@ -24,7 +24,7 @@ export default function SongList() {
     loadMoreSongs: s.loadMoreSongs,
     fetchPlaylists: s.fetchPlaylists,
   })))
-  const { playItems, currentTrack, isPlaying } = usePlayerStore(useShallow(s => ({ playItems: s.playItems, currentTrack: s.currentTrack, isPlaying: s.isPlaying })))
+  const { playFromList, currentTrack, isPlaying } = usePlayerStore(useShallow(s => ({ playFromList: s.playFromList, currentTrack: s.currentTrack, isPlaying: s.isPlaying })))
   const { isDownloaded, startDownload } = useDownloadStore(useShallow(s => ({ isDownloaded: s.isDownloaded, startDownload: s.startDownload, downloads: s.downloads })))
   const loaderRef = useRef<HTMLDivElement>(null)
   const listRef = useRef<HTMLDivElement>(null)
@@ -113,7 +113,7 @@ export default function SongList() {
               <TrackRow
                 className="px-5 py-2.5"
                 isCurrent={isCurrent}
-                onClick={() => playItems(songs, i, { type: 'songs', name: t('nav.songs') })}
+                onClick={() => playFromList(songs, i, { type: 'songs', name: t('nav.songs') })}
                 leading={
                   <>
                     <TrackIndex number={i + 1} isCurrent={isCurrent} isPlaying={isPlaying} />

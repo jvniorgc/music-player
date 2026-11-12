@@ -26,6 +26,7 @@ export default function ArtistView() {
   const [showMetadataEditor, setShowMetadataEditor] = useState(false)
   const [topSongs, setTopSongs] = useState<JellyfinItem[]>([])
   const playItems = usePlayerStore(s => s.playItems)
+  const playFromList = usePlayerStore(s => s.playFromList)
   const shuffleItems = usePlayerStore(s => s.shuffleItems)
   const currentId = usePlayerStore(s => s.currentTrack?.id)
   const isPlaying = usePlayerStore(s => s.isPlaying)
@@ -140,7 +141,7 @@ export default function ArtistView() {
                 <TrackRow
                   key={song.Id}
                   isCurrent={isCurrent}
-                  onClick={() => playItems(topSongs, i, artistContext)}
+                  onClick={() => playFromList(topSongs, i, artistContext)}
                   leading={
                     <>
                       <TrackIndex number={i + 1} isCurrent={isCurrent} isPlaying={isPlaying} className="w-6" />

@@ -3,6 +3,7 @@ import * as lastfm from './lastfm'
 import { audioEffects } from './audioEffects'
 import { t } from '../i18n'
 import { secondsToTicks, ticksToSeconds } from '../lib/format'
+import { usePlaybackPrefs } from '../stores/prefs/playback'
 
 export type RepeatMode = 'none' | 'all' | 'one'
 
@@ -96,6 +97,10 @@ class PlaybackService {
   private _preloadTrack: QueueTrack | null = null
   private _preloadReady = false
 
+  // Crossfade: the outgoing element while it fades out.
+  private _fadingAudio: HTMLAudioElement | null = null
+  private _fadeTimer: ReturnType<typeof setInterval> | null = null
+
   // Failure handling: skip unplayable tracks, but stop after a few in a row
   // (e.g. server down) instead of burning through the whole queue.
   private _loading = false
@@ -164,6 +169,7 @@ class PlaybackService {
         currentTime: audio.currentTime,
         duration: audio.duration || 0
       })
+      this.maybeCrossfade(audio)
     })
 
     audio.addEventListener('ended', () => {
@@ -263,6 +269,7 @@ class PlaybackService {
     const track = this._current
     if (!track) return
     this.finalizeScrobble()
+    this.cancelFade()
     this._resumeOnOnline = null
     this._pendingStart = false
 
@@ -333,27 +340,70 @@ class PlaybackService {
     }
   }
 
-  /** Instantly swaps to the preloaded element for a gapless transition. */
-  private playPreloaded(): boolean {
+  private get prefs() { return usePlaybackPrefs.getState().values }
+
+  /** Stops an in-progress crossfade, discarding the outgoing element. */
+  private cancelFade() {
+    if (this._fadeTimer) clearInterval(this._fadeTimer)
+    this._fadeTimer = null
+    const old = this._fadingAudio
+    if (!old) return
+    this._fadingAudio = null
+    old.pause()
+    old.src = ''
+    audioEffects.unregister(old)
+    this.audio.volume = this._volume
+  }
+
+  /** Starts a crossfade into the preloaded track when the current one nears its end. */
+  private maybeCrossfade(audio: HTMLAudioElement) {
+    const fade = this.prefs.crossfade
+    if (fade <= 0 || this._fadingAudio || !this._preloadReady || !this._preloadTrack) return
+    const remaining = (audio.duration || 0) - audio.currentTime
+    if (!(remaining > 0 && remaining <= fade)) return
+    if (this.peekNext()?.id !== this._preloadTrack.id || this._repeat === 'one') return
+
+    const ended = this._current!
+    jellyfin.reportPlaybackStopped(ended.id, secondsToTicks(this.duration)).catch(err => console.warn('[Playback] reportPlaybackStopped failed:', err))
+    this.advance()
+    this.emit('queuechange')
+    this.playPreloaded(remaining)
+  }
+
+  /** Swaps to the preloaded element: instantly (gapless) or crossfading over `fade` seconds. */
+  private playPreloaded(fade = 0): boolean {
     if (!this._preloadAudio || !this._preloadReady || !this._current) return false
 
     const track = this._current
     this.finalizeScrobble()
+    this.cancelFade()
     this._loadSeq++
     this._loading = false
 
-    // Stop current audio
     const oldAudio = this.audio
-    oldAudio.pause()
-    oldAudio.src = ''
-    audioEffects.unregister(oldAudio)
+    if (fade > 0) {
+      this._fadingAudio = oldAudio
+      const stepMs = 50
+      const steps = Math.max(1, Math.round((fade * 1000) / stepMs))
+      let step = 0
+      this._fadeTimer = setInterval(() => {
+        const p = Math.min(1, ++step / steps)
+        this.audio.volume = this._volume * p
+        oldAudio.volume = this._volume * (1 - p)
+        if (p >= 1) this.cancelFade()
+      }, stepMs)
+    } else {
+      oldAudio.pause()
+      oldAudio.src = ''
+      audioEffects.unregister(oldAudio)
+    }
 
     // Swap to the preloaded audio element
     this.audio = this._preloadAudio
     this._preloadAudio = null
     this._preloadTrack = null
     this._preloadReady = false
-    this.audio.volume = this._volume
+    this.audio.volume = fade > 0 ? 0 : this._volume
 
     this.emit('trackchange', track)
 
@@ -386,6 +436,8 @@ class PlaybackService {
     }
   }
 
+  private wraps() { return this._repeat === 'all' || this.prefs.queueEnd === 'repeat' }
+
   /** The next track that would play, without mutating any list. */
   private peekNext(): QueueTrack | null {
     if (this._repeat === 'one') return this._current
@@ -393,7 +445,7 @@ class PlaybackService {
     if (this._orderPos + 1 < this._order.length) {
       return this._context[this._order[this._orderPos + 1]]
     }
-    if (this._repeat === 'all' && this._order.length > 0) {
+    if (this.wraps() && this._order.length > 0) {
       return this._context[this._order[0]]
     }
     return null
@@ -417,7 +469,7 @@ class PlaybackService {
     } else if (this._orderPos + 1 < this._order.length) {
       newPos = this._orderPos + 1
       next = this._context[this._order[newPos]]
-    } else if (this._repeat === 'all' && this._order.length > 0) {
+    } else if (this.wraps() && this._order.length > 0) {
       newPos = 0
       next = this._context[this._order[0]]
     }
@@ -695,6 +747,7 @@ class PlaybackService {
   clearQueue() {
     this.finalizeScrobble()
     this.scrobbleItem = null
+    this.cancelFade()
     this.audio.pause()
     this.audio.src = ''
     this.invalidatePreload()
@@ -724,6 +777,7 @@ class PlaybackService {
   }
 
   pause() {
+    this.cancelFade()
     this.audio.pause()
   }
 
@@ -779,15 +833,32 @@ class PlaybackService {
     const next = this.advance()
     if (!next) {
       this.emit('queueend')
+      if (ended && this.prefs.queueEnd === 'radio') this.continueWithRadio(ended)
       return
     }
     this.emit('queuechange')
+    this.transitionTo(next)
+  }
 
-    // Use the preloaded element for a gapless transition when possible.
-    if (this._preloadReady && this._preloadTrack && this._preloadTrack.id === next.id) {
+  /** Plays `next` (already current): gapless swap when allowed and ready, else a full load. */
+  private transitionTo(next: QueueTrack) {
+    if (this.prefs.gapless && this._preloadReady && this._preloadTrack && this._preloadTrack.id === next.id) {
       this.playPreloaded()
     } else {
       this.loadAndPlayCurrent()
+    }
+  }
+
+  /** Queue ran out: keep going with an instant mix seeded by the last track. */
+  private async continueWithRadio(track: QueueTrack) {
+    try {
+      const res = await jellyfin.getInstantMix(track.id)
+      const rest = res.Items.filter(i => i.Id !== track.id)
+      if (rest.length === 0 || this._current !== track) return
+      const name = t('prefs.playback.radioContext', { name: track.item.Name || t('playback.trackFallback') })
+      this.setQueue(rest, 0, { type: 'radio', id: track.id, name })
+    } catch (err) {
+      console.warn('[Playback] Radio continuation failed:', err)
     }
   }
 
@@ -813,15 +884,12 @@ class PlaybackService {
     const next = this.advance()
     if (!next) return
     this.emit('queuechange')
-    if (this._preloadReady && this._preloadTrack && this._preloadTrack.id === next.id) {
-      this.playPreloaded()
-    } else {
-      this.loadAndPlayCurrent()
-    }
+    this.transitionTo(next)
   }
 
   previous() {
-    if (this.audio.currentTime > 3) {
+    const threshold = this.prefs.previousThreshold
+    if (threshold > 0 && this.audio.currentTime > threshold) {
       this.seek(0)
       return
     }
