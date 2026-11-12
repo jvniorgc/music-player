@@ -49,6 +49,7 @@
   },
   "dependencies": {
     "@tanstack/react-virtual": "^3.14.26",
+    "@xhayper/discord-rpc": "^1.5.1",
     "better-sqlite3": "^12.9.0",
     "electron-updater": "^6.8.3",
     "lucide-react": "^0.469.0",

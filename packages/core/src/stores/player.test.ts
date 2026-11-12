@@ -35,6 +35,13 @@ vi.mock('../services/jellyfin', () => ({
   jellyfin: { getImageUrl: (id: string) => `img://${id}`, getRandomSongs: vi.fn(), getInstantMix: vi.fn() },
 }))
 
+const discordStop = vi.hoisted(() => ({ fn: null as null | ReturnType<typeof import('vitest').vi.fn> }))
+vi.mock('../services/discord', async () => {
+  const { vi } = await import('vitest')
+  discordStop.fn = vi.fn()
+  return { initDiscordPresence: vi.fn(() => discordStop.fn) }
+})
+
 vi.mock('../services/recommendations', () => ({
   getRecommendations: vi.fn(),
 }))
@@ -172,6 +179,19 @@ describe('delegation to the playback engine', () => {
     const s = usePlayerStore.getState()
     expect(s.showFullScreen).toBe(true)
     expect(s.showQueue).toBe(true)
+  })
+})
+
+describe('initListeners Discord wiring', () => {
+  it('starts Discord presence and stops it with the playback listener', async () => {
+    const { initDiscordPresence } = await import('../services/discord')
+    const off = vi.fn()
+    vi.mocked(playback.on).mockReturnValueOnce(off)
+    const unsub = usePlayerStore.getState().initListeners()
+    expect(initDiscordPresence).toHaveBeenCalled()
+    unsub()
+    expect(off).toHaveBeenCalled()
+    expect(discordStop.fn).toHaveBeenCalled()
   })
 })
 

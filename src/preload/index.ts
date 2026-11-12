@@ -8,6 +8,7 @@ import type {
   UpdateProgress,
   LastfmTrack,
   LastfmInfoMethod,
+  DiscordPresence,
 } from '@music-player/core/platform'
 
 const api = {
@@ -54,6 +55,11 @@ const api = {
   lastfmScrobble: (track: LastfmTrack) => ipcRenderer.invoke('lastfm:scrobble', track),
   lastfmGetSimilarTracks: (track: { artist: string; track: string }, limit?: number) => ipcRenderer.invoke('lastfm:get-similar-tracks', track, limit),
   lastfmGetInfo: (method: LastfmInfoMethod, params: Record<string, string>) => ipcRenderer.invoke('lastfm:get-info', method, params),
+
+  // Discord Rich Presence
+  discordGetEnabled: () => ipcRenderer.invoke('discord:get-enabled'),
+  discordSetEnabled: (enabled: boolean) => ipcRenderer.invoke('discord:set-enabled', enabled),
+  discordSetActivity: (presence: DiscordPresence | null) => ipcRenderer.invoke('discord:set-activity', presence),
 
   // Lyrics Cache
   getCachedLyrics: (itemId: string) => ipcRenderer.invoke('lyrics:get', itemId),
