@@ -3,7 +3,7 @@ import { useAuthStore } from '../../stores/auth'
 import { useLibraryStore } from '../../stores/library'
 import { useDownloadStore } from '../../stores/download'
 import { useToastStore } from '../../stores/toast'
-import { Home, Disc3, Users, ListMusic, Search, Settings, Download, RefreshCw, Share2, Globe, Shuffle, User, Music, Heart, Inbox } from 'lucide-react'
+import { Home, Disc3, Users, ListMusic, Search, Settings, Download, RefreshCw, Share2, Globe, Shuffle, User, Music, Heart, Inbox, Mail } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { jellyfin } from '../../services/jellyfin'
 import { usePlayerStore } from '../../stores/player'
@@ -12,6 +12,7 @@ import { useShallow } from 'zustand/react/shallow'
 import { useT } from '../../i18n'
 import { PrivateSessionToggle } from './PrivateSessionToggle'
 import { FriendsNowPlaying } from './FriendsNowPlaying'
+import { useInboxStore, startInboxPolling, initInboxAutoListen } from '../../stores/inbox'
 
 const navItems = [
   { to: '/', icon: Home, label: 'nav.home' as const },
@@ -41,9 +42,16 @@ export default function Sidebar() {
   const navigate = useNavigate()
   const [refreshing, setRefreshing] = useState(false)
   const [profileOpen, setProfileOpen] = useState(false)
+  const { inboxConfigured, inboxUnread } = useInboxStore(useShallow(s => ({ inboxConfigured: s.configured, inboxUnread: s.unread })))
 
   useEffect(() => {
     fetchPlaylists()
+  }, [])
+
+  useEffect(() => {
+    const stopPolling = startInboxPolling()
+    const stopAutoListen = initInboxAutoListen()
+    return () => { stopPolling(); stopAutoListen() }
   }, [])
 
   const handleRefresh = async () => {
@@ -138,6 +146,27 @@ export default function Sidebar() {
               {t(item.label)}
             </NavLink>
           ))}
+          {inboxConfigured && (
+            <NavLink
+              to="/inbox"
+              className={({ isActive }) =>
+                `flex items-center gap-3 px-3 py-2 rounded-sm text-sm font-medium transition-colors no-drag ${
+                  isActive ? 'bg-white/10 text-text-primary' : 'text-text-secondary hover:text-text-primary hover:bg-white/5'
+                }`
+              }
+            >
+              <Mail size={18} />
+              <span className="flex-1">{t('inbox.nav')}</span>
+              {inboxUnread > 0 && (
+                <span
+                  className="min-w-5 h-5 px-1.5 rounded-full bg-accent text-white text-[11px] font-semibold flex items-center justify-center"
+                  aria-label={t('inbox.unreadBadge', { count: inboxUnread })}
+                >
+                  {inboxUnread > 99 ? '99+' : inboxUnread}
+                </span>
+              )}
+            </NavLink>
+          )}
         </nav>
       </div>
 

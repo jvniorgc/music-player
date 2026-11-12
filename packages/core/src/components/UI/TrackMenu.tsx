@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ListEnd, ListStart, ListPlus, Radio, User, Disc3, X } from 'lucide-react'
+import { ListEnd, ListStart, ListPlus, Radio, User, Disc3, X, Send } from 'lucide-react'
 import type { JellyfinItem } from '../../services/jellyfin'
 import { usePlayerStore } from '../../stores/player'
 import { useLibraryStore } from '../../stores/library'
@@ -8,6 +8,9 @@ import { useToastStore } from '../../stores/toast'
 import { MoreMenu, type MenuEntry } from './Menu'
 import AddToPlaylist from './AddToPlaylist'
 import { t, useT } from '../../i18n'
+import { isConfigured } from '../../services/social'
+import { itemFromJellyfin, type RecItem } from '../../services/friendRecs'
+import RecommendModal from '../Inbox/RecommendModal'
 
 /** Menu strings, resolved in the current language on each access. */
 export const MENU_TEXT = {
@@ -60,6 +63,7 @@ export interface TrackMenuProps {
 export default function TrackMenu({ track, onRemove, removeLabel, hideAlbum, className }: TrackMenuProps) {
   useT()
   const [pickerSong, setPickerSong] = useState<JellyfinItem | null>(null)
+  const [recItem, setRecItem] = useState<RecItem | null>(null)
   const toast = useToastStore(s => s.show)
   const goTo = useGoTo()
 
@@ -80,6 +84,7 @@ export default function TrackMenu({ track, onRemove, removeLabel, hideAlbum, cla
           setPickerSong(track)
         },
       },
+      isConfigured() && { label: t('inbox.recommend'), icon: Send, onSelect: () => setRecItem(itemFromJellyfin(track)) },
       onRemove && 'separator',
       onRemove && { label: removeLabel ?? MENU_TEXT.removeFromPlaylist, icon: X, danger: true, onSelect: onRemove },
     ]
@@ -89,6 +94,7 @@ export default function TrackMenu({ track, onRemove, removeLabel, hideAlbum, cla
     <>
       <MoreMenu entries={entries} className={className} />
       <AddToPlaylist song={pickerSong} onClose={() => setPickerSong(null)} />
+      <RecommendModal item={recItem} onClose={() => setRecItem(null)} />
     </>
   )
 }

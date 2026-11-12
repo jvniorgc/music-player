@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ListEnd, ListStart, ListPlus, Play, Shuffle } from 'lucide-react'
+import { ListEnd, ListStart, ListPlus, Play, Shuffle, Send } from 'lucide-react'
 import { jellyfin, type JellyfinItem } from '../../services/jellyfin'
 import { usePlayerStore } from '../../stores/player'
 import { useLibraryStore } from '../../stores/library'
@@ -8,10 +8,14 @@ import { MoreMenu, type MenuEntry } from './Menu'
 import AddToPlaylist from './AddToPlaylist'
 import { MENU_TEXT, artistEntries, useGoTo } from './TrackMenu'
 import { t } from '../../i18n'
+import { isConfigured } from '../../services/social'
+import { itemFromJellyfin, type RecItem } from '../../services/friendRecs'
+import RecommendModal from '../Inbox/RecommendModal'
 
 /** Album actions for cards and headers. Pass `tracks` when already loaded to skip the fetch. */
 export function useAlbumEntries(album: JellyfinItem, tracks?: JellyfinItem[]) {
   const [pickerSongs, setPickerSongs] = useState<JellyfinItem[] | null>(null)
+  const [recItem, setRecItem] = useState<RecItem | null>(null)
   const toast = useToastStore(s => s.show)
   const goTo = useGoTo()
   const ctx = { type: 'album' as const, id: album.Id, name: album.Name }
@@ -43,10 +47,16 @@ export function useAlbumEntries(album: JellyfinItem, tracks?: JellyfinItem[]) {
           setPickerSongs(items)
         }),
       },
+      isConfigured() && { label: t('inbox.recommend'), icon: Send, onSelect: () => setRecItem(itemFromJellyfin(album)) },
     ]
   }
 
-  const picker = <AddToPlaylist song={pickerSongs} onClose={() => setPickerSongs(null)} />
+  const picker = (
+    <>
+      <AddToPlaylist song={pickerSongs} onClose={() => setPickerSongs(null)} />
+      <RecommendModal item={recItem} onClose={() => setRecItem(null)} />
+    </>
+  )
   return { entries, picker }
 }
 
