@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { jellyfin, JellyfinItem } from '../../services/jellyfin'
 import { isAbortError } from '../../services/http'
-import { ImagePlus, Play, Shuffle } from 'lucide-react'
+import { ImagePlus, Play, Shuffle, Send } from 'lucide-react'
 import { usePlayerStore } from '../../stores/player'
 import type { PlaybackContext } from '../../services/playback'
 import { useHeaderStats, PopularitySummary } from '../UI/Popularity'
@@ -15,6 +15,9 @@ import { buttonClass } from '../UI/Button'
 import ArtistMetadataEditor from '../Metadata/ArtistMetadataEditor'
 import { AlbumCard } from '../UI/MediaCard'
 import { useT } from '../../i18n'
+import { isConfigured } from '../../services/social'
+import { itemFromJellyfin, type RecItem } from '../../services/friendRecs'
+import RecommendModal from '../Inbox/RecommendModal'
 
 export default function ArtistView() {
   const { t, tn } = useT()
@@ -24,6 +27,7 @@ export default function ArtistView() {
   const [albums, setAlbums] = useState<JellyfinItem[]>([])
   const [loading, setLoading] = useState(true)
   const [showMetadataEditor, setShowMetadataEditor] = useState(false)
+  const [recItem, setRecItem] = useState<RecItem | null>(null)
   const [topSongs, setTopSongs] = useState<JellyfinItem[]>([])
   const playItems = usePlayerStore(s => s.playItems)
   const playFromList = usePlayerStore(s => s.playFromList)
@@ -112,6 +116,15 @@ export default function ArtistView() {
                   <ImagePlus size={12} />
                   {imageUrl ? t('artist.changeImage') : t('artist.findImage')}
                 </button>
+                {artist && isConfigured() && (
+                  <button
+                    onClick={() => setRecItem(itemFromJellyfin(artist))}
+                    className="text-xs text-accent hover:text-accent-hover transition-colors flex items-center gap-1"
+                  >
+                    <Send size={12} />
+                    {t('inbox.recommend')}
+                  </button>
+                )}
               </div>
               <PopularitySummary stats={artistStats} />
               {topSongs.length > 0 && (
@@ -187,6 +200,7 @@ export default function ArtistView() {
           onApplied={() => loadArtist()}
         />
       )}
+      <RecommendModal item={recItem} onClose={() => setRecItem(null)} />
     </div>
   )
 }
