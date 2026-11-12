@@ -82,6 +82,7 @@ export default function Sidebar() {
           para os botões da janela ficarem integrados na mesma faixa do topo */}
       <div className={`${isMac ? 'h-14' : 'h-13'} drag-region shrink-0`} />
 
+      <div className="flex-1 min-h-0 overflow-y-auto" data-testid="sidebar-scroll">
       {/* Main nav */}
       <nav className="px-3 space-y-0.5">
         {navItems.map(item => (
@@ -176,7 +177,7 @@ export default function Sidebar() {
 
       {/* Playlists */}
       {playlists.length > 0 && (
-        <div className="mt-6 px-3 flex-1 min-h-0 overflow-y-auto">
+        <div className="mt-6 px-3 pb-3">
           <h3 className="text-xs font-medium text-text-tertiary px-3 mb-2">
             {t('nav.playlists')}
           </h3>
@@ -201,8 +202,10 @@ export default function Sidebar() {
         </div>
       )}
 
+      </div>
+
       {/* User section */}
-      <div className="mt-auto p-3 border-t border-border space-y-1">
+      <div className="shrink-0 p-3 border-t border-border space-y-1">
         <PrivateSessionToggle />
         <button
           onClick={() => setProfileOpen(true)}
