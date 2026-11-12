@@ -177,6 +177,11 @@ class JellyfinService {
     return JSON.parse(text)
   }
 
+  /** Sessions active in the last 2 minutes (non-admins may only see their own). */
+  async getSessions<T = unknown>(): Promise<T[]> {
+    return this.request<T[]>('/Sessions?ActiveWithinSeconds=120')
+  }
+
   /** Filter out items with empty/missing names (broken metadata) */
   private sanitizeItems(response: JellyfinItemsResponse): JellyfinItemsResponse {
     const filtered = response.Items.filter(item => item.Name && item.Name.trim() !== '')

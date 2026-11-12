@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { ChevronDown, ChevronRight, Pause, Headphones } from 'lucide-react'
 import { useT } from '../../i18n'
-import { isConfigured } from '../../services/social'
 import { listNowPlaying, joinPositionSeconds, type FriendNowPlaying } from '../../services/nowPlaying'
 import { jellyfin } from '../../services/jellyfin'
 import { playback } from '../../services/playback'
@@ -9,14 +8,14 @@ import { useInterfacePrefs } from '../../stores/prefs/interface'
 
 const POLL_MS = 15_000
 
-/** Compact sidebar section showing what friends are playing right now (via the social API). */
+/** Compact sidebar section showing what friends are playing right now (social API, or Jellyfin sessions as a fallback). */
 export function FriendsNowPlaying() {
   const { t } = useT()
   const enabled = useInterfacePrefs(s => s.values.showNowPlaying)
   const [items, setItems] = useState<FriendNowPlaying[]>([])
   const [open, setOpen] = useState(true)
   const fetchedAt = useRef(0)
-  const active = enabled && isConfigured()
+  const active = enabled
 
   const refresh = useCallback(async () => {
     if (document.hidden) return

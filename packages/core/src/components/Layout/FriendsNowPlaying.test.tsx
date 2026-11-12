@@ -4,8 +4,7 @@ import { FriendsNowPlaying } from './FriendsNowPlaying'
 import { useInterfacePrefs } from '../../stores/prefs/interface'
 import type { FriendNowPlaying } from '../../services/nowPlaying'
 
-const h = vi.hoisted(() => ({ configured: true, list: vi.fn(), getItem: vi.fn(), setQueue: vi.fn() }))
-vi.mock('../../services/social', () => ({ isConfigured: () => h.configured }))
+const h = vi.hoisted(() => ({ list: vi.fn(), getItem: vi.fn(), setQueue: vi.fn() }))
 vi.mock('../../services/nowPlaying', async (orig) => ({ ...(await orig<object>()), listNowPlaying: h.list }))
 vi.mock('../../services/jellyfin', () => ({ jellyfin: { getItem: h.getItem, getUserImageUrl: (id: string) => `img://${id}` } }))
 vi.mock('../../services/playback', () => ({ playback: { setQueue: h.setQueue } }))
@@ -21,7 +20,6 @@ const settle = () => act(async () => { await Promise.resolve(); await Promise.re
 beforeEach(() => {
   vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval', 'Date'] })
   vi.setSystemTime(1_000_000)
-  h.configured = true
   h.list.mockReset().mockResolvedValue([entry()])
   useInterfacePrefs.getState().reset()
   Object.defineProperty(document, 'hidden', { configurable: true, value: false })
@@ -74,7 +72,7 @@ describe('FriendsNowPlaying', () => {
     expect(h.setQueue).not.toHaveBeenCalled()
   })
 
-  it('hides when empty, on error, unconfigured or disabled', async () => {
+  it('hides when empty, on error or disabled', async () => {
     h.list.mockResolvedValue([])
     const { unmount } = render(<FriendsNowPlaying />)
     await settle()
@@ -85,11 +83,8 @@ describe('FriendsNowPlaying', () => {
     render(<FriendsNowPlaying />).unmount()
     await settle()
 
-    h.configured = false
     h.list.mockClear()
-    render(<FriendsNowPlaying />).unmount()
     useInterfacePrefs.getState().set({ showNowPlaying: false })
-    h.configured = true
     render(<FriendsNowPlaying />)
     await settle()
     expect(h.list).not.toHaveBeenCalled()
