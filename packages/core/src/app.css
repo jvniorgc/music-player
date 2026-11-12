@@ -288,3 +288,12 @@ html[data-reduce-motion] *::after {
   transition-duration: 0.01ms !important;
   scroll-behavior: auto !important;
 }
+
+@keyframes marquee {
+  0%, 20% { transform: translateX(0); }
+  80%, 100% { transform: translateX(var(--marquee-distance)); }
+}
+
+.animate-marquee {
+  animation: marquee linear infinite;
+}

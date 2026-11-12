@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { ChevronDown, ChevronRight, Pause, Headphones } from 'lucide-react'
 import { useT } from '../../i18n'
+import { Marquee } from '../UI/Marquee'
 import { listNowPlaying, joinPositionSeconds, type FriendNowPlaying } from '../../services/nowPlaying'
 import { jellyfin } from '../../services/jellyfin'
 import { playback } from '../../services/playback'
@@ -79,7 +80,7 @@ export function FriendsNowPlaying() {
                   </span>
                   <span className="min-w-0 flex-1">
                     <span className="block text-xs text-text-primary truncate">{e.userName}</span>
-                    <span className="block text-xs text-text-tertiary truncate">{track}</span>
+                    <Marquee text={track} className="text-xs text-text-tertiary" />
                   </span>
                   {e.isPaused
                     ? <Pause size={12} className="shrink-0 text-text-tertiary" aria-label={t('nowPlaying.paused')} />
