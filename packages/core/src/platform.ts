@@ -38,6 +38,17 @@ export type LastfmSimilarTrack = {
 
 export type LastfmInfoMethod = 'album.getInfo' | 'track.getInfo' | 'artist.getInfo'
 
+/** What the player is doing, pushed to Discord Rich Presence. Never include server URLs/tokens. */
+export type DiscordPresence = {
+  title: string
+  artist: string
+  album?: string
+  /** Current playback position in seconds. */
+  position: number
+  /** Track length in seconds (0 if unknown). */
+  duration: number
+}
+
 export type AuthData = {
   serverUrl: string
   token: string
@@ -111,6 +122,12 @@ export interface PlatformApi {
   lastfmGetSimilarTracks: (track: { artist: string; track: string }, limit?: number) => Promise<LastfmSimilarTrack[]>
   /** Raw Last.fm `*.getInfo` JSON (API key only; adds the linked username). Null if unconfigured / not found. */
   lastfmGetInfo: (method: LastfmInfoMethod, params: Record<string, string>) => Promise<Record<string, unknown> | null>
+
+  // Discord Rich Presence
+  discordGetEnabled: () => Promise<boolean>
+  discordSetEnabled: (enabled: boolean) => Promise<void>
+  /** Show the given track on Discord, or clear it with null (pause/stop). */
+  discordSetActivity: (presence: DiscordPresence | null) => Promise<void>
 
   // Lyrics cache (session)
   getCachedLyrics: (itemId: string) => Promise<string | null>

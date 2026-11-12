@@ -69,6 +69,12 @@ vi.mock('electron', () => {
 })
 
 vi.mock('./updater', () => ({ initAutoUpdater: vi.fn() }))
+vi.mock('./discord', () => ({
+  isEnabled: vi.fn(() => true),
+  setEnabled: vi.fn(),
+  setActivity: vi.fn().mockResolvedValue(undefined),
+  shutdown: vi.fn().mockResolvedValue(undefined),
+}))
 
 let tmpRoot = ''
 let getDatabase: typeof import('./database')['getDatabase']
@@ -166,6 +172,22 @@ describe('main process: Last.fm similar tracks handler', () => {
 
     const out = await invoke('lastfm:get-similar-tracks', { artist: 'Radiohead', track: 'Reckoner' })
     expect(out).toEqual([{ artist: 'Radiohead', track: 'Nude', match: 0.9 }])
+  })
+})
+
+describe('main process: Discord handlers', () => {
+  it('forwards to the discord module and shuts it down on quit', async () => {
+    const discord = await import('./discord')
+    expect(invoke('discord:get-enabled')).toBe(true)
+    invoke('discord:set-enabled', true)
+    expect(discord.setEnabled).toHaveBeenCalledWith(true)
+    invoke('discord:set-enabled', 'yes')
+    expect(discord.setEnabled).toHaveBeenLastCalledWith(false)
+    const p = { title: 't', artist: 'a', position: 0, duration: 1 }
+    await invoke('discord:set-activity', p)
+    expect(discord.setActivity).toHaveBeenCalledWith(p)
+    h.appHandlers.get('before-quit')!()
+    expect(discord.shutdown).toHaveBeenCalled()
   })
 })
 

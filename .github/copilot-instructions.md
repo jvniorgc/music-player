@@ -69,6 +69,7 @@ Service classes in `packages/core/src/services/` are instantiated once and impor
 - `playback.ts` — Audio engine wrapping `HTMLAudioElement` with queue, shuffle, repeat, preloading, and source resolution (stream → cache → download)
 - `musicbrainz.ts` — Metadata lookup via MusicBrainz + Cover Art Archive
 - `slskd.ts` — Soulseek integration via slskd REST API
+- `discord.ts` — Mirrors the player store into Discord Rich Presence (throttled) via `window.api.discordSetActivity`; the desktop side lives in `src/main/discord.ts`
 
 ### Adding a native capability (IPC pattern)
 

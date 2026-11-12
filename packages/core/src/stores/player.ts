@@ -4,6 +4,7 @@ import { playback, QueueTrack, RepeatMode, PlaybackContext } from '../services/p
 import { JellyfinItem, jellyfin } from '../services/jellyfin'
 import { t } from '../i18n'
 import { getRecommendations } from '../services/recommendations'
+import { initDiscordPresence } from '../services/discord'
 
 interface PlayerState {
   currentTrack: QueueTrack | null
@@ -147,7 +148,9 @@ export const usePlayerStore = create<PlayerState>((set) => ({
       })
     }
 
-    return playback.on((event, data) => {
+    const stopDiscord = initDiscordPresence()
+
+    const unsubscribe = playback.on((event, data) => {
       switch (event) {
         case 'trackchange':
           set({ currentTrack: data, currentTime: 0, duration: 0 })
@@ -207,5 +210,10 @@ export const usePlayerStore = create<PlayerState>((set) => ({
           break
       }
     })
+
+    return () => {
+      unsubscribe()
+      stopDiscord()
+    }
   }
 }))

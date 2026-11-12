@@ -11,6 +11,7 @@ import { SlskdSettings } from './SlskdSettings'
 import { shortcutList } from '../../lib/shortcuts'
 import { LANGUAGE_OPTIONS, type LanguagePreference } from '../../lib/language'
 import { useI18nStore, useT } from '../../i18n'
+import { getDiscordEnabled, setDiscordEnabled } from '../../services/discord'
 
 function Section({ id, title, children }: { id: string; title: string; children: ReactNode }) {
   return (
@@ -42,7 +43,22 @@ export default function SettingsView() {
   const [version, setVersion] = useState('')
   const [checking, setChecking] = useState(false)
   const [clearing, setClearing] = useState(false)
+  const [discordOn, setDiscordOn] = useState(false)
   const isMac = window.api?.platform === 'darwin'
+
+  useEffect(() => {
+    getDiscordEnabled().then(setDiscordOn).catch(() => {})
+  }, [])
+
+  const handleToggleDiscord = async () => {
+    const next = !discordOn
+    try {
+      await setDiscordEnabled(next)
+      setDiscordOn(next)
+    } catch {
+      toast(t('settings.discordFailed'), 'error')
+    }
+  }
 
   useEffect(() => {
     window.api?.getAppVersion?.().then(setVersion).catch(() => {})
@@ -113,6 +129,21 @@ export default function SettingsView() {
 
       <Section id="lastfm" title={'Last.fm'}>
         <LastfmSettings />
+      </Section>
+
+      <Section id="discord" title={t('settings.discord')}>
+        <div className="flex items-center justify-between gap-4">
+          <p className="text-sm text-text-secondary">{t('settings.discordPresence')}</p>
+          <button
+            role="switch"
+            aria-checked={discordOn}
+            aria-label={t('settings.discordPresence')}
+            onClick={handleToggleDiscord}
+            className={`relative w-10 h-6 shrink-0 rounded-full transition-colors ${discordOn ? 'bg-accent' : 'bg-white/15'}`}
+          >
+            <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform ${discordOn ? 'translate-x-4' : ''}`} />
+          </button>
+        </div>
       </Section>
 
       <Section id="soulseek" title={t('settings.soulseek')}>

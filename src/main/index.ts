@@ -8,7 +8,8 @@ import { Readable } from 'stream'
 import { pipeline } from 'stream/promises'
 import { initAutoUpdater } from './updater'
 import * as lastfm from './lastfm'
-import type { LastfmTrack } from '@music-player/core/platform'
+import * as discord from './discord'
+import type { LastfmTrack, DiscordPresence } from '@music-player/core/platform'
 import { encryptSecret, decryptSecret, needsMigration } from './secrets'
 import { isHttpUrl, isSafeExternalUrl, isSafeId, resolveInside, originOf, isCorsAllowed, toLocalAudioUrl } from './security'
 
@@ -359,6 +360,11 @@ function setupIPC() {
   ipcMain.handle('lastfm:now-playing', (_e, track: LastfmTrack) => lastfm.updateNowPlaying(track))
   ipcMain.handle('lastfm:scrobble', (_e, track: LastfmTrack) => lastfm.scrobble(track))
   ipcMain.handle('lastfm:get-similar-tracks', (_e, track: { artist: string; track: string }, limit?: number) => lastfm.getSimilarTracks(track.artist, track.track, limit))
+  // --- Discord Rich Presence ---
+  ipcMain.handle('discord:get-enabled', () => discord.isEnabled())
+  ipcMain.handle('discord:set-enabled', (_e, enabled: boolean) => discord.setEnabled(enabled === true))
+  ipcMain.handle('discord:set-activity', (_e, presence: DiscordPresence | null) => discord.setActivity(presence))
+
   ipcMain.handle('lastfm:get-info', (_e, method: string, params: Record<string, string>) => lastfm.getInfo(method, params))
 
   // --- Lyrics Cache ---
@@ -455,6 +461,10 @@ app.whenReady().then(() => {
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()
   })
+})
+
+app.on('before-quit', () => {
+  void discord.shutdown()
 })
 
 app.on('window-all-closed', () => {

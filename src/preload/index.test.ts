@@ -73,6 +73,13 @@ describe('preload bridge', () => {
 
     api.getFileUrl('/path')
     expect(h.invoke).toHaveBeenCalledWith('file:get-url', '/path')
+
+    api.discordGetEnabled()
+    expect(h.invoke).toHaveBeenCalledWith('discord:get-enabled')
+    api.discordSetEnabled(true)
+    expect(h.invoke).toHaveBeenCalledWith('discord:set-enabled', true)
+    api.discordSetActivity(null)
+    expect(h.invoke).toHaveBeenCalledWith('discord:set-activity', null)
   })
 
   it('maps the remaining invoke methods to their channels', () => {
