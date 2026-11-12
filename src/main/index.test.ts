@@ -17,7 +17,9 @@ const h = vi.hoisted(() => ({
   navigateHandler: null as null | ((e: { preventDefault: () => void }, url: string) => void),
   headersHandler: null as null | ((details: any, cb: (r: any) => void) => void),
   privileged: [] as unknown[],
-  encAvailable: false
+  encAvailable: false,
+  openDialog: vi.fn(),
+  openPath: vi.fn(async (_p: string) => '')
 }))
 
 vi.mock('electron', () => {
@@ -46,7 +48,8 @@ vi.mock('electron', () => {
     },
     BrowserWindow,
     ipcMain: { handle: (channel: string, cb: (...a: any[]) => any) => h.handlers.set(channel, cb) },
-    shell: { openExternal: vi.fn().mockResolvedValue(undefined) },
+    shell: { openExternal: vi.fn().mockResolvedValue(undefined), openPath: h.openPath },
+    dialog: { showOpenDialog: h.openDialog },
     protocol: { registerSchemesAsPrivileged: (s: unknown[]) => { h.privileged.push(...s) } },
     session: {
       defaultSession: {
@@ -147,7 +150,8 @@ describe('main process: IPC registration', () => {
       'lastfm:finish-auth', 'lastfm:disconnect', 'lastfm:now-playing', 'lastfm:scrobble',
       'lastfm:get-similar-tracks', 'lastfm:get-info',
       'lyrics:get', 'lyrics:save', 'lyrics:get-downloaded', 'lyrics:save-downloaded',
-      'file:get-url', 'cors:allow-origin'
+      'file:get-url', 'cors:allow-origin',
+      'cache:get-info', 'cache:set-limit', 'downloads:get-dir', 'downloads:choose-dir', 'downloads:open-dir'
     ]
     for (const ch of expected) expect(h.handlers.has(ch)).toBe(true)
   })
@@ -587,5 +591,85 @@ describe('main process: window & lifecycle wiring', () => {
     } finally {
       Object.defineProperty(process, 'platform', { value: original, configurable: true })
     }
+  })
+})
+
+describe('main process: audio cache limit', () => {
+  const GB = 1024 ** 3
+
+  it('reports usage and the default 2GB limit', () => {
+    getDatabase().prepare(`INSERT INTO audio_cache (item_id, quality, file_path, file_size) VALUES ('u1', 'q', '/nope', 1234)`).run()
+    expect(invoke('cache:get-info')).toEqual({ usedBytes: 1234, limitBytes: 2 * GB })
+  })
+
+  it('persists a new allowed limit and evicts down to it immediately', () => {
+    const db = getDatabase()
+    db.prepare(`INSERT INTO audio_cache (item_id, quality, file_path, file_size, last_accessed) VALUES ('old', 'q', '/nope', ?, datetime('now', '-1 hours'))`).run(GB)
+    db.prepare(`INSERT INTO audio_cache (item_id, quality, file_path, file_size) VALUES ('new', 'q', '/nope2', 100)`).run()
+    invoke('cache:set-limit', 512 * 1024 ** 2)
+    expect(invoke('cache:get-info')).toEqual({ usedBytes: 100, limitBytes: 512 * 1024 ** 2 })
+  })
+
+  it('rejects limits outside the allowed options and ignores corrupt stored values', () => {
+    expect(() => invoke('cache:set-limit', 123)).toThrow()
+    expect(() => invoke('settings:set', 'cache.maxBytes', '1')).toThrow()
+    getDatabase().prepare(`INSERT OR REPLACE INTO settings (key, value) VALUES ('cache.maxBytes', 'abc')`).run()
+    expect((invoke('cache:get-info') as any).limitBytes).toBe(2 * GB)
+  })
+})
+
+describe('main process: downloads folder', () => {
+  const defaultDir = () => join(h.paths.userData, 'downloads')
+
+  it('defaults to the app downloads dir and opens it in the OS', async () => {
+    expect(invoke('downloads:get-dir')).toBe(defaultDir())
+    await invoke('downloads:open-dir')
+    expect(h.openPath).toHaveBeenCalledWith(defaultDir())
+  })
+
+  it('keeps the current folder when the picker is cancelled', async () => {
+    h.openDialog.mockResolvedValueOnce({ canceled: true, filePaths: [] })
+    expect(await invoke('downloads:choose-dir')).toBeNull()
+    expect(invoke('downloads:get-dir')).toBe(defaultDir())
+  })
+
+  it('saves new downloads in the chosen folder while old downloads keep resolving', async () => {
+    const oldFile = join(defaultDir(), 'olditem.audio')
+    writeFileSync(oldFile, 'old')
+    getDatabase().prepare(`INSERT INTO downloads (item_id, file_path, filename, metadata, status) VALUES ('olditem', ?, 'f', '{}', 'completed')`).run(oldFile)
+
+    const newDir = join(tmpRoot, 'music-elsewhere')
+    h.openDialog.mockResolvedValueOnce({ canceled: false, filePaths: [newDir] })
+    expect(await invoke('downloads:choose-dir')).toBe(newDir)
+    expect(invoke('downloads:get-dir')).toBe(newDir)
+    expect(existsSync(newDir)).toBe(true)
+
+    vi.stubGlobal('fetch', vi.fn(async () => byteResponse(new Uint8Array([1, 2]))))
+    await invoke('download:start', { itemId: 'newitem', url: 'http://x/d', filename: 'n', metadata: '{}' })
+    await flushDisk()
+    const newFile = join(newDir, 'newitem.audio')
+    expect(existsSync(newFile)).toBe(true)
+    expect(invoke('file:get-url', newFile)).toBe(`local-audio://${encodeURIComponent(newFile)}`)
+    expect(invoke('file:get-url', oldFile)).toBe(`local-audio://${encodeURIComponent(oldFile)}`)
+    // Files saved in a previously chosen folder keep resolving after another change.
+    h.openDialog.mockResolvedValueOnce({ canceled: false, filePaths: [join(tmpRoot, 'third')] })
+    await invoke('downloads:choose-dir')
+    expect(invoke('file:get-url', newFile)).toBe(`local-audio://${encodeURIComponent(newFile)}`)
+    const served = await h.protocolHandler!({ url: `local-audio://${encodeURIComponent(newFile)}` }) as Response
+    expect(served.status).toBe(200)
+
+    invoke('download:remove', 'newitem')
+    expect(existsSync(newFile)).toBe(false)
+    // The renderer cannot redirect downloads through the generic settings channel.
+    expect(() => invoke('settings:set', 'downloads.dir', '/etc')).toThrow()
+  })
+
+  it('falls back to the default folder when the stored path is invalid', () => {
+    getDatabase().prepare(`INSERT OR REPLACE INTO settings (key, value) VALUES ('downloads.dir', 'relative/path')`).run()
+    getDatabase().prepare(`INSERT OR REPLACE INTO settings (key, value) VALUES ('downloads.previousDirs', '{bad')`).run()
+    expect(invoke('file:get-url', '/etc/passwd')).toBeNull()
+    getDatabase().prepare(`INSERT OR REPLACE INTO settings (key, value) VALUES ('downloads.previousDirs', '{}')`).run()
+    expect(invoke('file:get-url', '/etc/passwd')).toBeNull()
+    expect(invoke('downloads:get-dir')).toBe(defaultDir())
   })
 })

@@ -69,6 +69,8 @@ export interface JellyfinItemsResponse {
 
 import { timeoutSignal } from './http'
 import { TICKS_PER_SECOND } from '../lib/format'
+import { streamBitrateKbps } from '../lib/streaming'
+import { useStreamingPrefs } from '../stores/prefs/streaming'
 
 type RequestOptions = RequestInit & { timeoutMs?: number }
 
@@ -338,7 +340,16 @@ class JellyfinService {
       await this.request(`/Users/${this.userId}/FavoriteItems/${itemId}`, { method: 'DELETE' })
     } else {
       await this.request(`/Users/${this.userId}/FavoriteItems/${itemId}`, { method: 'POST' })
+      this.favoriteListeners.forEach(cb => cb(itemId))
     }
+  }
+
+  private favoriteListeners = new Set<(itemId: string) => void>()
+
+  /** Subscribe to songs being liked through this client; returns an unsubscribe function. */
+  onFavoriteAdded(cb: (itemId: string) => void): () => void {
+    this.favoriteListeners.add(cb)
+    return () => { this.favoriteListeners.delete(cb) }
   }
 
   async reportPlaybackStart(itemId: string): Promise<void> {
@@ -809,7 +820,19 @@ class JellyfinService {
   // --- URLs ---
 
   getStreamUrl(itemId: string): string {
-    return `${this.serverUrl}/Audio/${itemId}/stream?ApiKey=${this.token}&static=true`
+    const kbps = streamBitrateKbps(useStreamingPrefs.getState().values, this.serverUrl)
+    if (kbps === null) return `${this.serverUrl}/Audio/${itemId}/stream?ApiKey=${this.token}&static=true`
+    // Universal endpoint: direct-streams sources already under the cap, transcodes the rest to MP3.
+    const params = new URLSearchParams({
+      UserId: this.userId,
+      ApiKey: this.token,
+      MaxStreamingBitrate: String(kbps * 1000),
+      Container: 'mp3,aac,m4a|aac,m4b|aac,flac,webma,webm|webma,wav,ogg',
+      TranscodingContainer: 'mp3',
+      TranscodingProtocol: 'http',
+      AudioCodec: 'mp3',
+    })
+    return `${this.serverUrl}/Audio/${itemId}/universal?${params}`
   }
 
   getImageUrl(itemId: string, imageTag?: string, maxSize = 300): string {
@@ -818,6 +841,9 @@ class JellyfinService {
   }
 
   getDownloadUrl(itemId: string): string {
+    const quality = useStreamingPrefs.getState().values.downloadQuality
+    if (quality === 'mp3-320') return `${this.serverUrl}/Audio/${itemId}/stream.mp3?ApiKey=${this.token}&audioCodec=mp3&audioBitRate=320000`
+    if (quality === 'aac-256') return `${this.serverUrl}/Audio/${itemId}/stream.aac?ApiKey=${this.token}&audioCodec=aac&audioBitRate=256000`
     return `${this.serverUrl}/Items/${itemId}/Download?ApiKey=${this.token}`
   }
 

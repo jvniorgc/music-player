@@ -10,6 +10,7 @@ import { LastfmSettings } from './LastfmSettings'
 import { SlskdSettings } from './SlskdSettings'
 import { SocialServerSettings } from './SocialServerSettings'
 import { EqualizerSettings } from './EqualizerSettings'
+import { StreamingSettings } from './StreamingSettings'
 import { shortcutList } from '../../lib/shortcuts'
 import { LANGUAGE_OPTIONS, type LanguagePreference } from '../../lib/language'
 import { useI18nStore, useT } from '../../i18n'
@@ -158,6 +159,10 @@ export default function SettingsView() {
 
       <Section id="social-server" title={t('settings.socialServer')}>
         <SocialServerSettings />
+      </Section>
+
+      <Section id="streaming" title={t('prefs.streaming.title')}>
+        <StreamingSettings />
       </Section>
 
       <Section id="storage" title={t('settings.storage')}>

@@ -37,9 +37,16 @@ export default function App() {
 
   useEffect(() => {
     if (isAuthenticated) {
-      loadDownloads()
+      let cancelled = false
+      let stopAutoDownload = () => {}
+      // Auto-download needs the downloaded set first so it skips songs already on disk.
+      loadDownloads().finally(() => { if (!cancelled) stopAutoDownload = useDownloadStore.getState().initAutoDownload() })
       const cleanup = initListeners()
-      return cleanup
+      return () => {
+        cancelled = true
+        stopAutoDownload()
+        cleanup()
+      }
     }
   }, [isAuthenticated])
 

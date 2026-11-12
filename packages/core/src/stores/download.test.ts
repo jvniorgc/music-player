@@ -1,7 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
+const unsubscribeFavorites = vi.hoisted(() => () => {})
+
 vi.mock('../services/jellyfin', () => ({
   jellyfin: {
+    getFavoriteSongs: vi.fn(),
+    onFavoriteAdded: vi.fn(() => unsubscribeFavorites),
     getDownloadUrl: (id: string) => `download://${id}`,
     getLyricsWithCache: vi.fn().mockResolvedValue([{ Text: 'la' }]),
   },
@@ -9,6 +13,7 @@ vi.mock('../services/jellyfin', () => ({
 
 import { useDownloadStore, type DownloadItem } from './download'
 import { jellyfin } from '../services/jellyfin'
+import { useStreamingPrefs } from './prefs/streaming'
 
 const ITEM = { Id: 'it1', Name: 'Song', AlbumArtist: 'Artist', Type: 'Audio' }
 const flush = () => new Promise(r => setTimeout(r, 0))
@@ -93,5 +98,56 @@ describe('initListeners', () => {
 
     expect(typeof unsub).toBe('function')
     unsub()
+  })
+})
+
+describe('auto-download liked songs', () => {
+  const LIKED = [ITEM, { Id: 'it2', Name: 'Two', Type: 'Audio' }]
+
+  beforeEach(() => {
+    useStreamingPrefs.getState().reset()
+    vi.mocked(jellyfin.getFavoriteSongs).mockResolvedValue({ Items: LIKED, TotalRecordCount: 2 })
+  })
+
+  it('does nothing while the preference is off', async () => {
+    await useDownloadStore.getState().autoDownloadLiked(LIKED)
+    await useDownloadStore.getState().syncLikedDownloads()
+    expect(window.api.startDownload).not.toHaveBeenCalled()
+    expect(jellyfin.getFavoriteSongs).not.toHaveBeenCalled()
+  })
+
+  it('downloads liked songs that are not downloaded yet, one at a time', async () => {
+    useStreamingPrefs.getState().set({ autoDownloadLiked: true })
+    useDownloadStore.setState({ downloads: new Map([['it1', { itemId: 'it1', filename: 'f', metadata: ITEM, status: 'completed' as DownloadItem['status'], progress: 1 }]]) })
+    await useDownloadStore.getState().syncLikedDownloads()
+    expect(vi.mocked(window.api.startDownload).mock.calls.map(c => c[0].itemId)).toEqual(['it2'])
+  })
+
+  it('does not queue the same song twice while a run is in progress, and survives failures', async () => {
+    useStreamingPrefs.getState().set({ autoDownloadLiked: true })
+    vi.mocked(window.api.startDownload).mockRejectedValueOnce(new Error('boom'))
+    const a = useDownloadStore.getState().autoDownloadLiked(LIKED)
+    useDownloadStore.setState({ downloads: new Map() })
+    const b = useDownloadStore.getState().autoDownloadLiked(LIKED)
+    await Promise.all([a, b])
+    expect(vi.mocked(window.api.startDownload).mock.calls.map(c => c[0].itemId)).toEqual(['it1', 'it2'])
+  })
+
+  it('swallows favorite-fetch errors', async () => {
+    useStreamingPrefs.getState().set({ autoDownloadLiked: true })
+    vi.mocked(jellyfin.getFavoriteSongs).mockRejectedValueOnce(new Error('offline'))
+    await expect(useDownloadStore.getState().syncLikedDownloads()).resolves.toBeUndefined()
+  })
+
+  it('initAutoDownload syncs now and again whenever a song is liked', async () => {
+    useStreamingPrefs.getState().set({ autoDownloadLiked: true })
+    const off = useDownloadStore.getState().initAutoDownload()
+    await flush()
+    expect(jellyfin.getFavoriteSongs).toHaveBeenCalledTimes(1)
+    const onLiked = vi.mocked(jellyfin.onFavoriteAdded).mock.calls[0][0]
+    onLiked('it9')
+    await flush()
+    expect(jellyfin.getFavoriteSongs).toHaveBeenCalledTimes(2)
+    expect(off).toBe(unsubscribeFavorites)
   })
 })

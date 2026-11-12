@@ -25,7 +25,11 @@ export default function LikedView() {
   useEffect(() => {
     const controller = new AbortController()
     jellyfin.getFavoriteSongs(controller.signal)
-      .then(res => { if (!controller.signal.aborted) setTracks(res.Items) })
+      .then(res => {
+        if (controller.signal.aborted) return
+        setTracks(res.Items)
+        void useDownloadStore.getState().autoDownloadLiked(res.Items)
+      })
       .catch(err => { if (!isAbortError(err) && !controller.signal.aborted) console.warn('[LikedView] failed to load', err) })
       .finally(() => { if (!controller.signal.aborted) setLoading(false) })
     return () => controller.abort()

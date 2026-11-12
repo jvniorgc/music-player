@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { JellyfinItem, jellyfin } from '../services/jellyfin'
+import { useStreamingPrefs } from './prefs/streaming'
 
 export interface DownloadItem {
   itemId: string
@@ -17,7 +18,17 @@ interface DownloadState {
   removeDownload: (itemId: string) => Promise<void>
   loadDownloads: () => Promise<void>
   initListeners: () => () => void
+  /** If auto-download is on, download the given liked songs not downloaded yet (sequentially). */
+  autoDownloadLiked: (items: JellyfinItem[]) => Promise<void>
+  /** If auto-download is on, fetch the liked songs and download the missing ones. */
+  syncLikedDownloads: () => Promise<void>
+  /** Sync now and on every like; returns an unsubscribe function. */
+  initAutoDownload: () => () => void
 }
+
+/** Songs queued by an auto-download run that may not be in `downloads` yet. */
+const autoQueued = new Set<string>()
+const autoDownloadEnabled = () => useStreamingPrefs.getState().values.autoDownloadLiked
 
 export const useDownloadStore = create<DownloadState>((set, get) => ({
   downloads: new Map(),
@@ -77,6 +88,36 @@ export const useDownloadStore = create<DownloadState>((set, get) => ({
       } catch {}
     }
     set({ downloads: map })
+  },
+
+  autoDownloadLiked: async (items) => {
+    if (!autoDownloadEnabled()) return
+    const todo = items.filter(i => !get().downloads.has(i.Id) && !autoQueued.has(i.Id))
+    todo.forEach(i => autoQueued.add(i.Id))
+    for (const item of todo) {
+      try {
+        await get().startDownload(item)
+      } catch (err) {
+        console.warn('[download] auto-download failed', item.Id, err)
+      } finally {
+        autoQueued.delete(item.Id)
+      }
+    }
+  },
+
+  syncLikedDownloads: async () => {
+    if (!autoDownloadEnabled()) return
+    try {
+      const res = await jellyfin.getFavoriteSongs()
+      await get().autoDownloadLiked(res.Items)
+    } catch (err) {
+      console.warn('[download] could not sync liked songs', err)
+    }
+  },
+
+  initAutoDownload: () => {
+    void get().syncLikedDownloads()
+    return jellyfin.onFavoriteAdded(() => { void get().syncLikedDownloads() })
   },
 
   initListeners: () => {
