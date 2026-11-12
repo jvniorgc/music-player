@@ -353,7 +353,7 @@ class PlaybackService {
     old.pause()
     old.src = ''
     audioEffects.unregister(old)
-    this.audio.volume = this._volume
+    this.audio.volume = audioOutput.effectiveVolume(this._volume)
   }
 
   /** Starts a crossfade into the preloaded track when the current one nears its end. */
@@ -389,8 +389,9 @@ class PlaybackService {
       let step = 0
       this._fadeTimer = setInterval(() => {
         const p = Math.min(1, ++step / steps)
-        this.audio.volume = this._volume * p
-        oldAudio.volume = this._volume * (1 - p)
+        const vol = audioOutput.effectiveVolume(this._volume)
+        this.audio.volume = vol * p
+        oldAudio.volume = vol * (1 - p)
         if (p >= 1) this.cancelFade()
       }, stepMs)
     } else {
@@ -404,8 +405,7 @@ class PlaybackService {
     this._preloadAudio = null
     this._preloadTrack = null
     this._preloadReady = false
-    this.audio.volume = fade > 0 ? 0 : this._volume
-    this.audio.volume = audioOutput.effectiveVolume(this._volume)
+    this.audio.volume = fade > 0 ? 0 : audioOutput.effectiveVolume(this._volume)
 
     this.emit('trackchange', track)
 

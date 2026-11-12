@@ -19,7 +19,7 @@ const h = vi.hoisted(() => ({
   privileged: [] as unknown[],
   encAvailable: false,
   openDialog: vi.fn(),
-  openPath: vi.fn(async (_p: string) => '')
+  openPath: vi.fn(async (_p: string) => ''),
   win: null as any,
   minimized: false
 }))
