@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { DiscoveredBadge } from '../Rankings/DiscoveredBadge'
 import { useParams, useNavigate } from 'react-router-dom'
 import { jellyfin, JellyfinItem } from '../../services/jellyfin'
 import { isAbortError } from '../../services/http'
@@ -135,6 +136,7 @@ export default function AlbumView() {
             <span>{formatTotalDuration(tracks)}</span>
           </div>
           <PopularitySummary stats={albumStats} />
+          <DiscoveredBadge albumId={album.Id} />
 
           <div className="flex items-center gap-3 mt-5">
             <button
