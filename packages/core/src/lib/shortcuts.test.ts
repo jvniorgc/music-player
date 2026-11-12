@@ -41,6 +41,7 @@ describe('resolveShortcut', () => {
     [ev('M'), 'mute'],
     [ev('s'), 'shuffle'],
     [ev('r'), 'repeat'],
+    [ev('l'), 'toggleLike'],
   ] as const)('%j → %s', (e, action) => {
     expect(resolveShortcut(e)).toBe(action)
   })

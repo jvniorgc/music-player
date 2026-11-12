@@ -109,8 +109,6 @@ export const ptBR: Messages = {
   'nav.liked': 'Curtidas',
   'liked.title': 'Músicas curtidas',
   'liked.downloadAll': 'Baixar todas',
-  'liked.unlike': 'Remover das curtidas',
-  'liked.unlikeFailed': 'Não foi possível atualizar as curtidas',
   'liked.empty': 'Nenhuma música curtida ainda',
   'liked.emptyHint': 'As músicas que você curtir aparecerão aqui',
   'nav.soulseek': "Soulseek",
@@ -741,4 +739,8 @@ export const ptBR: Messages = {
   'picks.loadFailed': "Não foi possível carregar as escolhas",
   'picks.notConfigured': "Configure o servidor social para ver as escolhas da semana.",
   'picks.openSettings': "Abrir configurações",
+  'like.like': "Curtir",
+  'like.unlike': "Remover das Músicas curtidas",
+  'like.failed': "Não foi possível atualizar suas músicas curtidas",
+  'prefs.shortcuts.action.toggleLike': "Curtir / descurtir música atual",
 }

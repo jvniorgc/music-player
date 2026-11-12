@@ -10,6 +10,7 @@ import { Play, Pause, Shuffle, Download, Check, Pencil } from 'lucide-react'
 import MetadataEditor from '../Metadata/MetadataEditor'
 import { AlbumHeaderMenu } from '../UI/AlbumMenu'
 import TrackMenu from '../UI/TrackMenu'
+import LikeButton from '../UI/LikeButton'
 import { formatTotalDuration } from '../../lib/format'
 import AlbumReviews, { AlbumRatingSummary } from '../Reviews/AlbumReviews'
 import TrackRow, { TrackIndex, TrackDuration } from '../UI/TrackRow'
@@ -195,6 +196,7 @@ export default function AlbumView() {
 
               <ReactionBadge summary={reactionSummary[track.Id]} />
 
+              <LikeButton item={track} revealOnHover />
               <TrackDuration ticks={track.RunTimeTicks} />
 
               <TrackMenu track={track} hideAlbum />

@@ -12,6 +12,7 @@ import {
 } from 'lucide-react'
 import AddToPlaylist from '../UI/AddToPlaylist'
 import CoverArt from '../UI/CoverArt'
+import LikeButton from '../UI/LikeButton'
 import { formatTime } from '../../lib/format'
 import { ArtistLinks, AlbumLink } from '../UI/Links'
 import { useT } from '../../i18n'
@@ -75,6 +76,7 @@ export default function NowPlayingBar() {
               <ArtistLinks item={item} fallback={t('player.unknownArtist')} />
             </p>
           </div>
+          <LikeButton item={item} fetchState />
           <ChevronUp size={14} className="text-text-tertiary shrink-0 ml-1" />
         </div>
 

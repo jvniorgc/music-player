@@ -14,6 +14,7 @@ import { ArtistLinks, AlbumLink, PlayingFrom } from '../UI/Links'
 import { formatTime, TICKS_PER_SECOND } from '../../lib/format'
 import { useT } from '../../i18n'
 import { useInterfacePrefs, LYRICS_SIZE_CLASS } from '../../stores/prefs/interface'
+import LikeButton from '../UI/LikeButton'
 
 interface LyricLine {
   Text: string
@@ -176,7 +177,10 @@ export default function FullScreenPlayer() {
           {/* Track info */}
           <div className="text-center mb-3 md:mb-6 w-full">
             <PlayingFrom className="mb-2" />
-            <h2 className="text-xl font-semibold truncate">{item.Name}</h2>
+            <div className="flex items-center justify-center gap-2 min-w-0">
+              <h2 className="text-xl font-semibold truncate">{item.Name}</h2>
+              <LikeButton item={item} size={20} fetchState />
+            </div>
             <p className="text-base text-accent mt-1 truncate">
               <ArtistLinks item={item} fallback={t('player.unknownArtist')} />
             </p>

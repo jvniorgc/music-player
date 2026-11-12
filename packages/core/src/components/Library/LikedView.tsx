@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Play, Pause, Shuffle, Heart, Download } from 'lucide-react'
 import { useShallow } from 'zustand/react/shallow'
 import { jellyfin, JellyfinItem } from '../../services/jellyfin'
@@ -6,8 +6,9 @@ import { isAbortError } from '../../services/http'
 import type { PlaybackContext } from '../../services/playback'
 import { usePlayerStore } from '../../stores/player'
 import { useDownloadStore } from '../../stores/download'
-import { useToastStore } from '../../stores/toast'
+import { useLikesStore } from '../../stores/likes'
 import TrackMenu from '../UI/TrackMenu'
+import LikeButton from '../UI/LikeButton'
 import { TrackSubtitle } from '../UI/Links'
 import TrackRow, { TrackIndex, TrackDuration } from '../UI/TrackRow'
 import CoverArt from '../UI/CoverArt'
@@ -16,34 +17,38 @@ import { useT } from '../../i18n'
 
 export default function LikedView() {
   const { t, tn } = useT()
-  const [tracks, setTracks] = useState<JellyfinItem[]>([])
+  const [allTracks, setTracks] = useState<JellyfinItem[]>([])
   const [loading, setLoading] = useState(true)
   const { playItems, playFromList, shuffleItems, currentTrack, isPlaying, togglePlay } = usePlayerStore(useShallow(s => ({ playItems: s.playItems, playFromList: s.playFromList, shuffleItems: s.shuffleItems, currentTrack: s.currentTrack, isPlaying: s.isPlaying, togglePlay: s.togglePlay })))
   const { isDownloaded, startDownload } = useDownloadStore(useShallow(s => ({ isDownloaded: s.isDownloaded, startDownload: s.startDownload, downloads: s.downloads })))
-  const toast = useToastStore(s => s.show)
+  const liked = useLikesStore(s => s.liked)
+  // Unliked songs disappear right away (and come back if the unlike is rolled back).
+  const tracks = allTracks.filter(x => liked[x.Id] !== false)
+  const idsRef = useRef<Set<string>>(new Set())
+  idsRef.current = new Set(allTracks.map(x => x.Id))
 
-  useEffect(() => {
-    const controller = new AbortController()
-    jellyfin.getFavoriteSongs(controller.signal)
+  const load = useCallback((signal?: AbortSignal) => {
+    jellyfin.getFavoriteSongs(signal)
       .then(res => {
-        if (controller.signal.aborted) return
+        if (signal?.aborted) return
         setTracks(res.Items)
         void useDownloadStore.getState().autoDownloadLiked(res.Items)
       })
-      .catch(err => { if (!isAbortError(err) && !controller.signal.aborted) console.warn('[LikedView] failed to load', err) })
-      .finally(() => { if (!controller.signal.aborted) setLoading(false) })
-    return () => controller.abort()
+      .catch(err => { if (!isAbortError(err) && !signal?.aborted) console.warn('[LikedView] failed to load', err) })
+      .finally(() => { if (!signal?.aborted) setLoading(false) })
   }, [])
 
-  const handleUnlike = async (track: JellyfinItem) => {
-    try {
-      await jellyfin.toggleFavorite(track.Id, true)
-      setTracks(prev => prev.filter(x => x.Id !== track.Id))
-    } catch (err) {
-      console.error('Failed to unlike track:', err)
-      toast(t('liked.unlikeFailed'), 'error')
-    }
-  }
+  useEffect(() => {
+    const controller = new AbortController()
+    load(controller.signal)
+    return () => controller.abort()
+  }, [load])
+
+  // A song liked elsewhere (other view, player bar) isn't in the list yet: refetch.
+  useEffect(() => useLikesStore.subscribe((s, prev) => {
+    const added = Object.keys(s.liked).some(id => s.liked[id] && !prev.liked[id] && !idsRef.current.has(id))
+    if (added) load()
+  }), [load])
 
   const handleDownloadAll = () => {
     tracks.forEach(track => { if (!isDownloaded(track.Id)) startDownload(track) })
@@ -113,14 +118,7 @@ export default function LikedView() {
                 title={track.Name}
                 subtitle={<TrackSubtitle item={track} />}
               >
-                <button
-                  onClick={e => { e.stopPropagation(); handleUnlike(track) }}
-                  className="p-1.5 rounded-full text-accent hover:bg-white/10 transition-colors"
-                  title={t('liked.unlike')}
-                  aria-label={t('liked.unlike')}
-                >
-                  <Heart size={15} fill="currentColor" />
-                </button>
+                <LikeButton item={track} />
                 <TrackDuration ticks={track.RunTimeTicks} />
                 <TrackMenu track={track} />
               </TrackRow>

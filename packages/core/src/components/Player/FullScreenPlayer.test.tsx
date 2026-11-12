@@ -146,3 +146,15 @@ describe('FullScreenPlayer reactions', () => {
     expect(seek).toHaveBeenCalledWith(30)
   })
 })
+
+describe('FullScreenPlayer like button', () => {
+  it('fetches the liked state of the current track and toggles it', async () => {
+    const { useLikesStore } = await import('../../stores/likes')
+    useLikesStore.setState({ liked: {} })
+    vi.spyOn(jellyfin, 'getItem').mockResolvedValue({ Id: 's1', UserData: { IsFavorite: true } } as never)
+    const toggle = vi.spyOn(jellyfin, 'toggleFavorite').mockResolvedValue()
+    renderPlayer()
+    fireEvent.click(await screen.findByRole('button', { name: 'Remove from Liked songs' }))
+    expect(toggle).toHaveBeenCalledWith('s1', true)
+  })
+})

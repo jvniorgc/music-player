@@ -1,11 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import LikedView from './LikedView'
 import { jellyfin } from '../../services/jellyfin'
 import { usePlayerStore } from '../../stores/player'
 import { useDownloadStore } from '../../stores/download'
 import { useToastStore } from '../../stores/toast'
+import { useLikesStore } from '../../stores/likes'
 
 const song = (id: string, name: string) => ({ Id: id, Name: name, Type: 'Audio', UserData: { IsFavorite: true } })
 
@@ -13,6 +14,7 @@ const renderView = () => render(<MemoryRouter><LikedView /></MemoryRouter>)
 
 describe('LikedView', () => {
   beforeEach(() => {
+    useLikesStore.setState({ liked: {} })
     vi.spyOn(jellyfin, 'getImageUrl').mockReturnValue('img')
   })
 
@@ -46,7 +48,7 @@ describe('LikedView', () => {
     const toggle = vi.spyOn(jellyfin, 'toggleFavorite').mockResolvedValue()
     renderView()
     await screen.findByText('One')
-    fireEvent.click(screen.getAllByRole('button', { name: 'Remove from liked songs' })[0])
+    fireEvent.click(screen.getAllByRole('button', { name: 'Remove from Liked songs' })[0])
     await waitFor(() => expect(screen.queryByText('One')).toBeNull())
     expect(toggle).toHaveBeenCalledWith('a', true)
     expect(screen.getByText('Two')).toBeInTheDocument()
@@ -57,8 +59,8 @@ describe('LikedView', () => {
     vi.spyOn(jellyfin, 'toggleFavorite').mockRejectedValue(new Error('x'))
     vi.spyOn(console, 'error').mockImplementation(() => {})
     renderView()
-    fireEvent.click(await screen.findByRole('button', { name: 'Remove from liked songs' }))
-    await waitFor(() => expect(useToastStore.getState().toasts.map(t => t.message)).toContain('Could not update liked songs'))
+    fireEvent.click(await screen.findByRole('button', { name: 'Remove from Liked songs' }))
+    await waitFor(() => expect(useToastStore.getState().toasts.map(t => t.message)).toContain("Couldn't update your liked songs"))
     expect(screen.getByText('One')).toBeInTheDocument()
   })
 
@@ -77,5 +79,19 @@ describe('LikedView', () => {
     renderView()
     await screen.findByText('One')
     expect(autoDownloadLiked).toHaveBeenCalledWith(items)
+  })
+
+  it('drops songs unliked elsewhere and refetches when a new song is liked', async () => {
+    const get = vi.spyOn(jellyfin, 'getFavoriteSongs')
+      .mockResolvedValueOnce({ Items: [song('a', 'One'), song('b', 'Two')], TotalRecordCount: 2 } as never)
+      .mockResolvedValueOnce({ Items: [song('c', 'Three'), song('b', 'Two')], TotalRecordCount: 2 } as never)
+    renderView()
+    await screen.findByText('One')
+    act(() => useLikesStore.setState({ liked: { a: false, b: true } }))
+    expect(screen.queryByText('One')).toBeNull()
+    expect(get).toHaveBeenCalledTimes(1)
+    act(() => useLikesStore.setState(s => ({ liked: { ...s.liked, c: true } })))
+    expect(await screen.findByText('Three')).toBeInTheDocument()
+    expect(get).toHaveBeenCalledTimes(2)
   })
 })

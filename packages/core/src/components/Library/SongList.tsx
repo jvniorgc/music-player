@@ -7,6 +7,7 @@ import { useDownloadStore } from '../../stores/download'
 import { jellyfin, JellyfinItem } from '../../services/jellyfin'
 import { Loader2, Download, Check } from 'lucide-react'
 import TrackMenu from '../UI/TrackMenu'
+import LikeButton from '../UI/LikeButton'
 import { ArtistLinks, AlbumLink } from '../UI/Links'
 import TrackRow, { TrackIndex, TrackDuration } from '../UI/TrackRow'
 import CoverArt from '../UI/CoverArt'
@@ -130,6 +131,7 @@ export default function SongList() {
                   <AlbumLink item={song} />
                 </span>
 
+                <LikeButton item={song} revealOnHover />
                 <TrackDuration ticks={song.RunTimeTicks} className="w-12 text-right" />
 
                 <div className="w-20 flex justify-end gap-1 items-center">

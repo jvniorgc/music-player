@@ -10,6 +10,7 @@ import { getArtistStats, artistKey } from '../../services/popularity'
 import TrackRow, { TrackIndex, TrackDuration } from '../UI/TrackRow'
 import CoverArt from '../UI/CoverArt'
 import TrackMenu from '../UI/TrackMenu'
+import LikeButton from '../UI/LikeButton'
 import { AlbumLink } from '../UI/Links'
 import { buttonClass } from '../UI/Button'
 import ArtistMetadataEditor from '../Metadata/ArtistMetadataEditor'
@@ -168,6 +169,7 @@ export default function ArtistView() {
                   title={song.Name}
                   subtitle={<AlbumLink item={song} />}
                 >
+                  <LikeButton item={song} revealOnHover />
                   <TrackDuration ticks={song.RunTimeTicks} />
                   <TrackMenu track={song} />
                 </TrackRow>

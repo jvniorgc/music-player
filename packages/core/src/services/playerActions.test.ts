@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { usePlayerStore } from '../stores/player'
 import { runPlayerAction } from './playerActions'
+import { useLikesStore } from '../stores/likes'
 
 const fns = {
   togglePlay: vi.fn(), next: vi.fn(), previous: vi.fn(), seek: vi.fn(),
@@ -20,6 +21,17 @@ describe('runPlayerAction', () => {
     expect(fns.previous).toHaveBeenCalled()
     expect(fns.toggleShuffle).toHaveBeenCalled()
     expect(fns.toggleRepeat).toHaveBeenCalled()
+  })
+
+  it('toggles the like of the current track, if any', () => {
+    const toggle = vi.fn().mockResolvedValue(true)
+    useLikesStore.setState({ toggle })
+    usePlayerStore.setState({ currentTrack: null })
+    runPlayerAction('toggleLike')
+    expect(toggle).not.toHaveBeenCalled()
+    usePlayerStore.setState({ currentTrack: { id: 't1', item: { Id: 't1' } } } as any)
+    runPlayerAction('toggleLike')
+    expect(toggle).toHaveBeenCalledWith('t1')
   })
 
   it('seeks within bounds', () => {

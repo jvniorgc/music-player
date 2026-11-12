@@ -339,10 +339,20 @@ class JellyfinService {
   async toggleFavorite(itemId: string, isFavorite: boolean): Promise<void> {
     if (isFavorite) {
       await this.request(`/Users/${this.userId}/FavoriteItems/${itemId}`, { method: 'DELETE' })
+      this.favoriteChangeListeners.forEach(cb => cb(itemId, false))
     } else {
       await this.request(`/Users/${this.userId}/FavoriteItems/${itemId}`, { method: 'POST' })
       this.favoriteListeners.forEach(cb => cb(itemId))
+      this.favoriteChangeListeners.forEach(cb => cb(itemId, true))
     }
+  }
+
+  private favoriteChangeListeners = new Set<(itemId: string, isFavorite: boolean) => void>()
+
+  /** Subscribe to likes and unlikes made through this client; returns an unsubscribe function. */
+  onFavoriteChanged(cb: (itemId: string, isFavorite: boolean) => void): () => void {
+    this.favoriteChangeListeners.add(cb)
+    return () => { this.favoriteChangeListeners.delete(cb) }
   }
 
   private favoriteListeners = new Set<(itemId: string) => void>()

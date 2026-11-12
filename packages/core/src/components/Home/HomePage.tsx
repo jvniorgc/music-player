@@ -7,6 +7,7 @@ import { jellyfin } from '../../services/jellyfin'
 import { Clock, Radio, Loader2, AlertCircle, RefreshCw } from 'lucide-react'
 import { TrackSubtitle } from '../UI/Links'
 import TrackMenu from '../UI/TrackMenu'
+import LikeButton from '../UI/LikeButton'
 import TrackRow, { TrackDuration, CoverPlayOverlay } from '../UI/TrackRow'
 import CoverArt from '../UI/CoverArt'
 import { AlbumCard } from '../UI/MediaCard'
@@ -164,6 +165,7 @@ export default function HomePage() {
                 title={item.Name}
                 subtitle={<TrackSubtitle item={item} />}
               >
+                <LikeButton item={item} revealOnHover />
                 <TrackDuration ticks={item.RunTimeTicks} />
                 <TrackMenu track={item} />
               </TrackRow>

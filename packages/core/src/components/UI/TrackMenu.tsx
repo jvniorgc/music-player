@@ -1,10 +1,11 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ListEnd, ListStart, ListPlus, Radio, User, Disc3, X, Send } from 'lucide-react'
+import { ListEnd, ListStart, ListPlus, Radio, User, Disc3, X, Send, Heart } from 'lucide-react'
 import type { JellyfinItem } from '../../services/jellyfin'
 import { usePlayerStore } from '../../stores/player'
 import { useLibraryStore } from '../../stores/library'
 import { useToastStore } from '../../stores/toast'
+import { useLikesStore } from '../../stores/likes'
 import { MoreMenu, type MenuEntry } from './Menu'
 import AddToPlaylist from './AddToPlaylist'
 import { t, useT } from '../../i18n'
@@ -69,6 +70,8 @@ export default function TrackMenu({ track, onRemove, removeLabel, hideAlbum, cla
 
   const entries = (): MenuEntry[] => {
     const p = usePlayerStore.getState()
+    const likes = useLikesStore.getState()
+    const liked = likes.liked[track.Id] ?? track.UserData?.IsFavorite ?? false
     return [
       { label: MENU_TEXT.playNext, icon: ListStart, onSelect: () => { p.addNext(track); toast(MENU_TEXT.willPlayNext, 'success') } },
       { label: MENU_TEXT.addToQueue, icon: ListEnd, onSelect: () => { p.addToQueue(track); toast(MENU_TEXT.addedToQueue, 'success') } },
@@ -84,6 +87,7 @@ export default function TrackMenu({ track, onRemove, removeLabel, hideAlbum, cla
           setPickerSong(track)
         },
       },
+      { label: liked ? t('like.unlike') : t('like.like'), icon: Heart, onSelect: () => { void likes.toggle(track.Id) } },
       isConfigured() && { label: t('inbox.recommend'), icon: Send, onSelect: () => setRecItem(itemFromJellyfin(track)) },
       onRemove && 'separator',
       onRemove && { label: removeLabel ?? MENU_TEXT.removeFromPlaylist, icon: X, danger: true, onSelect: onRemove },

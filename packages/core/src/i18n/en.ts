@@ -110,8 +110,6 @@ export const en = {
   'nav.liked': 'Liked songs',
   'liked.title': 'Liked songs',
   'liked.downloadAll': 'Download all',
-  'liked.unlike': 'Remove from liked songs',
-  'liked.unlikeFailed': 'Could not update liked songs',
   'liked.empty': 'No liked songs yet',
   'liked.emptyHint': 'Songs you like will appear here',
   'nav.soulseek': "Soulseek",
@@ -742,6 +740,10 @@ export const en = {
   'picks.loadFailed': "Couldn't load picks",
   'picks.notConfigured': "Set up the social server to see weekly picks.",
   'picks.openSettings': "Open settings",
+  'like.like': "Like",
+  'like.unlike': "Remove from Liked songs",
+  'like.failed': "Couldn't update your liked songs",
+  'prefs.shortcuts.action.toggleLike': "Like / unlike current song",
 } as const
 
 export type Messages = { [K in keyof typeof en]: (typeof en)[K] extends string ? string : Plural }
