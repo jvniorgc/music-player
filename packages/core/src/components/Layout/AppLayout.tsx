@@ -12,6 +12,8 @@ import { playback } from '../../services/playback'
 import { jellyfin } from '../../services/jellyfin'
 import { startSessionPersistence } from '../../lib/session'
 import { useShallow } from 'zustand/react/shallow'
+import { initGlobalShortcuts } from '../../services/globalShortcuts'
+import { initNotifications } from '../../services/notifications'
 
 export default function AppLayout() {
   const { showFullScreen, showQueue, initListeners } = usePlayerStore(useShallow(s => ({ showFullScreen: s.showFullScreen, showQueue: s.showQueue, initListeners: s.initListeners })))
@@ -22,7 +24,11 @@ export default function AppLayout() {
     const cleanup = initListeners()
     // Resume the last session (paused) once the store mirrors the engine.
     const stopPersistence = startSessionPersistence(playback, { serverUrl: jellyfin.serverUrl, userId: jellyfin.userId })
+    const stopGlobalShortcuts = initGlobalShortcuts()
+    const stopNotifications = initNotifications()
     return () => {
+      stopNotifications()
+      stopGlobalShortcuts()
       stopPersistence()
       cleanup()
     }

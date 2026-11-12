@@ -91,6 +91,11 @@ describe('preload bridge', () => {
     expect(h.invoke).toHaveBeenCalledWith('discord:set-enabled', true)
     api.discordSetActivity(null)
     expect(h.invoke).toHaveBeenCalledWith('discord:set-activity', null)
+
+    api.setGlobalShortcuts({ next: 'F9' })
+    expect(h.invoke).toHaveBeenCalledWith('shortcuts:set-global', { next: 'F9' })
+    api.focusWindow()
+    expect(h.invoke).toHaveBeenCalledWith('window:focus')
   })
 
   it('maps the remaining invoke methods to their channels', () => {
@@ -186,7 +191,8 @@ describe('preload bridge', () => {
       ['onUpdateAvailable', 'updater:update-available'],
       ['onUpdateDownloadProgress', 'updater:download-progress'],
       ['onUpdateDownloaded', 'updater:update-downloaded'],
-      ['onUpdateError', 'updater:error']
+      ['onUpdateError', 'updater:error'],
+      ['onGlobalShortcut', 'shortcuts:global']
     ]
     for (const [method, channel] of channels) {
       h.on.mockClear()

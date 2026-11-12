@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { JellyfinItem, jellyfin } from '../services/jellyfin'
 import { useStreamingPrefs } from './prefs/streaming'
+import { notifyDownloadComplete } from '../services/notifications'
 
 export interface DownloadItem {
   itemId: string
@@ -143,6 +144,8 @@ export const useDownloadStore = create<DownloadState>((set, get) => ({
         }
         return { downloads: newMap }
       })
+      const done = get().downloads.get(itemId)
+      if (done) notifyDownloadComplete(done.metadata)
 
       // Fetch and persist lyrics for offline use
       jellyfin.getLyricsWithCache(itemId).then(lines => {

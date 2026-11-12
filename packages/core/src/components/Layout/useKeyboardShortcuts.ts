@@ -3,6 +3,9 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { usePlayerStore } from '../../stores/player'
 import { useAudioPrefs } from '../../stores/prefs/audio'
 import { resolveShortcut, SEEK_STEP, FOCUS_SEARCH_EVENT, type ShortcutAction } from '../../lib/shortcuts'
+import { useShortcutPrefs } from '../../stores/prefs/shortcuts'
+import { runPlayerAction } from '../../services/playerActions'
+import { resolveShortcut, effectiveBindings, FOCUS_SEARCH_EVENT } from '../../lib/shortcuts'
 
 /** Global player shortcuts (ignored while typing in text fields). */
 export function useKeyboardShortcuts() {
@@ -10,7 +13,6 @@ export function useKeyboardShortcuts() {
   const location = useLocation()
   const pathRef = useRef(location.pathname)
   pathRef.current = location.pathname
-  const lastVolume = useRef(1)
 
   useEffect(() => {
     const run = (action: ShortcutAction) => {
@@ -39,10 +41,14 @@ export function useKeyboardShortcuts() {
     }
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.defaultPrevented) return
-      const action = resolveShortcut(e)
+      const action = resolveShortcut(e, effectiveBindings(useShortcutPrefs.getState().values))
       if (!action) return
       e.preventDefault()
-      run(action)
+      if (action !== 'search') return runPlayerAction(action)
+      const p = usePlayerStore.getState()
+      if (p.showFullScreen) p.setShowFullScreen(false)
+      if (pathRef.current !== '/search') navigate('/search')
+      else window.dispatchEvent(new Event(FOCUS_SEARCH_EVENT))
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)

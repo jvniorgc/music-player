@@ -9,6 +9,7 @@ import { pipeline } from 'stream/promises'
 import { initAutoUpdater } from './updater'
 import * as lastfm from './lastfm'
 import * as discord from './discord'
+import { applyGlobalShortcuts, clearGlobalShortcuts } from './globalShortcuts'
 import type { LastfmTrack, DiscordPresence } from '@music-player/core/platform'
 import { encryptSecret, decryptSecret, needsMigration } from './secrets'
 import { isHttpUrl, isSafeExternalUrl, isSafeId, resolveInside, originOf, isCorsAllowed, toLocalAudioUrl } from './security'
@@ -441,6 +442,15 @@ function setupIPC() {
   ipcMain.handle('discord:set-enabled', (_e, enabled: boolean) => discord.setEnabled(enabled === true))
   ipcMain.handle('discord:set-activity', (_e, presence: DiscordPresence | null) => discord.setActivity(presence))
 
+  ipcMain.handle('shortcuts:set-global', (_e, bindings) =>
+    applyGlobalShortcuts(bindings, action => mainWindow?.webContents.send('shortcuts:global', action)))
+  ipcMain.handle('window:focus', () => {
+    if (!mainWindow) return
+    if (mainWindow.isMinimized()) mainWindow.restore()
+    mainWindow.show()
+    mainWindow.focus()
+  })
+
   ipcMain.handle('lastfm:get-info', (_e, method: string, params: Record<string, string>) => lastfm.getInfo(method, params))
 
   // --- Lyrics Cache ---
@@ -555,6 +565,10 @@ app.whenReady().then(() => {
 
 app.on('before-quit', () => {
   void discord.shutdown()
+})
+
+app.on('will-quit', () => {
+  clearGlobalShortcuts()
 })
 
 app.on('window-all-closed', () => {

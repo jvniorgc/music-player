@@ -20,11 +20,17 @@ const h = vi.hoisted(() => ({
   encAvailable: false,
   openDialog: vi.fn(),
   openPath: vi.fn(async (_p: string) => '')
+  win: null as any,
+  minimized: false
 }))
 
 vi.mock('electron', () => {
   class BrowserWindow {
-    constructor(opts?: Record<string, any>) { h.windowOpts = opts ?? null }
+    constructor(opts?: Record<string, any>) { h.windowOpts = opts ?? null; h.win = this }
+    isMinimized = () => h.minimized
+    restore = vi.fn()
+    show = vi.fn()
+    focus = vi.fn()
     webContents = {
       setWindowOpenHandler: (cb: (d: { url: string }) => unknown) => { h.windowOpenHandler = cb },
       on: (event: string, cb: any) => { if (event === 'will-navigate') h.navigateHandler = cb },
@@ -71,6 +77,10 @@ vi.mock('electron', () => {
   }
 })
 
+vi.mock('./globalShortcuts', () => ({
+  applyGlobalShortcuts: vi.fn((_b: unknown, send: (a: string) => void) => { send('next'); return { failed: [] } }),
+  clearGlobalShortcuts: vi.fn(),
+}))
 vi.mock('./updater', () => ({ initAutoUpdater: vi.fn() }))
 vi.mock('./discord', () => ({
   isEnabled: vi.fn(() => true),
@@ -192,6 +202,27 @@ describe('main process: Discord handlers', () => {
     expect(discord.setActivity).toHaveBeenCalledWith(p)
     h.appHandlers.get('before-quit')!()
     expect(discord.shutdown).toHaveBeenCalled()
+  })
+})
+
+describe('main process: global shortcuts & window focus', () => {
+  it('applies bindings, forwards presses and clears on quit', async () => {
+    const gs = await import('./globalShortcuts')
+    expect(await invoke('shortcuts:set-global', { next: 'F9' })).toEqual({ failed: [] })
+    expect(gs.applyGlobalShortcuts).toHaveBeenCalledWith({ next: 'F9' }, expect.any(Function))
+    expect(h.sent).toContainEqual({ channel: 'shortcuts:global', data: 'next' })
+    h.appHandlers.get('will-quit')!()
+    expect(gs.clearGlobalShortcuts).toHaveBeenCalled()
+  })
+
+  it('focuses (and restores) the main window', () => {
+    invoke('window:focus')
+    expect(h.win.restore).not.toHaveBeenCalled()
+    h.minimized = true
+    invoke('window:focus')
+    expect(h.win.restore).toHaveBeenCalled()
+    expect(h.win.show).toHaveBeenCalled()
+    expect(h.win.focus).toHaveBeenCalled()
   })
 })
 

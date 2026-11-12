@@ -168,4 +168,13 @@ export interface PlatformApi {
   onUpdateDownloadProgress: (cb: (data: UpdateProgress) => void) => () => void
   onUpdateDownloaded: (cb: () => void) => () => void
   onUpdateError: (cb: (error: string) => void) => () => void
+
+  // System-wide media shortcuts (optional: desktop only)
+  /** Replace the global shortcuts (action → Electron accelerator); null unregisters all. */
+  setGlobalShortcuts?: (bindings: Partial<Record<GlobalShortcutAction, string>> | null) => Promise<{ failed: GlobalShortcutAction[] }>
+  onGlobalShortcut?: (cb: (action: GlobalShortcutAction) => void) => () => void
+  /** Bring the app window to the front (e.g. when a notification is clicked). */
+  focusWindow?: () => Promise<void>
 }
+
+export type GlobalShortcutAction = 'togglePlay' | 'next' | 'previous' | 'volumeUp' | 'volumeDown'

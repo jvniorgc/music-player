@@ -1,4 +1,3 @@
-import { t } from '../i18n'
 /** True when the event target is a text field where typing must not trigger shortcuts. */
 export function isEditableTarget(target: EventTarget | null): boolean {
   if (!target || typeof (target as HTMLElement).tagName !== 'string') return false
@@ -33,57 +32,82 @@ export const SEEK_STEP = 10
 /** Volume change for Ctrl/Cmd+Up/Down. */
 export const VOLUME_STEP = 0.1
 
+export const SHORTCUT_ACTIONS: ShortcutAction[] = [
+  'togglePlay', 'next', 'previous', 'seekForward', 'seekBack',
+  'volumeUp', 'volumeDown', 'mute', 'shuffle', 'repeat', 'search',
+]
+
+/** Combos are `[Mod+][Alt+][Shift+]Key` (Mod = Ctrl, or ⌘ on macOS). */
+export type Bindings = Record<ShortcutAction, string[]>
+
+export const DEFAULT_BINDINGS: Bindings = {
+  togglePlay: ['Space'],
+  next: ['Mod+ArrowRight'],
+  previous: ['Mod+ArrowLeft'],
+  seekForward: ['Shift+ArrowRight'],
+  seekBack: ['Shift+ArrowLeft'],
+  volumeUp: ['Mod+ArrowUp'],
+  volumeDown: ['Mod+ArrowDown'],
+  mute: ['M'],
+  shuffle: ['S'],
+  repeat: ['R'],
+  search: ['Mod+F', '/'],
+}
+
+/** Combos handled elsewhere (Alt+←/→ = history navigation). */
+const RESERVED = ['Alt+ArrowLeft', 'Alt+ArrowRight']
+
+/** Applies per-action overrides ('' = default) on top of DEFAULT_BINDINGS. */
+export function effectiveBindings(overrides: Partial<Record<ShortcutAction, string>>): Bindings {
+  const out = { ...DEFAULT_BINDINGS }
+  for (const a of SHORTCUT_ACTIONS) if (overrides[a]) out[a] = [overrides[a]!]
+  return out
+}
+
+/** Normalized combo for a keydown, or null for lone modifier / dead keys. */
+export function comboFromEvent(e: ShortcutEvent): string | null {
+  if (['Control', 'Meta', 'Shift', 'Alt', 'AltGraph', 'Dead', 'Unidentified'].includes(e.key)) return null
+  const key = e.code === 'Space' || e.key === ' ' ? 'Space' : e.key.length === 1 ? e.key.toUpperCase() : e.key
+  const parts: string[] = []
+  if (e.ctrlKey || e.metaKey) parts.push('Mod')
+  if (e.altKey) parts.push('Alt')
+  if (e.shiftKey) parts.push('Shift')
+  parts.push(key)
+  return parts.join('+')
+}
+
 /**
  * Maps a keydown to a player action. Plain arrow keys are left alone so they
  * keep scrolling/moving focus in lists; seeking uses Shift+Left/Right.
  */
-export function resolveShortcut(e: ShortcutEvent): ShortcutAction | null {
-  if (e.altKey || isEditableTarget(e.target)) return null
-  const mod = e.ctrlKey || e.metaKey
-  const key = e.key.length === 1 ? e.key.toLowerCase() : e.key
-
-  if (mod && !e.shiftKey) {
-    switch (key) {
-      case 'ArrowRight': return 'next'
-      case 'ArrowLeft': return 'previous'
-      case 'ArrowUp': return 'volumeUp'
-      case 'ArrowDown': return 'volumeDown'
-      case 'f': return 'search'
-    }
-    return null
-  }
-  if (mod) return null
-  if (e.shiftKey) {
-    if (key === 'ArrowRight') return 'seekForward'
-    if (key === 'ArrowLeft') return 'seekBack'
-    return null
-  }
-  if (e.repeat) return null
-  if (e.code === 'Space' || key === ' ') return 'togglePlay'
-  switch (key) {
-    case 'm': return 'mute'
-    case 's': return 'shuffle'
-    case 'r': return 'repeat'
-    case '/': return 'search'
-  }
-  return null
+export function resolveShortcut(e: ShortcutEvent, bindings: Bindings = DEFAULT_BINDINGS): ShortcutAction | null {
+  if (isEditableTarget(e.target)) return null
+  const combo = comboFromEvent(e)
+  if (!combo) return null
+  // Single-key toggles shouldn't fire repeatedly while held.
+  if (e.repeat && !combo.includes('+')) return null
+  return SHORTCUT_ACTIONS.find(a => bindings[a].includes(combo)) ?? null
 }
 
-/** Human-readable list for the settings page. */
-export function shortcutList(isMac: boolean): { keys: string; action: string }[] {
-  const mod = isMac ? '⌘' : 'Ctrl'
-  return [
-    { keys: t('shortcut.space'), action: t('shortcut.playPause') },
-    { keys: `${mod} + →`, action: t('shortcut.next') },
-    { keys: `${mod} + ←`, action: t('shortcut.previous') },
-    { keys: 'Shift + → / ←', action: t('shortcut.seek', { seconds: SEEK_STEP }) },
-    { keys: `${mod} + ↑ / ↓`, action: t('shortcut.volume') },
-    { keys: 'M', action: t('shortcut.mute') },
-    { keys: 'S', action: t('shortcut.shuffle') },
-    { keys: 'R', action: t('shortcut.repeat') },
-    { keys: `${mod} + F ${t('shortcut.or')} /`, action: t('shortcut.search') },
-    { keys: 'Alt + ← / →', action: t('shortcut.history') },
-  ]
+/** The action (or 'history' for reserved combos) already using `combo`, other than `action`. */
+export function findConflict(bindings: Bindings, action: string, combo: string): ShortcutAction | 'history' | null {
+  if (RESERVED.includes(combo)) return 'history'
+  return SHORTCUT_ACTIONS.find(a => a !== action && bindings[a].includes(combo)) ?? null
+}
+
+const ARROWS: Record<string, string> = { ArrowRight: '→', ArrowLeft: '←', ArrowUp: '↑', ArrowDown: '↓' }
+
+/** Human-readable combo, e.g. "⌘ + →" / "Ctrl + Alt + Space". */
+export function formatCombo(combo: string, isMac: boolean): string {
+  const names: Record<string, string> = isMac
+    ? { Mod: '⌘', Alt: '⌥', Shift: '⇧' }
+    : { Mod: 'Ctrl', Alt: 'Alt', Shift: 'Shift' }
+  return combo.split(/\+(?!$)/).map(p => names[p] ?? ARROWS[p] ?? p).join(' + ')
+}
+
+/** Electron accelerator for a combo (used for global shortcuts). */
+export function toAccelerator(combo: string): string {
+  return combo.split(/\+(?!$)/).map(p => p === 'Mod' ? 'CommandOrControl' : p.replace(/^Arrow/, '')).join('+')
 }
 
 /** Event SearchView listens to so a shortcut can focus its input. */

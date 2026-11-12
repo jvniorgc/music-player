@@ -9,6 +9,7 @@ import type {
   LastfmTrack,
   LastfmInfoMethod,
   DiscordPresence,
+  GlobalShortcutAction,
 } from '@music-player/core/platform'
 
 const api = {
@@ -122,7 +123,17 @@ const api = {
     const handler = (_e: Electron.IpcRendererEvent, error: string) => cb(error)
     ipcRenderer.on('updater:error', handler)
     return () => ipcRenderer.removeListener('updater:error', handler)
-  }
+  },
+
+  // Global media shortcuts / window
+  setGlobalShortcuts: (bindings: Partial<Record<GlobalShortcutAction, string>> | null) =>
+    ipcRenderer.invoke('shortcuts:set-global', bindings),
+  onGlobalShortcut: (cb: (action: GlobalShortcutAction) => void) => {
+    const handler = (_e: Electron.IpcRendererEvent, action: GlobalShortcutAction) => cb(action)
+    ipcRenderer.on('shortcuts:global', handler)
+    return () => ipcRenderer.removeListener('shortcuts:global', handler)
+  },
+  focusWindow: () => ipcRenderer.invoke('window:focus'),
 } satisfies PlatformApi
 
 contextBridge.exposeInMainWorld('api', api)
