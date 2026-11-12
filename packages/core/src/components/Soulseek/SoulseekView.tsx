@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import {
   startSearch, getSearch, getSearchResponses, deleteSearch, downloadFiles, getDownloads, removeDownload, removeCompletedDownloads,
   SlskdResponse, SlskdFile, SlskdSearch, SlskdTransferGroup,
@@ -29,7 +29,8 @@ export default function SoulseekView() {
   }, [])
 
   // Search state
-  const [query, setQuery] = useState('')
+  const [searchParams] = useSearchParams()
+  const [query, setQuery] = useState(() => searchParams.get('q') ?? '')
   const [searching, setSearching] = useState(false)
   const [searchId, setSearchId] = useState<string | null>(null)
   const [searchState, setSearchState] = useState<SlskdSearch | null>(null)

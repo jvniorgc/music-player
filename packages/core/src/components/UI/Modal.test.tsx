@@ -45,6 +45,13 @@ describe('Modal', () => {
 })
 
 describe('InputModal', () => {
+  it('confirms an empty value when allowEmpty is set', () => {
+    const onConfirm = vi.fn()
+    render(<InputModal open title="Name" allowEmpty onClose={() => {}} onConfirm={onConfirm} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Confirm' }))
+    expect(onConfirm).toHaveBeenCalledWith('')
+  })
+
   it('disables confirm until a non-blank value is present', async () => {
     const onConfirm = vi.fn()
     render(<InputModal open title="Name" confirmLabel="Save" onClose={() => {}} onConfirm={onConfirm} />)

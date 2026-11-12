@@ -18,6 +18,7 @@ import SearchView from './components/Search/SearchView'
 import LikedView from './components/Library/LikedView'
 import DownloadsView from './components/Library/DownloadsView'
 import SoulseekView from './components/Soulseek/SoulseekView'
+import RequestsView from './components/Requests/RequestsView'
 import SocialView from './components/Social/SocialView'
 import UserProfileView from './components/Social/UserProfileView'
 import SettingsView from './components/Settings/SettingsView'
@@ -74,6 +75,7 @@ export default function App() {
           <Route path="/liked" element={<LikedView />} />
           <Route path="/downloads" element={<DownloadsView />} />
           <Route path="/soulseek" element={<SoulseekView />} />
+          <Route path="/requests" element={<RequestsView />} />
           <Route path="/social" element={<SocialView />} />
           <Route path="/social/user/:id" element={<UserProfileView />} />
         </Route>

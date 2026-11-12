@@ -8,6 +8,7 @@ import { buttonClass } from '../UI/Button'
 import { ProfileEditModal } from '../UI/ProfileEditModal'
 import { LastfmSettings } from './LastfmSettings'
 import { SlskdSettings } from './SlskdSettings'
+import { SocialServerSettings } from './SocialServerSettings'
 import { EqualizerSettings } from './EqualizerSettings'
 import { shortcutList } from '../../lib/shortcuts'
 import { LANGUAGE_OPTIONS, type LanguagePreference } from '../../lib/language'
@@ -153,6 +154,10 @@ export default function SettingsView() {
 
       <Section id="soulseek" title={t('settings.soulseek')}>
         <SlskdSettings />
+      </Section>
+
+      <Section id="social-server" title={t('settings.socialServer')}>
+        <SocialServerSettings />
       </Section>
 
       <Section id="storage" title={t('settings.storage')}>

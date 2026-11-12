@@ -3,7 +3,7 @@ import { useAuthStore } from '../../stores/auth'
 import { useLibraryStore } from '../../stores/library'
 import { useDownloadStore } from '../../stores/download'
 import { useToastStore } from '../../stores/toast'
-import { Home, Disc3, Users, ListMusic, Search, Settings, Download, RefreshCw, Share2, Globe, Shuffle, User, Music, Heart } from 'lucide-react'
+import { Home, Disc3, Users, ListMusic, Search, Settings, Download, RefreshCw, Share2, Globe, Shuffle, User, Music, Heart, Inbox } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { jellyfin } from '../../services/jellyfin'
 import { usePlayerStore } from '../../stores/player'
@@ -25,6 +25,7 @@ const libraryItems = [
   { to: '/downloads', icon: Download, label: 'nav.downloads' as const },
   { to: '/soulseek', icon: Share2, label: 'nav.soulseek' as const },
   { to: '/social', icon: Globe, label: 'nav.social' as const },
+  { to: '/requests', icon: Inbox, label: 'nav.requests' as const },
 ]
 
 export default function Sidebar() {

@@ -81,6 +81,10 @@ Because the UI is shared, adding a native call is a four-step flow:
 
 The `ElectronAPI` type is exported from the preload for type safety.
 
+### Social server (separate repo)
+
+Social features (album requests) talk over HTTP to the optional self-hosted API in **[jvniorgc/music-player-api](https://github.com/jvniorgc/music-player-api)**. It has no accounts of its own: the client sends its Jellyfin token (`Authorization: MediaBrowser Token="..."`) and the server validates it against Jellyfin's `/Users/Me`; Jellyfin admins moderate. The client lives in `packages/core/src/services/social.ts`; its URL is the `socialServerUrl` setting. Keep the client types in sync with that repo's API.
+
 ## Key Conventions
 
 - **Keep `packages/core` platform-agnostic**: no `electron`, `node:*`, or filesystem imports in core — reach the host only through `window.api`. This is what lets the mobile client reuse the package.

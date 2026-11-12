@@ -50,11 +50,13 @@ interface InputModalProps {
   placeholder?: string
   initialValue?: string
   confirmLabel?: string
+  /** Allow confirming with an empty value (for optional input). */
+  allowEmpty?: boolean
   onClose: () => void
   onConfirm: (value: string) => void
 }
 
-export function InputModal({ open, title, placeholder, initialValue = '', confirmLabel, onClose, onConfirm }: InputModalProps) {
+export function InputModal({ open, title, placeholder, initialValue = '', confirmLabel, allowEmpty, onClose, onConfirm }: InputModalProps) {
   const { t } = useT()
   const [value, setValue] = useState(initialValue)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -68,7 +70,7 @@ export function InputModal({ open, title, placeholder, initialValue = '', confir
 
   const handleSubmit = () => {
     const trimmed = value.trim()
-    if (trimmed) {
+    if (trimmed || allowEmpty) {
       onConfirm(trimmed)
       onClose()
     }
@@ -93,7 +95,7 @@ export function InputModal({ open, title, placeholder, initialValue = '', confir
         </Button>
         <Button
           onClick={handleSubmit}
-          disabled={!value.trim()}
+          disabled={!allowEmpty && !value.trim()}
         >
           {confirmLabel ?? t('common.confirm')}
         </Button>

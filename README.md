@@ -34,6 +34,7 @@
 - [x] Download for offline playback
 - [x] Metadata editor via MusicBrainz + Cover Art Archive
 - [x] Soulseek integration via [slskd](https://github.com/slskd/slskd)
+- [x] Album requests — friends request albums to be added to the server, vote on them, and admins approve/mark them as added (requires the optional [social server](https://github.com/jvniorgc/music-player-api))
 - [ ] [Request a feature](https://github.com/jvniorgc/music-player/issues/new)
 
 ## Download
@@ -127,6 +128,8 @@ The renderer has **no** Node.js access — all system communication goes through
 On the login screen, provide your Jellyfin server URL (e.g. `http://192.168.1.100:8096`) and credentials.
 
 Soulseek integration connects to an [slskd](https://github.com/slskd/slskd) instance — configurable in the app preferences.
+
+Social features such as album requests use the optional companion [social server](https://github.com/jvniorgc/music-player-api) (Docker, runs next to Jellyfin, authenticates with Jellyfin tokens) — set its URL under **Settings → Social server**.
 
 ## License
 
