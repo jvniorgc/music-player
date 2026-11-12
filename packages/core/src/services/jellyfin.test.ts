@@ -170,6 +170,19 @@ describe('onFavoriteAdded', () => {
   })
 })
 
+describe('onFavoriteChanged', () => {
+  it('notifies listeners of likes and unlikes, until unsubscribed', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(null, { status: 204 })))
+    const cb = vi.fn()
+    const off = jellyfin.onFavoriteChanged(cb)
+    await jellyfin.toggleFavorite('a', false)
+    await jellyfin.toggleFavorite('b', true)
+    off()
+    await jellyfin.toggleFavorite('c', false)
+    expect(cb.mock.calls).toEqual([['a', true], ['b', false]])
+  })
+})
+
 describe('URL builders', () => {
   it('builds stream, image, download and user-image URLs from auth', () => {
     expect(jellyfin.getStreamUrl('it1')).toBe('http://jf.local/Audio/it1/stream?ApiKey=TKN&static=true')

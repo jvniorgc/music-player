@@ -9,6 +9,7 @@ import { buttonClass } from '../UI/Button'
 import { isPrivateSession } from '../../stores/prefs/privacy'
 import { loadRecentSearches, addRecentSearch, removeRecentSearch, clearRecentSearches } from '../../lib/recentSearches'
 import TrackMenu from '../UI/TrackMenu'
+import LikeButton from '../UI/LikeButton'
 import { TrackSubtitle } from '../UI/Links'
 import { FOCUS_SEARCH_EVENT } from '../../lib/shortcuts'
 import TrackRow, { TrackDuration, CoverPlayOverlay } from '../UI/TrackRow'
@@ -150,6 +151,7 @@ export default function SearchView() {
                     title={song.Name}
                     subtitle={<TrackSubtitle item={song} />}
                   >
+                    <LikeButton item={song} revealOnHover />
                     <TrackDuration ticks={song.RunTimeTicks} />
                     <TrackMenu track={song} />
                   </TrackRow>

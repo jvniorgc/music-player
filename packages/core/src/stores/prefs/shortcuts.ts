@@ -3,7 +3,7 @@ import { createPreferences } from '../../lib/preferences'
 /** In-app shortcut overrides: '' keeps the default binding. */
 export const useShortcutPrefs = createPreferences('shortcuts', {
   togglePlay: '', next: '', previous: '', seekForward: '', seekBack: '',
-  volumeUp: '', volumeDown: '', mute: '', shuffle: '', repeat: '', search: '',
+  volumeUp: '', volumeDown: '', mute: '', shuffle: '', repeat: '', toggleLike: '', search: '',
 })
 
 export const GLOBAL_SHORTCUT_DEFAULTS = {

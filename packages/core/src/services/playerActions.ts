@@ -1,6 +1,7 @@
 import { usePlayerStore } from '../stores/player'
 import { SEEK_STEP, type ShortcutAction } from '../lib/shortcuts'
 import { useAudioPrefs } from '../stores/prefs/audio'
+import { useLikesStore } from '../stores/likes'
 
 let lastVolume = 1
 
@@ -23,5 +24,6 @@ export function runPlayerAction(action: Exclude<ShortcutAction, 'search'>): void
       break
     case 'shuffle': p.toggleShuffle(); break
     case 'repeat': p.toggleRepeat(); break
+    case 'toggleLike': if (p.currentTrack) void useLikesStore.getState().toggle(p.currentTrack.item.Id); break
   }
 }

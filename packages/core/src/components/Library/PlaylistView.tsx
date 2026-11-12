@@ -9,6 +9,7 @@ import { useToastStore } from '../../stores/toast'
 import { Play, Pause, Shuffle, ListMusic, Pencil, Trash2, Camera, X as XIcon } from 'lucide-react'
 import { InputModal, ConfirmModal } from '../UI/Modal'
 import TrackMenu from '../UI/TrackMenu'
+import LikeButton from '../UI/LikeButton'
 import { TrackSubtitle } from '../UI/Links'
 import TrackRow, { TrackIndex, TrackDuration } from '../UI/TrackRow'
 import CoverArt from '../UI/CoverArt'
@@ -236,6 +237,7 @@ export default function PlaylistView() {
               >
                 {showPopularity && id && <TrackPopularity item={track} group={id} />}
 
+                <LikeButton item={track} revealOnHover />
                 <TrackDuration ticks={track.RunTimeTicks} />
 
                 <TrackMenu track={track} onRemove={track.PlaylistItemId ? () => handleRemoveTrack(track) : undefined} />

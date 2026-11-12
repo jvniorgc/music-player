@@ -14,7 +14,7 @@ export function isEditableTarget(target: EventTarget | null): boolean {
 
 export type ShortcutAction =
   | 'togglePlay' | 'next' | 'previous' | 'seekForward' | 'seekBack'
-  | 'volumeUp' | 'volumeDown' | 'mute' | 'shuffle' | 'repeat' | 'search'
+  | 'volumeUp' | 'volumeDown' | 'mute' | 'shuffle' | 'repeat' | 'toggleLike' | 'search'
 
 export interface ShortcutEvent {
   key: string
@@ -34,7 +34,7 @@ export const VOLUME_STEP = 0.1
 
 export const SHORTCUT_ACTIONS: ShortcutAction[] = [
   'togglePlay', 'next', 'previous', 'seekForward', 'seekBack',
-  'volumeUp', 'volumeDown', 'mute', 'shuffle', 'repeat', 'search',
+  'volumeUp', 'volumeDown', 'mute', 'shuffle', 'repeat', 'toggleLike', 'search',
 ]
 
 /** Combos are `[Mod+][Alt+][Shift+]Key` (Mod = Ctrl, or ⌘ on macOS). */
@@ -51,6 +51,7 @@ export const DEFAULT_BINDINGS: Bindings = {
   mute: ['M'],
   shuffle: ['S'],
   repeat: ['R'],
+  toggleLike: ['L'],
   search: ['Mod+F', '/'],
 }
 
