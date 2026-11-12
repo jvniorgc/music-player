@@ -80,7 +80,12 @@ interface Graph {
   preamp: GainNode
   filters: BiquadFilterNode[]
   compressor: DynamicsCompressorNode
+  /** Final stage; downmixes to mono when enabled. */
+  output: GainNode
 }
+
+type SinkContext = AudioContext & { setSinkId?: (id: string) => Promise<void> }
+type ElementObserver = (audio: HTMLAudioElement, added: boolean) => void
 
 type Listener = (s: AudioEffectsSettings) => void
 
@@ -93,10 +98,13 @@ class AudioEffects {
   private trackGains = new Map<HTMLAudioElement, number | undefined>()
   private nodes = new Map<HTMLAudioElement, { source: MediaElementAudioSourceNode; gain: GainNode }>()
   private failed = new WeakSet<HTMLAudioElement>()
+  private observers = new Set<ElementObserver>()
+  private mono = false
+  private sinkId = ''
 
   get settings(): AudioEffectsSettings { return this._settings }
 
-  private get active() { return this._settings.enabled || this._settings.normalization }
+  private get active() { return this._settings.enabled || this._settings.normalization || this.mono }
 
   subscribe(fn: Listener): () => void {
     this.listeners.add(fn)
@@ -124,11 +132,37 @@ class AudioEffects {
   register(audio: HTMLAudioElement) {
     audio.crossOrigin = 'anonymous'
     this.elements.add(audio)
+    this.observers.forEach(fn => fn(audio, true))
     if (this.active) this.apply()
+  }
+
+  /** Notifies `fn` of every registered element (existing ones immediately) and of removals. */
+  observeElements(fn: ElementObserver): () => void {
+    this.observers.add(fn)
+    this.elements.forEach(a => fn(a, true))
+    return () => { this.observers.delete(fn) }
+  }
+
+  /** Downmixes the output to mono (routes through Web Audio while on). */
+  setMono(on: boolean) {
+    if (on === this.mono) return
+    this.mono = on
+    this.apply()
+  }
+
+  /** Output device for the AudioContext, used while elements are routed through Web Audio. */
+  setSinkId(id: string) {
+    this.sinkId = id
+    if (this.graph) this.applySink(this.graph.ctx)
+  }
+
+  private applySink(ctx: SinkContext) {
+    ctx.setSinkId?.(this.sinkId).catch(err => console.warn('[AudioEffects] setSinkId failed:', err))
   }
 
   unregister(audio: HTMLAudioElement) {
     this.elements.delete(audio)
+    this.observers.forEach(fn => fn(audio, false))
     this.trackGains.delete(audio)
     this.nodes.get(audio)?.gain.disconnect()
     this.nodes.delete(audio)
@@ -173,8 +207,11 @@ class AudioEffects {
     let node: AudioNode = preamp
     for (const f of filters) node = node.connect(f)
     node.connect(compressor)
-    compressor.connect(ctx.destination)
-    this.graph = { ctx, preamp, filters, compressor }
+    const output = ctx.createGain()
+    compressor.connect(output)
+    output.connect(ctx.destination)
+    this.graph = { ctx, preamp, filters, compressor, output }
+    if (this.sinkId) this.applySink(ctx)
     return this.graph
   }
 
@@ -185,6 +222,9 @@ class AudioEffects {
     const { enabled, preamp, gains } = this._settings
     graph.preamp.gain.value = enabled ? dbToLinear(preamp) : 1
     graph.filters.forEach((f, i) => { f.gain.value = enabled ? gains[i] : 0 })
+    graph.output.channelCount = this.mono ? 1 : 2
+    graph.output.channelCountMode = this.mono ? 'explicit' : 'max'
+    graph.output.channelInterpretation = 'speakers'
     for (const audio of this.elements) {
       if (!this.nodes.has(audio) && !this.failed.has(audio)) this.attach(graph, audio)
       this.applyTrackGain(audio)

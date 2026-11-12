@@ -470,6 +470,16 @@ export const en = {
   'requests.updated': "Request updated",
   'requests.searchSoulseek': "Search on Soulseek",
   'requests.adminNote': "Admin: {note}",
+  'prefs.audio.title': "Audio output",
+  'prefs.audio.device': "Output device",
+  'prefs.audio.deviceDefault': "System default",
+  'prefs.audio.deviceUnnamed': "Audio device {n}",
+  'prefs.audio.deviceUnsupported': "Choosing an output device isn't supported here",
+  'prefs.audio.maxVolume': "Maximum volume",
+  'prefs.audio.percent': "{value}%",
+  'prefs.audio.mono': "Mono audio",
+  'prefs.audio.monoHint': "Combine left and right channels",
+  'prefs.audio.volumeStep': "Volume step (keyboard)",
 } as const
 
 export type Messages = { [K in keyof typeof en]: (typeof en)[K] extends string ? string : Plural }

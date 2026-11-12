@@ -383,6 +383,15 @@ describe('seek & volume', () => {
     expect(localStorage.getItem('player_volume')).toBe('0.5')
     expect(events).toContainEqual(['volumechange', 0.5])
   })
+
+  it('caps the element volume at the max volume preference', async () => {
+    const { useAudioPrefs } = await import('../stores/prefs/audio')
+    useAudioPrefs.getState().set({ maxVolume: 50 })
+    playback.setVolume(0.8)
+    expect(playback.volume).toBe(0.8)
+    expect((playback as any).audio.volume).toBeCloseTo(0.4)
+    useAudioPrefs.getState().reset()
+  })
 })
 
 describe('volume persistence', () => {

@@ -1,7 +1,8 @@
 import { useEffect, useRef } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { usePlayerStore } from '../../stores/player'
-import { resolveShortcut, SEEK_STEP, VOLUME_STEP, FOCUS_SEARCH_EVENT, type ShortcutAction } from '../../lib/shortcuts'
+import { useAudioPrefs } from '../../stores/prefs/audio'
+import { resolveShortcut, SEEK_STEP, FOCUS_SEARCH_EVENT, type ShortcutAction } from '../../lib/shortcuts'
 
 /** Global player shortcuts (ignored while typing in text fields). */
 export function useKeyboardShortcuts() {
@@ -14,14 +15,15 @@ export function useKeyboardShortcuts() {
   useEffect(() => {
     const run = (action: ShortcutAction) => {
       const p = usePlayerStore.getState()
+      const step = useAudioPrefs.getState().values.volumeStep / 100
       switch (action) {
         case 'togglePlay': p.togglePlay(); break
         case 'next': p.next(); break
         case 'previous': p.previous(); break
         case 'seekForward': p.seek(Math.min(p.currentTime + SEEK_STEP, p.duration || Infinity)); break
         case 'seekBack': p.seek(Math.max(0, p.currentTime - SEEK_STEP)); break
-        case 'volumeUp': p.setVolume(Math.min(1, Math.round((p.volume + VOLUME_STEP) * 100) / 100)); break
-        case 'volumeDown': p.setVolume(Math.max(0, Math.round((p.volume - VOLUME_STEP) * 100) / 100)); break
+        case 'volumeUp': p.setVolume(Math.min(1, Math.round((p.volume + step) * 100) / 100)); break
+        case 'volumeDown': p.setVolume(Math.max(0, Math.round((p.volume - step) * 100) / 100)); break
         case 'mute':
           if (p.volume > 0) { lastVolume.current = p.volume; p.setVolume(0) }
           else p.setVolume(lastVolume.current || 1)

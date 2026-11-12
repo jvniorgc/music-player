@@ -1,6 +1,7 @@
 import { JellyfinItem, jellyfin } from './jellyfin'
 import * as lastfm from './lastfm'
 import { audioEffects } from './audioEffects'
+import { audioOutput } from './audioOutput'
 import { t } from '../i18n'
 import { secondsToTicks, ticksToSeconds } from '../lib/format'
 
@@ -114,7 +115,7 @@ class PlaybackService {
     const savedVol = localStorage.getItem('player_volume')
     if (savedVol) {
       this._volume = parseFloat(savedVol)
-      this.audio.volume = this._volume
+      this.audio.volume = audioOutput.effectiveVolume(this._volume)
     }
 
     if (typeof window !== 'undefined') {
@@ -353,7 +354,7 @@ class PlaybackService {
     this._preloadAudio = null
     this._preloadTrack = null
     this._preloadReady = false
-    this.audio.volume = this._volume
+    this.audio.volume = audioOutput.effectiveVolume(this._volume)
 
     this.emit('trackchange', track)
 
@@ -448,7 +449,7 @@ class PlaybackService {
 
     const audio = new Audio()
     audio.preload = 'auto'
-    audio.volume = this._volume
+    audio.volume = audioOutput.effectiveVolume(this._volume)
     this.attachAudioListeners(audio)
     audioEffects.register(audio)
     this._preloadAudio = audio
@@ -743,7 +744,7 @@ class PlaybackService {
 
   setVolume(vol: number) {
     this._volume = Math.max(0, Math.min(1, vol))
-    this.audio.volume = this._volume
+    this.audio.volume = audioOutput.effectiveVolume(this._volume)
     localStorage.setItem('player_volume', String(this._volume))
     this.emit('volumechange', this._volume)
   }

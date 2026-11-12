@@ -10,6 +10,7 @@ import { LastfmSettings } from './LastfmSettings'
 import { SlskdSettings } from './SlskdSettings'
 import { SocialServerSettings } from './SocialServerSettings'
 import { EqualizerSettings } from './EqualizerSettings'
+import { AudioOutputSettings } from './AudioOutputSettings'
 import { shortcutList } from '../../lib/shortcuts'
 import { LANGUAGE_OPTIONS, type LanguagePreference } from '../../lib/language'
 import { useI18nStore, useT } from '../../i18n'
@@ -131,6 +132,10 @@ export default function SettingsView() {
 
       <Section id="equalizer" title={t('settings.equalizer')}>
         <EqualizerSettings />
+      </Section>
+
+      <Section id="audio-output" title={t('prefs.audio.title')}>
+        <AudioOutputSettings />
       </Section>
 
       <Section id="lastfm" title={'Last.fm'}>

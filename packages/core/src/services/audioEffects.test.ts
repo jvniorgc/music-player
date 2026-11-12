@@ -142,7 +142,7 @@ describe('audio graph', () => {
     expect(g.filters[9].type).toBe('highshelf')
     expect(g.filters[5].type).toBe('peaking')
     expect(g.preamp.gain.value).toBeCloseTo(10 ** (-3 / 20))
-    expect(g.compressor.connections).toContain(ctx().destination)
+    expect(g.compressor.connections).toContain((mod.audioEffects as any).graph.output)
     // Normalization is still off, so per-track gain stays at unity.
     expect(trackGain(a)).toBe(1)
     // Re-registering / re-enabling never calls createMediaElementSource twice.
@@ -199,5 +199,50 @@ describe('audio graph', () => {
     mod.audioEffects.update({ enabled: true })
     expect((mod.audioEffects as any).nodes.has(b)).toBe(false)
     expect(console.warn).toHaveBeenCalled()
+  })
+})
+
+describe('output stage', () => {
+  it('mono routes through Web Audio and downmixes to one channel', () => {
+    const a = el()
+    mod.audioEffects.register(a)
+    mod.audioEffects.setMono(true)
+    expect(sources).toHaveLength(1)
+    const out = (mod.audioEffects as any).graph.output
+    expect(out.channelCount).toBe(1)
+    expect(out.channelCountMode).toBe('explicit')
+    expect(graph().compressor.connections).toContain(out)
+    expect(out.connections).toContain(ctx().destination)
+    mod.audioEffects.setMono(false)
+    expect(out.channelCountMode).toBe('max')
+  })
+
+  it('applies the sink id to the context when supported, now or on creation', () => {
+    mod.audioEffects.setSinkId('usb')
+    expect(FakeContext.instances).toHaveLength(0)
+    const setSinkId = vi.fn(() => Promise.reject(new Error('x')))
+    ;(FakeContext.prototype as any).setSinkId = setSinkId
+    mod.audioEffects.register(el())
+    mod.audioEffects.update({ enabled: true })
+    expect(setSinkId).toHaveBeenCalledWith('usb')
+    mod.audioEffects.setSinkId('')
+    expect(setSinkId).toHaveBeenLastCalledWith('')
+    delete (FakeContext.prototype as any).setSinkId
+    mod.audioEffects.setSinkId('x') // unsupported: no-op
+  })
+
+  it('notifies element observers about existing, added and removed elements', () => {
+    const a = el(), b = el()
+    mod.audioEffects.register(a)
+    const fn = vi.fn()
+    const off = mod.audioEffects.observeElements(fn)
+    expect(fn).toHaveBeenCalledWith(a, true)
+    mod.audioEffects.register(b)
+    mod.audioEffects.unregister(b)
+    expect(fn).toHaveBeenCalledWith(b, true)
+    expect(fn).toHaveBeenCalledWith(b, false)
+    off()
+    mod.audioEffects.register(el())
+    expect(fn).toHaveBeenCalledTimes(3)
   })
 })
