@@ -36,7 +36,7 @@ export function SocialServerSettings() {
       <p className="text-sm text-text-secondary">{t('socialServer.hint')}</p>
       <div>
         <label htmlFor="social-url" className="block text-xs font-medium text-text-secondary mb-1 ml-1">{t('slskd.serverAddress')}</label>
-        <Input id="social-url" variant="subtle" type="text" value={url} onChange={e => setUrl(e.target.value)} placeholder="http://192.168.1.100:8099" />
+        <Input id="social-url" variant="subtle" type="text" value={url} onChange={e => setUrl(e.target.value)} placeholder="https://jellyfin.example.com/mp-api" />
       </div>
       <div className="flex items-center gap-3 pt-2">
         <button

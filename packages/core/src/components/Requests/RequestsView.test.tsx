@@ -26,6 +26,7 @@ describe('RequestsView', () => {
   beforeEach(() => {
     useToastStore.setState({ show: toastSpy } as never)
     vi.spyOn(social, 'loadConfig').mockResolvedValue()
+    vi.spyOn(social, 'autoDetect').mockResolvedValue(false)
     vi.spyOn(social, 'isConfigured').mockReturnValue(true)
     vi.spyOn(social, 'getMe').mockResolvedValue({ id: 'u1', name: 'Ana', isAdmin: false })
     vi.spyOn(social, 'listRequests').mockResolvedValue([req()])
@@ -36,6 +37,7 @@ describe('RequestsView', () => {
     renderView()
     fireEvent.click(await screen.findByRole('link', { name: 'Open settings' }))
     expect(screen.getByTestId('loc')).toHaveTextContent('/settings')
+    expect(social.autoDetect).toHaveBeenCalled()
   })
 
   it('lists pending requests and toggles votes', async () => {

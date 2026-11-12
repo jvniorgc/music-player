@@ -41,8 +41,27 @@ describe('config', () => {
   })
 
   it('derives the default url', () => {
-    expect(social.deriveDefaultUrl('https://music.home:8096/jf')).toBe('https://music.home:8099')
+    expect(social.deriveDefaultUrl('https://music.home/jf/')).toBe('https://music.home/jf/mp-api')
+    expect(social.deriveDefaultUrl('http://10.0.0.2:8096')).toBe('http://10.0.0.2:8096/mp-api')
     expect(social.deriveDefaultUrl('nope')).toBe('')
+  })
+
+  it('autoDetect configures the /mp-api subpath when it answers', async () => {
+    social.configure('')
+    mockFetchRouter([['/mp-api/health', jsonRes({ ok: true })]])
+    expect(await social.autoDetect('https://music.home')).toBe(true)
+    expect(social.getConfig().url).toBe('https://music.home/mp-api')
+  })
+
+  it('autoDetect leaves config alone when unreachable, invalid or already set', async () => {
+    social.configure('')
+    mockFetchRouter([['/mp-api/health', jsonRes({}, 404)]])
+    expect(await social.autoDetect('https://music.home')).toBe(false)
+    expect(social.getConfig().url).toBe('')
+    expect(await social.autoDetect('nope')).toBe(false)
+    social.configure('http://manual')
+    expect(await social.autoDetect('https://music.home')).toBe(false)
+    expect(social.getConfig().url).toBe('http://manual')
   })
 
   it('loads the persisted url', async () => {

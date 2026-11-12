@@ -129,7 +129,7 @@ On the login screen, provide your Jellyfin server URL (e.g. `http://192.168.1.10
 
 Soulseek integration connects to an [slskd](https://github.com/slskd/slskd) instance — configurable in the app preferences.
 
-Social features such as album requests use the optional companion [social server](https://github.com/jvniorgc/music-player-api) (Docker, runs next to Jellyfin, authenticates with Jellyfin tokens) — set its URL under **Settings → Social server**.
+Social features such as album requests use the optional companion [social server](https://github.com/jvniorgc/music-player-api) (Docker, runs next to Jellyfin, authenticates with Jellyfin tokens) — expose it at `/mp-api` on your Jellyfin domain via your reverse proxy and the app detects it automatically, or set its URL under **Settings → Social server**.
 
 ## License
 

@@ -1,8 +1,9 @@
+import { jellyfin } from '../../services/jellyfin'
 import { useCallback, useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Inbox, Loader2, Plus, ThumbsUp, Trash2, Check, X, PackageCheck, Search, Disc3, Settings } from 'lucide-react'
 import {
-  isConfigured, loadConfig, getMe, listRequests, createRequest, vote, unvote, updateRequest, deleteRequest,
+  isConfigured, loadConfig, autoDetect, getMe, listRequests, createRequest, vote, unvote, updateRequest, deleteRequest,
   DuplicateRequestError, type AlbumRequest, type Me, type RequestStatus,
 } from '../../services/social'
 import { searchReleases, getCoverArtUrl, getArtistName, formatMBDate, type MBRelease } from '../../services/musicbrainz'
@@ -30,7 +31,7 @@ export default function RequestsView() {
   const [rejecting, setRejecting] = useState<AlbumRequest | null>(null)
 
   useEffect(() => {
-    loadConfig().then(() => {
+    loadConfig().then(() => autoDetect(jellyfin.serverUrl)).then(() => {
       const ok = isConfigured()
       setConfigured(ok)
       setReady(true)

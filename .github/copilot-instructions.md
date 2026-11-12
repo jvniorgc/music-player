@@ -83,7 +83,7 @@ The `ElectronAPI` type is exported from the preload for type safety.
 
 ### Social server (separate repo)
 
-Social features (album requests) talk over HTTP to the optional self-hosted API in **[jvniorgc/music-player-api](https://github.com/jvniorgc/music-player-api)**. It has no accounts of its own: the client sends its Jellyfin token (`Authorization: MediaBrowser Token="..."`) and the server validates it against Jellyfin's `/Users/Me`; Jellyfin admins moderate. The client lives in `packages/core/src/services/social.ts`; its URL is the `socialServerUrl` setting. Keep the client types in sync with that repo's API.
+Social features (album requests) talk over HTTP to the optional self-hosted API in **[jvniorgc/music-player-api](https://github.com/jvniorgc/music-player-api)**. It has no accounts of its own: the client sends its Jellyfin token (`Authorization: MediaBrowser Token="..."`) and the server validates it against Jellyfin's `/Users/Me`; Jellyfin admins moderate. The client lives in `packages/core/src/services/social.ts`; its URL is the `socialServerUrl` setting, defaulting to (and auto-detected at) `{jellyfinUrl}/mp-api`. Keep the client types in sync with that repo's API.
 
 ## Key Conventions
 

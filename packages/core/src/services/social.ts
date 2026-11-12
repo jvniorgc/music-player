@@ -1,7 +1,7 @@
 import { timeoutSignal } from './http'
 import { jellyfin } from './jellyfin'
 
-const SOCIAL_DEFAULT_PORT = '8099'
+const SOCIAL_SUBPATH = '/mp-api'
 const SETTING_KEY = 'socialServerUrl'
 
 let socialUrl = ''
@@ -82,14 +82,23 @@ export function isConfigured(): boolean {
   return socialUrl.length > 0
 }
 
-/** Default social server URL: same host as Jellyfin, port 8099. */
+/** Default social server URL: the `/mp-api` subpath reverse-proxied on the Jellyfin domain. */
 export function deriveDefaultUrl(jellyfinUrl: string): string {
   try {
     const u = new URL(jellyfinUrl)
-    return `${u.protocol}//${u.hostname}:${SOCIAL_DEFAULT_PORT}`
+    return `${u.origin}${u.pathname.replace(/\/+$/, '')}${SOCIAL_SUBPATH}`
   } catch {
     return ''
   }
+}
+
+/** If no URL is configured, probe `{jellyfinUrl}/mp-api/health` and adopt it when it answers. */
+export async function autoDetect(jellyfinUrl: string): Promise<boolean> {
+  if (socialUrl) return false
+  const url = deriveDefaultUrl(jellyfinUrl)
+  if (!url || !(await testConnection(url))) return false
+  configure(url)
+  return true
 }
 
 export async function testConnection(url: string): Promise<boolean> {
