@@ -606,4 +606,18 @@ export const ptBR: Messages = {
   'prefs.system.trayPrevious': "Anterior",
   'prefs.system.trayShow': "Mostrar",
   'prefs.system.trayQuit': "Sair",
+  // feed
+  'feed.title': "Novidades",
+  'feed.seeAll': "Ver tudo",
+  'feed.soulseekOne': "{name} baixou {album} pelo Soulseek",
+  'feed.soulseekMany': "{name} adicionou {count} álbuns pelo Soulseek",
+  'feed.fulfilled': "O pedido de {name} “{title}” foi atendido",
+  'feed.libraryOne': "Novo na biblioteca: {album}",
+  'feed.libraryMany': "{count} novos álbuns na biblioteca",
+  'feed.loadMore': "Carregar mais",
+  'feed.loading': "Carregando novidades",
+  'feed.error': "Não foi possível carregar as novidades",
+  'feed.empty': "Nada de novo por enquanto",
+  'feed.notConfigured': "O servidor social não está configurado",
+  'feed.openSettings': "Abrir configurações",
 }

@@ -607,6 +607,20 @@ export const en = {
   'prefs.system.trayPrevious': "Previous",
   'prefs.system.trayShow': "Show",
   'prefs.system.trayQuit': "Quit",
+  // feed
+  'feed.title': "What's new",
+  'feed.seeAll': "See all",
+  'feed.soulseekOne': "{name} downloaded {album} via Soulseek",
+  'feed.soulseekMany': "{name} added {count} albums via Soulseek",
+  'feed.fulfilled': "{name}'s request “{title}” was fulfilled",
+  'feed.libraryOne': "New in the library: {album}",
+  'feed.libraryMany': "{count} new albums in the library",
+  'feed.loadMore': "Load more",
+  'feed.loading': "Loading feed",
+  'feed.error': "Could not load the feed",
+  'feed.empty': "Nothing new yet",
+  'feed.notConfigured': "The social server is not configured",
+  'feed.openSettings': "Open settings",
 } as const
 
 export type Messages = { [K in keyof typeof en]: (typeof en)[K] extends string ? string : Plural }
