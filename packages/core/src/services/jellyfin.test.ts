@@ -277,3 +277,26 @@ describe('session expiry and cancellation', () => {
     for (const call of fetchMock.mock.calls) expect((call[1] as RequestInit).signal?.aborted).toBe(true)
   })
 })
+
+describe('playback reporting privacy', () => {
+  it('skips Jellyfin play reports when disabled or in a private session', async () => {
+    const { usePrivacyPrefs, setPrivateSession } = await import('../stores/prefs/privacy')
+    const fetchMock = vi.fn(async () => emptyRes())
+    vi.stubGlobal('fetch', fetchMock)
+    try {
+      usePrivacyPrefs.getState().set({ reportPlays: false })
+      await jellyfin.reportPlaybackStart('i1')
+      await jellyfin.reportPlaybackStopped('i1', 10)
+      usePrivacyPrefs.getState().set({ reportPlays: true })
+      setPrivateSession(true)
+      await jellyfin.reportPlaybackStart('i1')
+      expect(fetchMock).not.toHaveBeenCalled()
+      setPrivateSession(false)
+      await jellyfin.reportPlaybackStart('i1')
+      expect(fetchMock).toHaveBeenCalledTimes(1)
+    } finally {
+      usePrivacyPrefs.getState().reset()
+      vi.unstubAllGlobals()
+    }
+  })
+})

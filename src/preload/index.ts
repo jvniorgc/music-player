@@ -9,6 +9,9 @@ import type {
   LastfmTrack,
   LastfmInfoMethod,
   DiscordPresence,
+  SystemSettings,
+  TrayLabels,
+  TrayCommand,
 } from '@music-player/core/platform'
 
 const api = {
@@ -115,6 +118,17 @@ const api = {
     const handler = (_e: Electron.IpcRendererEvent, error: string) => cb(error)
     ipcRenderer.on('updater:error', handler)
     return () => ipcRenderer.removeListener('updater:error', handler)
+  },
+
+  // System integration
+  systemGetSettings: () => ipcRenderer.invoke('system:get-settings'),
+  systemSetSettings: (patch: Partial<SystemSettings>) => ipcRenderer.invoke('system:set-settings', patch),
+  systemRelaunch: () => ipcRenderer.invoke('system:relaunch'),
+  systemSetTrayLabels: (labels: TrayLabels) => ipcRenderer.invoke('system:set-tray-labels', labels),
+  onTrayCommand: (cb: (command: TrayCommand) => void) => {
+    const handler = (_e: Electron.IpcRendererEvent, command: TrayCommand) => cb(command)
+    ipcRenderer.on('system:tray-command', handler)
+    return () => ipcRenderer.removeListener('system:tray-command', handler)
   }
 } satisfies PlatformApi
 

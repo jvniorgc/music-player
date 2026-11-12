@@ -69,6 +69,12 @@ vi.mock('electron', () => {
 })
 
 vi.mock('./updater', () => ({ initAutoUpdater: vi.fn() }))
+vi.mock('./system', () => ({
+  applyHardwareAcceleration: vi.fn(),
+  windowOptions: vi.fn(() => ({})),
+  attachWindow: vi.fn(),
+  setupSystem: vi.fn(),
+}))
 vi.mock('./discord', () => ({
   isEnabled: vi.fn(() => true),
   setEnabled: vi.fn(),
@@ -587,5 +593,16 @@ describe('main process: window & lifecycle wiring', () => {
     } finally {
       Object.defineProperty(process, 'platform', { value: original, configurable: true })
     }
+  })
+})
+
+describe('main process: system integration', () => {
+  it('applies startup system settings and wires the main window', async () => {
+    const system = await import('./system')
+    expect(system.applyHardwareAcceleration).toHaveBeenCalled()
+    expect(system.setupSystem).toHaveBeenCalledWith(expect.any(Function))
+    expect(system.attachWindow).toHaveBeenCalled()
+    const getWindow = vi.mocked(system.setupSystem).mock.calls[0][0]
+    expect(getWindow()).not.toBeNull()
   })
 })

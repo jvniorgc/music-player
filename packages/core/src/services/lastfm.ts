@@ -1,6 +1,7 @@
 import type { JellyfinItem } from './jellyfin'
 import type { LastfmStatus, LastfmTrack } from '../platform'
 import { TICKS_PER_SECOND } from '../lib/format'
+import { isPrivateSession } from '../stores/prefs/privacy'
 
 // Last.fm scrobbling rules: a track must be longer than 30s and must have been
 // played for at least half its length OR for 4 minutes, whichever comes first.
@@ -31,14 +32,14 @@ export function shouldScrobble(playedSeconds: number, durationSeconds: number): 
 /** Report the currently playing track to Last.fm (best-effort; main no-ops if not linked). */
 export async function nowPlaying(item: JellyfinItem): Promise<void> {
   const meta = toScrobbleMeta(item)
-  if (!meta) return
+  if (!meta || isPrivateSession()) return
   await window.api.lastfmNowPlaying(meta)
 }
 
 /** Scrobble a finished track, stamped with the unix time playback started. */
 export async function scrobble(item: JellyfinItem, timestamp: number): Promise<void> {
   const meta = toScrobbleMeta(item)
-  if (!meta) return
+  if (!meta || isPrivateSession()) return
   await window.api.lastfmScrobble({ ...meta, timestamp })
 }
 

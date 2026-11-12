@@ -168,6 +168,14 @@ export function peekCached(key: string): PopularityStats | null | undefined {
   return cacheGet(key)?.v
 }
 
+/** Drops cached popularity stats from memory and localStorage. */
+export function clearPopularityCache(): void {
+  memory = null
+  if (persistTimer) clearTimeout(persistTimer)
+  persistTimer = null
+  try { localStorage.removeItem(CACHE_STORAGE_KEY) } catch { /* ignore */ }
+}
+
 /** Reset all in-memory state (tests). */
 export function _resetPopularity(): void {
   memory = null

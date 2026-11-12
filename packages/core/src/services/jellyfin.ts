@@ -69,6 +69,7 @@ export interface JellyfinItemsResponse {
 
 import { timeoutSignal } from './http'
 import { TICKS_PER_SECOND } from '../lib/format'
+import { shouldReportPlays } from '../stores/prefs/privacy'
 
 type RequestOptions = RequestInit & { timeoutMs?: number }
 
@@ -342,6 +343,7 @@ class JellyfinService {
   }
 
   async reportPlaybackStart(itemId: string): Promise<void> {
+    if (!shouldReportPlays()) return
     await this.request('/Sessions/Playing', {
       method: 'POST',
       body: JSON.stringify({ ItemId: itemId, CanSeek: true })
@@ -349,6 +351,7 @@ class JellyfinService {
   }
 
   async reportPlaybackStopped(itemId: string, positionTicks: number): Promise<void> {
+    if (!shouldReportPlays()) return
     await this.request('/Sessions/Playing/Stopped', {
       method: 'POST',
       body: JSON.stringify({ ItemId: itemId, PositionTicks: positionTicks })

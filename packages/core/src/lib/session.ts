@@ -136,6 +136,7 @@ export function saveSession(snap: PlaybackSnapshot | null, owner: SessionOwner):
 interface PersistablePlayback {
   getSnapshot(): PlaybackSnapshot | null
   restoreSnapshot(snap: PlaybackSnapshot): Promise<boolean>
+  play?(): unknown
   on(listener: (event: string, data?: unknown) => void): () => void
 }
 
@@ -143,10 +144,15 @@ interface PersistablePlayback {
 export const SAVE_INTERVAL_MS = 5000
 
 /**
- * Restores the last session (paused) and keeps it saved: every few seconds
- * while playing and immediately on pause, track/queue/mode changes and unload.
+ * Restores the last session (paused unless `autoplay`; skipped when `restore`
+ * is false) and keeps it saved: every few seconds while playing and
+ * immediately on pause, track/queue/mode changes and unload.
  */
-export function startSessionPersistence(engine: PersistablePlayback, owner: SessionOwner): () => void {
+export function startSessionPersistence(
+  engine: PersistablePlayback,
+  owner: SessionOwner,
+  { restore = true, autoplay = false }: { restore?: boolean; autoplay?: boolean } = {},
+): () => void {
   let lastSave = 0
   let restoring = true
   const save = () => {
@@ -155,9 +161,9 @@ export function startSessionPersistence(engine: PersistablePlayback, owner: Sess
     saveSession(engine.getSnapshot(), owner)
   }
 
-  const saved = loadSession(owner)
+  const saved = restore ? loadSession(owner) : null
   const restored = saved ? engine.restoreSnapshot(saved).catch(() => false) : Promise.resolve(false)
-  restored.finally(() => { restoring = false })
+  restored.then(ok => { if (ok && autoplay) engine.play?.() }).finally(() => { restoring = false })
 
   const off = engine.on((event) => {
     switch (event) {

@@ -63,6 +63,12 @@ export function makeApiStub(): PlatformApi {
     onUpdateDownloadProgress: vi.fn().mockReturnValue(() => {}),
     onUpdateDownloaded: vi.fn().mockReturnValue(() => {}),
     onUpdateError: vi.fn().mockReturnValue(() => {}),
+    // System
+    systemGetSettings: vi.fn().mockResolvedValue({ launchAtLogin: false, startMinimized: false, closeToTray: false, hardwareAcceleration: true, restartRequired: false }),
+    systemSetSettings: vi.fn().mockResolvedValue({ launchAtLogin: false, startMinimized: false, closeToTray: false, hardwareAcceleration: true, restartRequired: false }),
+    systemRelaunch: vi.fn().mockResolvedValue(undefined),
+    systemSetTrayLabels: vi.fn().mockResolvedValue(undefined),
+    onTrayCommand: vi.fn().mockReturnValue(() => {}),
   }
 }
 

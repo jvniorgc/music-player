@@ -9,6 +9,7 @@ import { pipeline } from 'stream/promises'
 import { initAutoUpdater } from './updater'
 import * as lastfm from './lastfm'
 import * as discord from './discord'
+import * as system from './system'
 import type { LastfmTrack, DiscordPresence } from '@music-player/core/platform'
 import { encryptSecret, decryptSecret, needsMigration } from './secrets'
 import { isHttpUrl, isSafeExternalUrl, isSafeId, resolveInside, originOf, isCorsAllowed, toLocalAudioUrl } from './security'
@@ -27,6 +28,7 @@ const corsOrigins = new Set<string>()
 
 // Allow audio autoplay without user gesture (async source resolution breaks gesture chain)
 app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required')
+system.applyHardwareAcceleration()
 
 let DOWNLOADS_DIR = ''
 let CACHE_DIR = ''
@@ -70,6 +72,7 @@ function createWindow() {
     minWidth: 900,
     minHeight: 600,
     backgroundColor: '#000000',
+    ...system.windowOptions(),
     // macOS: titlebar oculto com os botões da janela sobrepostos (integrados ao app).
     // Windows/Linux mantêm o frame padrão do SO.
     ...(process.platform === 'darwin'
@@ -83,6 +86,8 @@ function createWindow() {
       webSecurity: true
     }
   })
+
+  system.attachWindow(mainWindow)
 
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
     if (isSafeExternalUrl(url)) {
@@ -436,6 +441,7 @@ app.whenReady().then(() => {
   initDatabase()
   clearSessionCaches()
   setupIPC()
+  system.setupSystem(() => mainWindow)
   setupCors()
   lastfm.startScrobbleQueue()
 

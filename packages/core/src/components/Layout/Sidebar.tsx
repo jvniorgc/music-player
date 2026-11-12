@@ -10,6 +10,7 @@ import { usePlayerStore } from '../../stores/player'
 import { ProfileEditModal } from '../UI/ProfileEditModal'
 import { useShallow } from 'zustand/react/shallow'
 import { useT } from '../../i18n'
+import { PrivateSessionToggle } from './PrivateSessionToggle'
 
 const navItems = [
   { to: '/', icon: Home, label: 'nav.home' as const },
@@ -168,6 +169,7 @@ export default function Sidebar() {
 
       {/* User section */}
       <div className="mt-auto p-3 border-t border-border space-y-1">
+        <PrivateSessionToggle />
         <button
           onClick={() => setProfileOpen(true)}
           className="flex items-center gap-3 px-3 py-2 rounded-sm text-sm text-text-secondary hover:text-text-primary hover:bg-white/5 transition-colors w-full no-drag"

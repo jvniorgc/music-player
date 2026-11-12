@@ -145,3 +145,24 @@ describe('getDiscordEnabled', () => {
     expect(await getDiscordEnabled()).toBe(true)
   })
 })
+
+describe('private session', () => {
+  it('clears presence while a private session is on and restores it after', async () => {
+    const { setPrivateSession } = await import('../stores/prefs/privacy')
+    vi.mocked(window.api.discordGetEnabled).mockResolvedValue(true)
+    play('a')
+    stop = initDiscordPresence()
+    await flush()
+    expect(window.api.discordSetActivity).toHaveBeenLastCalledWith(expect.objectContaining({ title: 'Song' }))
+    setPrivateSession(true)
+    await vi.advanceTimersByTimeAsync(THROTTLE_MS)
+    expect(window.api.discordSetActivity).toHaveBeenLastCalledWith(null)
+    const calls = vi.mocked(window.api.discordSetActivity).mock.calls.length
+    play('b')
+    await vi.advanceTimersByTimeAsync(THROTTLE_MS * 2)
+    expect(window.api.discordSetActivity).toHaveBeenCalledTimes(calls)
+    setPrivateSession(false)
+    await vi.advanceTimersByTimeAsync(THROTTLE_MS)
+    expect(window.api.discordSetActivity).toHaveBeenLastCalledWith(expect.objectContaining({ title: 'Song' }))
+  })
+})

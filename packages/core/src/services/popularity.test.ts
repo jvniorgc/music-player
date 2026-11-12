@@ -235,3 +235,13 @@ describe('meter helpers', () => {
     expect(pop.trackArtist(album({ AlbumArtist: undefined }))).toBe('')
   })
 })
+
+describe('clearPopularityCache', () => {
+  it('drops memory and stored cache', async () => {
+    const { clearPopularityCache, CACHE_STORAGE_KEY, peekCached } = await import('./popularity')
+    localStorage.setItem(CACHE_STORAGE_KEY, JSON.stringify({ k: { v: { listeners: 1, playcount: 1 }, exp: Date.now() + 1e6 } }))
+    clearPopularityCache()
+    expect(localStorage.getItem(CACHE_STORAGE_KEY)).toBeNull()
+    expect(peekCached('k')).toBeUndefined()
+  })
+})
