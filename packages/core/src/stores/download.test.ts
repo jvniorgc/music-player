@@ -7,6 +7,9 @@ vi.mock('../services/jellyfin', () => ({
   },
 }))
 
+vi.mock('../services/notifications', () => ({ notifyDownloadComplete: vi.fn() }))
+
+import { notifyDownloadComplete } from '../services/notifications'
 import { useDownloadStore, type DownloadItem } from './download'
 import { jellyfin } from '../services/jellyfin'
 
@@ -84,6 +87,9 @@ describe('initListeners', () => {
 
     onComplete({ itemId: 'it1' })
     expect(useDownloadStore.getState().downloads.get('it1')?.status).toBe('completed')
+    expect(notifyDownloadComplete).toHaveBeenCalledWith(ITEM)
+    onComplete({ itemId: 'unknown' })
+    expect(notifyDownloadComplete).toHaveBeenCalledTimes(1)
     await flush()
     expect(jellyfin.getLyricsWithCache).toHaveBeenCalledWith('it1')
     expect(window.api.saveDownloadedLyrics).toHaveBeenCalled()

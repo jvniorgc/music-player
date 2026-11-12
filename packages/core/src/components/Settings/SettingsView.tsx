@@ -10,7 +10,8 @@ import { LastfmSettings } from './LastfmSettings'
 import { SlskdSettings } from './SlskdSettings'
 import { SocialServerSettings } from './SocialServerSettings'
 import { EqualizerSettings } from './EqualizerSettings'
-import { shortcutList } from '../../lib/shortcuts'
+import { ShortcutSettings } from './ShortcutSettings'
+import { NotificationSettings } from './NotificationSettings'
 import { LANGUAGE_OPTIONS, type LanguagePreference } from '../../lib/language'
 import { useI18nStore, useT } from '../../i18n'
 import { getDiscordEnabled, setDiscordEnabled } from '../../services/discord'
@@ -118,15 +119,11 @@ export default function SettingsView() {
       </Section>
 
       <Section id="playback" title={t('settings.playback')}>
-        <h3 className="text-sm font-medium mb-2">{t('settings.shortcuts')}</h3>
-        <dl className="divide-y divide-border text-sm">
-          {shortcutList(isMac).map(s => (
-            <div key={s.action} className="flex justify-between py-2">
-              <dt className="text-text-secondary">{s.action}</dt>
-              <dd><kbd className="font-mono text-xs bg-surface-2 border border-border rounded-sm px-1.5 py-0.5">{s.keys}</kbd></dd>
-            </div>
-          ))}
-        </dl>
+        <ShortcutSettings isMac={isMac} />
+      </Section>
+
+      <Section id="notifications" title={t('prefs.notify.title')}>
+        <NotificationSettings />
       </Section>
 
       <Section id="equalizer" title={t('settings.equalizer')}>

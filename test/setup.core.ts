@@ -63,6 +63,10 @@ export function makeApiStub(): PlatformApi {
     onUpdateDownloadProgress: vi.fn().mockReturnValue(() => {}),
     onUpdateDownloaded: vi.fn().mockReturnValue(() => {}),
     onUpdateError: vi.fn().mockReturnValue(() => {}),
+    // Global shortcuts / window
+    setGlobalShortcuts: vi.fn().mockResolvedValue({ failed: [] }),
+    onGlobalShortcut: vi.fn().mockReturnValue(() => {}),
+    focusWindow: vi.fn().mockResolvedValue(undefined),
   }
 }
 
