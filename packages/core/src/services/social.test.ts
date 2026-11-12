@@ -82,6 +82,8 @@ describe('api', () => {
     const f = mockFetchRouter([['/health', jsonRes({ ok: true })]])
     expect(await social.testConnection('http://other:8099/')).toBe(true)
     expect(f.mock.calls[0][0]).toBe('http://other:8099/health')
+    mockFetchRouter([['/health', textRes('Healthy')]])
+    expect(await social.testConnection('http://jellyfin:8096')).toBe(false)
     mockFetchRouter([['/health', jsonRes({}, 500)]])
     expect(await social.testConnection('http://other')).toBe(false)
     mockFetchRouter([['/health', () => { throw new Error('down') }]])

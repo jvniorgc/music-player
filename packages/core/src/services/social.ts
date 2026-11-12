@@ -104,7 +104,10 @@ export async function autoDetect(jellyfinUrl: string): Promise<boolean> {
 export async function testConnection(url: string): Promise<boolean> {
   try {
     const res = await fetch(`${url.trim().replace(/\/+$/, '')}/health`, { signal: timeoutSignal(undefined, 10_000) })
-    return res.ok
+    // Jellyfin also answers /health ("Healthy"), so require the API's JSON shape.
+    if (!res.ok) return false
+    const data = await res.json().catch(() => null)
+    return data?.ok === true
   } catch {
     return false
   }
