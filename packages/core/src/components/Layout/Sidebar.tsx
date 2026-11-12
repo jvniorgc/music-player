@@ -26,12 +26,23 @@ const libraryItems = [
   { to: '/artists', icon: Users, label: 'nav.artists' as const },
   { to: '/playlists', icon: ListMusic, label: 'nav.playlists' as const },
   { to: '/downloads', icon: Download, label: 'nav.downloads' as const },
-  { to: '/soulseek', icon: Share2, label: 'nav.soulseek' as const },
+]
+
+const communityItems = [
   { to: '/social', icon: Globe, label: 'nav.social' as const },
-  { to: '/requests', icon: Inbox, label: 'nav.requests' as const },
   { to: '/rankings', icon: Trophy, label: 'nav.rankings' as const },
   { to: '/reviews', icon: Star, label: 'nav.reviews' as const },
 ]
+
+const getMusicItems = [
+  { to: '/requests', icon: Inbox, label: 'nav.requests' as const },
+  { to: '/soulseek', icon: Share2, label: 'nav.soulseek' as const },
+]
+
+const linkClass = ({ isActive }: { isActive: boolean }) =>
+  `flex items-center gap-3 px-3 py-2 rounded-sm text-sm font-medium transition-colors no-drag ${
+    isActive ? 'bg-white/10 text-text-primary' : 'text-text-secondary hover:text-text-primary hover:bg-white/5'
+  }`
 
 export default function Sidebar() {
   const { t } = useT()
@@ -149,14 +160,24 @@ export default function Sidebar() {
               {t(item.label)}
             </NavLink>
           ))}
+        </nav>
+      </div>
+
+      <div className="mt-6 px-3">
+        <h3 className="text-xs font-medium text-text-tertiary px-3 mb-2">
+          {t('nav.community')}
+        </h3>
+        <nav className="space-y-0.5">
+          {communityItems.map(item => (
+            <NavLink key={item.to} to={item.to} className={linkClass}>
+              <item.icon size={18} />
+              {t(item.label)}
+            </NavLink>
+          ))}
           {inboxConfigured && (
             <NavLink
               to="/inbox"
-              className={({ isActive }) =>
-                `flex items-center gap-3 px-3 py-2 rounded-sm text-sm font-medium transition-colors no-drag ${
-                  isActive ? 'bg-white/10 text-text-primary' : 'text-text-secondary hover:text-text-primary hover:bg-white/5'
-                }`
-              }
+              className={linkClass}
             >
               <Mail size={18} />
               <span className="flex-1">{t('inbox.nav')}</span>
@@ -170,6 +191,20 @@ export default function Sidebar() {
               )}
             </NavLink>
           )}
+        </nav>
+      </div>
+
+      <div className="mt-6 px-3">
+        <h3 className="text-xs font-medium text-text-tertiary px-3 mb-2">
+          {t('nav.getMusic')}
+        </h3>
+        <nav className="space-y-0.5">
+          {getMusicItems.map(item => (
+            <NavLink key={item.to} to={item.to} className={linkClass}>
+              <item.icon size={18} />
+              {t(item.label)}
+            </NavLink>
+          ))}
         </nav>
       </div>
 

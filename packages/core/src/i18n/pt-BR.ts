@@ -99,6 +99,8 @@ export const ptBR: Messages = {
   'playback.error': "Erro de reprodução",
   'shortcut.space': "Espaço",
   // nav
+  'nav.community': 'Comunidade',
+  'nav.getMusic': 'Adicionar músicas',
   'nav.home': "Início",
   'nav.search': "Buscar",
   'nav.songs': "Músicas",

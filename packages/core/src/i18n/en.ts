@@ -100,6 +100,8 @@ export const en = {
   'playback.error': "Playback error",
   'shortcut.space': "Space",
   // nav
+  'nav.community': 'Community',
+  'nav.getMusic': 'Get music',
   'nav.home': "Home",
   'nav.search': "Search",
   'nav.songs': "Songs",
