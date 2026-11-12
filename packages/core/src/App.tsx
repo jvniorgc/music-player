@@ -22,6 +22,8 @@ import RequestsView from './components/Requests/RequestsView'
 import SocialView from './components/Social/SocialView'
 import UserProfileView from './components/Social/UserProfileView'
 import SettingsView from './components/Settings/SettingsView'
+import RankingsView from './components/Rankings/RankingsView'
+import { initPlayScrobbler } from './services/plays'
 import UpdateDialog from './components/UpdateDialog'
 import { Loader2 } from 'lucide-react'
 import AppIcon from './components/UI/AppIcon'
@@ -45,8 +47,10 @@ export default function App() {
       // Auto-download needs the downloaded set first so it skips songs already on disk.
       loadDownloads().finally(() => { if (!cancelled) stopAutoDownload = useDownloadStore.getState().initAutoDownload() })
       const cleanup = initListeners()
+      const stopPlays = initPlayScrobbler()
       return () => {
         cancelled = true
+        stopPlays()
         stopAutoDownload()
         cleanup()
       }
@@ -88,6 +92,7 @@ export default function App() {
           <Route path="/requests" element={<RequestsView />} />
           <Route path="/social" element={<SocialView />} />
           <Route path="/social/user/:id" element={<UserProfileView />} />
+          <Route path="/rankings" element={<RankingsView />} />
         </Route>
       </Routes>
     </HashRouter>
