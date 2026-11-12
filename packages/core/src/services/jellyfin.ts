@@ -13,7 +13,15 @@ export interface JellyfinUser {
   HasPassword?: boolean
   LastLoginDate?: string
   LastActivityDate?: string
+  Policy?: { IsAdministrator?: boolean }
 }
+
+/**
+ * Routes admin-backed calls through the companion social API. Resolves
+ * `{ handled: false }` when the API is unavailable so the caller can fall back
+ * to the direct Jellyfin call. Injected (by social.ts) to avoid a circular import.
+ */
+export type AdminProxy = (path: string, init: RequestInit) => Promise<{ handled: true; data: unknown } | { handled: false }>
 
 export interface JellyfinItem {
   Id: string
@@ -85,6 +93,16 @@ const DEVICE_ID = 'jellyfin-music-player-' + Math.random().toString(36).slice(2)
 class JellyfinService {
   private auth: JellyfinAuth | null = null
   private unauthorizedListeners = new Set<() => void>()
+  private adminProxy: AdminProxy | null = null
+
+  setAdminProxy(proxy: AdminProxy | null): void {
+    this.adminProxy = proxy
+  }
+
+  private async viaAdminProxy<T>(path: string, init: RequestInit): Promise<{ handled: true; data: T } | { handled: false }> {
+    if (!this.adminProxy) return { handled: false }
+    return this.adminProxy(path, init) as Promise<{ handled: true; data: T } | { handled: false }>
+  }
 
   /**
    * Subscribe to session expiry: fired once when an authenticated request gets
@@ -404,6 +422,7 @@ class JellyfinService {
   }
 
   private async setItemOwnerTag(itemId: string, userId: string): Promise<void> {
+    if ((await this.viaAdminProxy(`/playlists/${itemId}/owner-tag`, { method: 'POST' })).handled) return
     const item = await this.getFullItem(itemId)
     const tag = this.ownerTag(userId)
     const existingTags: string[] = Array.isArray(item.Tags) ? item.Tags : []
@@ -443,6 +462,17 @@ class JellyfinService {
     })
   }
 
+  async renamePlaylist(playlistId: string, name: string): Promise<void> {
+    const r = await this.viaAdminProxy(`/playlists/${playlistId}/name`, { method: 'PUT', body: JSON.stringify({ name }) })
+    if (!r.handled) await this.renameItem(playlistId, name)
+  }
+
+  async setPlaylistImage(playlistId: string, blob: Blob): Promise<void> {
+    const { contentType, data } = await this.encodeImage(blob)
+    const r = await this.viaAdminProxy(`/playlists/${playlistId}/image`, { method: 'PUT', body: JSON.stringify({ contentType, data }) })
+    if (!r.handled) await this.uploadImageBlob(playlistId, blob)
+  }
+
   async getFullItem(itemId: string): Promise<JellyfinFullItem> {
     return this.request<JellyfinFullItem>(`/Users/${this.userId}/Items/${itemId}`)
   }
@@ -464,7 +494,7 @@ class JellyfinService {
     await this.uploadImageBlob(itemId, blob)
   }
 
-  async uploadImageBlob(itemId: string, blob: Blob): Promise<void> {
+  private async encodeImage(blob: Blob): Promise<{ contentType: string; data: string }> {
     const buffer = await blob.arrayBuffer()
     const bytes = new Uint8Array(buffer)
 
@@ -474,9 +504,11 @@ class JellyfinService {
     for (let i = 0; i < bytes.length; i += chunk) {
       base64 += String.fromCharCode(...bytes.subarray(i, i + chunk))
     }
-    base64 = btoa(base64)
+    return { contentType: blob.type || 'image/jpeg', data: btoa(base64) }
+  }
 
-    const contentType = blob.type || 'image/jpeg'
+  async uploadImageBlob(itemId: string, blob: Blob): Promise<void> {
+    const { contentType, data: base64 } = await this.encodeImage(blob)
     const uploadRes = await this.rawFetch(`/Items/${itemId}/Images/Primary`, {
       method: 'POST',
       headers: { 'Content-Type': contentType },
@@ -613,6 +645,11 @@ class JellyfinService {
    * Returns top played song ItemIds with their play count within the period.
    */
   private async queryPlaybackReport(userId: string, minDate?: string, limit = 100): Promise<{ itemId: string; playCount: number }[]> {
+    const proxied = await this.viaAdminProxy<{ items: { itemId: string; playCount: number }[] }>('/stats/top-items', {
+      method: 'POST',
+      body: JSON.stringify({ userId, minDate, limit })
+    })
+    if (proxied.handled) return proxied.data.items
     const userIdNormalized = userId.replace(/-/g, '')
     const dateFilter = minDate ? ` AND DateCreated >= '${minDate}'` : ''
     const sql = `SELECT ItemId, COUNT(*) as play_count FROM PlaybackActivity WHERE UserId='${userIdNormalized}' AND ItemType='Audio'${dateFilter} GROUP BY ItemId ORDER BY play_count DESC LIMIT ${limit}`

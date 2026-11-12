@@ -1,5 +1,5 @@
 import { NavLink, useNavigate } from 'react-router-dom'
-import { useAuthStore } from '../../stores/auth'
+import { useAuthStore, useIsAdmin } from '../../stores/auth'
 import { useLibraryStore } from '../../stores/library'
 import { useDownloadStore } from '../../stores/download'
 import { useToastStore } from '../../stores/toast'
@@ -35,7 +35,7 @@ const communityItems = [
 
 const getMusicItems = [
   { to: '/requests', icon: Inbox, label: 'nav.requests' as const },
-  { to: '/soulseek', icon: Share2, label: 'nav.soulseek' as const },
+  { to: '/soulseek', icon: Share2, label: 'nav.soulseek' as const, adminOnly: true },
 ]
 
 const linkClass = ({ isActive }: { isActive: boolean }) =>
@@ -52,6 +52,7 @@ export default function Sidebar() {
   const shuffleAllSongs = usePlayerStore(s => s.shuffleAllSongs)
   const toast = useToastStore(s => s.show)
   const navigate = useNavigate()
+  const isAdmin = useIsAdmin()
   const [refreshing, setRefreshing] = useState(false)
   const [profileOpen, setProfileOpen] = useState(false)
   const { inboxConfigured, inboxUnread } = useInboxStore(useShallow(s => ({ inboxConfigured: s.configured, inboxUnread: s.unread })))
@@ -198,7 +199,7 @@ export default function Sidebar() {
           {t('nav.getMusic')}
         </h3>
         <nav className="space-y-0.5">
-          {getMusicItems.map(item => (
+          {getMusicItems.filter(item => isAdmin || !('adminOnly' in item)).map(item => (
             <NavLink key={item.to} to={item.to} className={linkClass}>
               <item.icon size={18} />
               {t(item.label)}

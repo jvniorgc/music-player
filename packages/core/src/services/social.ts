@@ -1,5 +1,5 @@
 import { timeoutSignal } from './http'
-import { jellyfin } from './jellyfin'
+import { jellyfin, type AdminProxy } from './jellyfin'
 
 const SOCIAL_SUBPATH = '/mp-api'
 const SETTING_KEY = 'socialServerUrl'
@@ -167,3 +167,17 @@ export function deleteRequest(id: number): Promise<void> {
 export async function listUsers(): Promise<KnownUser[]> {
   return (await socialRequest<{ items: KnownUser[] }>('/users')).items
 }
+
+/** 404/503 mean the API is too old or has no admin key: let Jellyfin handle the call directly. */
+export const adminProxy: AdminProxy = async (path, init) => {
+  if (!isConfigured()) return { handled: false }
+  try {
+    return { handled: true, data: await socialRequest(path, init) }
+  } catch (err) {
+    if (err instanceof SocialApiError && (err.status === 404 || err.status === 503)) return { handled: false }
+    throw err
+  }
+}
+
+// Optional call: some tests mock the jellyfin module without it.
+jellyfin.setAdminProxy?.(adminProxy)

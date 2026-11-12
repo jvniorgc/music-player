@@ -3,6 +3,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import SettingsView from './SettingsView'
 import { useToastStore } from '../../stores/toast'
+import { useAuthStore } from '../../stores/auth'
 import { useI18nStore } from '../../i18n'
 import { LANGUAGE_KEY } from '../../lib/language'
 
@@ -47,5 +48,13 @@ describe('SettingsView Discord toggle', () => {
     await waitFor(() => expect(useToastStore.getState().toasts).toContainEqual(
       expect.objectContaining({ message: 'Failed to update Discord setting', type: 'error' })))
     expect(sw()).toHaveAttribute('aria-checked', 'true')
+  })
+})
+
+describe('SettingsView Soulseek section', () => {
+  it.each([[false], [true]])('is shown only to admins (admin=%s)', isAdmin => {
+    useAuthStore.setState({ isAdmin })
+    render(<MemoryRouter><SettingsView /></MemoryRouter>)
+    expect(!!screen.queryByRole('heading', { name: 'Soulseek (slskd)' })).toBe(isAdmin)
   })
 })

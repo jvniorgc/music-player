@@ -22,7 +22,7 @@ const AUTH = { serverUrl: 'http://jf', token: 'TKN', userId: 'u1', username: 'me
 const flush = () => new Promise(r => setTimeout(r, 0))
 
 beforeEach(() => {
-  useAuthStore.setState({ isAuthenticated: false, isLoading: true, error: null, auth: null, primaryImageTag: null })
+  useAuthStore.setState({ isAuthenticated: false, isLoading: true, error: null, auth: null, primaryImageTag: null, isAdmin: false })
   vi.mocked(jellyfin.getCurrentUser).mockResolvedValue({ Id: 'u1', Name: 'me', PrimaryImageTag: 'pt' })
 })
 
@@ -165,5 +165,41 @@ describe('session expiry (401)', () => {
     expect(s.auth).toBeNull()
     expect(s.error).toBe('login.error.sessionExpired')
     expect(window.api.clearAuth).toHaveBeenCalled()
+  })
+})
+
+describe('admin status', () => {
+  const SAVED = { server_url: 'http://jf', token: 'TKN', user_id: 'u1', username: 'me', server_id: 's1' }
+
+  it('defaults to non-admin', () => {
+    expect(useAuthStore.getState().isAdmin).toBe(false)
+  })
+
+  it('reads Policy.IsAdministrator on login and persists it', async () => {
+    vi.mocked(jellyfin.authenticate).mockResolvedValue(AUTH)
+    vi.mocked(jellyfin.getCurrentUser).mockResolvedValue({ Id: 'u1', Name: 'me', Policy: { IsAdministrator: true } })
+    await useAuthStore.getState().login('http://jf', 'me', 'pw')
+    await flush()
+    expect(useAuthStore.getState().isAdmin).toBe(true)
+    expect(window.api.setSetting).toHaveBeenCalledWith('isAdmin:u1', 'true')
+  })
+
+  it('restores the persisted flag before the session is shown, then refreshes it', async () => {
+    vi.mocked(window.api.getAuth).mockResolvedValue(SAVED)
+    vi.mocked(jellyfin.testConnection).mockResolvedValue(true)
+    vi.mocked(window.api.getSetting).mockImplementation(async k => (k === 'isAdmin:u1' ? 'true' : null))
+    let resolveUser!: (u: any) => void
+    vi.mocked(jellyfin.getCurrentUser).mockReturnValue(new Promise(r => { resolveUser = r }))
+    await useAuthStore.getState().restoreSession()
+    expect(useAuthStore.getState()).toMatchObject({ isAuthenticated: true, isAdmin: true })
+    resolveUser({ Id: 'u1', Name: 'me', Policy: { IsAdministrator: false } })
+    await flush()
+    expect(useAuthStore.getState().isAdmin).toBe(false)
+  })
+
+  it('logout clears admin status', async () => {
+    useAuthStore.setState({ isAdmin: true })
+    await useAuthStore.getState().logout()
+    expect(useAuthStore.getState().isAdmin).toBe(false)
   })
 })

@@ -17,6 +17,7 @@ import PlaylistView from './components/Library/PlaylistView'
 import SearchView from './components/Search/SearchView'
 import LikedView from './components/Library/LikedView'
 import DownloadsView from './components/Library/DownloadsView'
+import AdminRoute from './components/Layout/AdminRoute'
 import SoulseekView from './components/Soulseek/SoulseekView'
 import RequestsView from './components/Requests/RequestsView'
 import InboxView from './components/Inbox/InboxView'
@@ -92,7 +93,7 @@ export default function App() {
           <Route path="/playlist/:id" element={<PlaylistView />} />
           <Route path="/liked" element={<LikedView />} />
           <Route path="/downloads" element={<DownloadsView />} />
-          <Route path="/soulseek" element={<SoulseekView />} />
+          <Route path="/soulseek" element={<AdminRoute><SoulseekView /></AdminRoute>} />
           <Route path="/requests" element={<RequestsView />} />
           <Route path="/inbox" element={<InboxView />} />
           <Route path="/feed" element={<FeedView />} />

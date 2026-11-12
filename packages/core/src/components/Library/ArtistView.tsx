@@ -18,6 +18,7 @@ import { AlbumCard } from '../UI/MediaCard'
 import { useT } from '../../i18n'
 import { isConfigured } from '../../services/social'
 import { itemFromJellyfin, type RecItem } from '../../services/friendRecs'
+import { useIsAdmin } from '../../stores/auth'
 import RecommendModal from '../Inbox/RecommendModal'
 
 export default function ArtistView() {
@@ -28,6 +29,7 @@ export default function ArtistView() {
   const [albums, setAlbums] = useState<JellyfinItem[]>([])
   const [loading, setLoading] = useState(true)
   const [showMetadataEditor, setShowMetadataEditor] = useState(false)
+  const isAdmin = useIsAdmin()
   const [recItem, setRecItem] = useState<RecItem | null>(null)
   const [topSongs, setTopSongs] = useState<JellyfinItem[]>([])
   const playItems = usePlayerStore(s => s.playItems)
@@ -92,6 +94,8 @@ export default function ArtistView() {
           <div className="flex items-end gap-6">
             {imageUrl ? (
               <img src={imageUrl} className="w-32 h-32 rounded-full object-cover border border-white/10" alt="" />
+            ) : !isAdmin ? (
+              <div className="w-32 h-32 rounded-full bg-surface-2 border border-border" />
             ) : (
               <button
                 onClick={() => setShowMetadataEditor(true)}
@@ -110,13 +114,15 @@ export default function ArtistView() {
                 {albums.length > 0 && (
                   <p className="text-sm text-text-secondary">{tn('common.albumCount', albums.length)}</p>
                 )}
-                <button
-                  onClick={() => setShowMetadataEditor(true)}
-                  className="text-xs text-accent hover:text-accent-hover transition-colors flex items-center gap-1"
-                >
-                  <ImagePlus size={12} />
-                  {imageUrl ? t('artist.changeImage') : t('artist.findImage')}
-                </button>
+                {isAdmin && (
+                  <button
+                    onClick={() => setShowMetadataEditor(true)}
+                    className="text-xs text-accent hover:text-accent-hover transition-colors flex items-center gap-1"
+                  >
+                    <ImagePlus size={12} />
+                    {imageUrl ? t('artist.changeImage') : t('artist.findImage')}
+                  </button>
+                )}
                 {artist && isConfigured() && (
                   <button
                     onClick={() => setRecItem(itemFromJellyfin(artist))}
@@ -194,7 +200,7 @@ export default function ArtistView() {
         </div>
       </div>
       {/* Artist Metadata Editor */}
-      {artist && (
+      {artist && isAdmin && (
         <ArtistMetadataEditor
           artist={artist}
           open={showMetadataEditor}

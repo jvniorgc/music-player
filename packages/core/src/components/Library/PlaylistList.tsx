@@ -47,7 +47,7 @@ export default function PlaylistList() {
   const handleRename = async (name: string) => {
     if (!renameTarget) return
     try {
-      await jellyfin.renameItem(renameTarget.Id, name)
+      await jellyfin.renamePlaylist(renameTarget.Id, name)
       await fetchPlaylists()
       toast(t('playlist.renamed'), 'success')
     } catch (err) {

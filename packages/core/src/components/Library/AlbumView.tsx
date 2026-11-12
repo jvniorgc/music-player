@@ -17,6 +17,7 @@ import TrackRow, { TrackIndex, TrackDuration } from '../UI/TrackRow'
 import { CoverFallbackIcon } from '../UI/CoverArt'
 import { ArtistLinks } from '../UI/Links'
 import { buttonClass } from '../UI/Button'
+import { useIsAdmin } from '../../stores/auth'
 import { useShallow } from 'zustand/react/shallow'
 import { useT } from '../../i18n'
 import { usePopularityActive, useHeaderStats, PopularitySummary, TrackPopularity } from '../UI/Popularity'
@@ -34,6 +35,7 @@ export default function AlbumView() {
   const { isDownloaded, startDownload } = useDownloadStore(useShallow(s => ({ isDownloaded: s.isDownloaded, startDownload: s.startDownload, downloads: s.downloads })))
   const { playlists, fetchPlaylists } = useLibraryStore(useShallow(s => ({ playlists: s.playlists, fetchPlaylists: s.fetchPlaylists })))
   const [showMetadata, setShowMetadata] = useState(false)
+  const isAdmin = useIsAdmin()
   const showPopularity = usePopularityActive()
   const reactionSummary = useReactionSummary(tracks.map(t => t.Id))
   const albumStats = useHeaderStats(album ? albumKey(album) : null, () => getAlbumStats(album!))
@@ -163,14 +165,14 @@ export default function AlbumView() {
               <Download size={16} />
             </button>
             <AlbumHeaderMenu album={album} tracks={tracks} />
-            <button
+            {isAdmin && <button
               onClick={() => setShowMetadata(true)}
               className="w-8 h-8 inline-flex items-center justify-center rounded-full border border-border text-text-secondary hover:text-text-primary hover:bg-white/10 transition-colors"
               title={t('common.editMetadata')}
               aria-label={t('common.editMetadata')}
             >
               <Pencil size={16} />
-            </button>
+            </button>}
           </div>
         </div>
       </div>
@@ -208,13 +210,13 @@ export default function AlbumView() {
       <AlbumSocialSection albumId={album.Id} />
       <AlbumReviews album={album} />
 
-      <MetadataEditor
+      {isAdmin && <MetadataEditor
         album={album}
         tracks={tracks}
         open={showMetadata}
         onClose={() => setShowMetadata(false)}
         onApplied={() => loadData()}
-      />
+      />}
 
     </div>
   )

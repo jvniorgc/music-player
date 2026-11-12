@@ -66,7 +66,7 @@ export default function PlaylistView() {
   const handleRename = async (name: string) => {
     if (!id) return
     try {
-      await jellyfin.renameItem(id, name)
+      await jellyfin.renamePlaylist(id, name)
       setPlaylist(prev => prev ? { ...prev, Name: name } : prev)
       fetchPlaylists()
       toast(t('playlist.renamed'), 'success')
@@ -82,7 +82,7 @@ export default function PlaylistView() {
     if (!id || !file) return
     setUploadingCover(true)
     try {
-      await jellyfin.uploadImageBlob(id, file)
+      await jellyfin.setPlaylistImage(id, file)
       const updated = await jellyfin.getItem(id)
       setPlaylist(updated)
       fetchPlaylists()

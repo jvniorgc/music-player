@@ -22,7 +22,7 @@ describe('PlaylistView cover image', () => {
 
   it('lets the owner upload a new cover', async () => {
     vi.spyOn(jellyfin, 'isPlaylistOwner').mockResolvedValue(true)
-    const upload = vi.spyOn(jellyfin, 'uploadImageBlob').mockResolvedValue()
+    const upload = vi.spyOn(jellyfin, 'setPlaylistImage').mockResolvedValue()
     vi.mocked(jellyfin.getItem).mockResolvedValueOnce(playlist).mockResolvedValueOnce({ ...playlist, ImageTags: { Primary: 'new' } })
     renderView()
 

@@ -8,6 +8,8 @@ interface AuthState {
   error: string | null
   auth: JellyfinAuth | null
   primaryImageTag: string | null
+  /** Jellyfin `Policy.IsAdministrator`; false until known (persisted per user to avoid flicker). */
+  isAdmin: boolean
   login: (serverUrl: string, username: string, password: string) => Promise<void>
   logout: () => Promise<void>
   restoreSession: () => Promise<void>
@@ -15,12 +17,15 @@ interface AuthState {
   updateProfile: (name?: string, imageBlob?: Blob) => Promise<void>
 }
 
+const adminKey = (userId: string) => `isAdmin:${userId}`
+
 export const useAuthStore = create<AuthState>((set, get) => ({
   isAuthenticated: false,
   isLoading: true,
   error: null,
   auth: null,
   primaryImageTag: null,
+  isAdmin: false,
 
   login: async (serverUrl, username, password) => {
     set({ isLoading: true, error: null })
@@ -31,7 +36,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       await window.api.allowOrigin?.(fullUrl).catch(err => console.warn('[auth] allowOrigin failed', err))
       const auth = await jellyfin.authenticate(fullUrl, username.trim(), password)
       await window.api.saveAuth(auth)
-      set({ isAuthenticated: true, auth, isLoading: false, primaryImageTag: null })
+      set({ isAuthenticated: true, auth, isLoading: false, primaryImageTag: null, isAdmin: false })
       get().refreshUserInfo()
     } catch (err: any) {
       set({ error: friendlyLoginError(err), isLoading: false })
@@ -41,7 +46,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   logout: async () => {
     jellyfin.clearAuth()
     await window.api.clearAuth()
-    set({ isAuthenticated: false, auth: null, primaryImageTag: null })
+    set({ isAuthenticated: false, auth: null, primaryImageTag: null, isAdmin: false })
   },
 
   restoreSession: async () => {
@@ -58,7 +63,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         jellyfin.setAuth(auth)
         const connected = await jellyfin.testConnection(auth.serverUrl)
         if (connected) {
-          set({ isAuthenticated: true, auth, isLoading: false })
+          const savedAdmin = await window.api.getSetting(adminKey(auth.userId)).catch(() => null)
+          set({ isAuthenticated: true, auth, isLoading: false, isAdmin: savedAdmin === 'true' })
           get().refreshUserInfo()
           return
         }
@@ -72,10 +78,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   refreshUserInfo: async () => {
     try {
       const user = await jellyfin.getCurrentUser()
+      const isAdmin = user.Policy?.IsAdministrator === true
       set(state => ({
+        isAdmin,
         primaryImageTag: user.PrimaryImageTag || null,
         auth: state.auth ? { ...state.auth, username: user.Name } : state.auth
       }))
+      window.api.setSetting(adminKey(user.Id), String(isAdmin)).catch(() => {})
     } catch (err) {
       console.warn('[auth] failed to refresh user info', err)
     }
@@ -98,11 +107,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   }
 }))
 
+export const useIsAdmin = () => useAuthStore(s => s.isAdmin)
+
 export const SESSION_EXPIRED_MESSAGE = 'login.error.sessionExpired'
 
 // Central 401 handling: any authenticated request that comes back 401 drops
 // the session and sends the user back to the login screen with a message.
 jellyfin.onUnauthorized(() => {
   window.api.clearAuth().catch(err => console.warn('[auth] failed to clear stored auth', err))
-  useAuthStore.setState({ isAuthenticated: false, auth: null, primaryImageTag: null, isLoading: false, error: SESSION_EXPIRED_MESSAGE })
+  useAuthStore.setState({ isAuthenticated: false, auth: null, primaryImageTag: null, isAdmin: false, isLoading: false, error: SESSION_EXPIRED_MESSAGE })
 })

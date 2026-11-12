@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { Loader2, LogOut, Pencil, RefreshCw, Trash2 } from 'lucide-react'
-import { useAuthStore } from '../../stores/auth'
+import { useAuthStore, useIsAdmin } from '../../stores/auth'
 import { useToastStore } from '../../stores/toast'
 import { useShallow } from 'zustand/react/shallow'
 import { buttonClass } from '../UI/Button'
@@ -42,6 +42,7 @@ function Row({ label, children }: { label: string; children: ReactNode }) {
 
 export default function SettingsView() {
   const { auth, logout } = useAuthStore(useShallow(s => ({ auth: s.auth, logout: s.logout })))
+  const isAdmin = useIsAdmin()
   const toast = useToastStore(s => s.show)
   const navigate = useNavigate()
   const { hash } = useLocation()
@@ -167,9 +168,11 @@ export default function SettingsView() {
         <PrivacySettings />
       </Section>
 
-      <Section id="soulseek" title={t('settings.soulseek')}>
-        <SlskdSettings />
-      </Section>
+      {isAdmin && (
+        <Section id="soulseek" title={t('settings.soulseek')}>
+          <SlskdSettings />
+        </Section>
+      )}
 
       <Section id="social-server" title={t('settings.socialServer')}>
         <SocialServerSettings />
