@@ -15,6 +15,7 @@ import ArtistView from './components/Library/ArtistView'
 import PlaylistList from './components/Library/PlaylistList'
 import PlaylistView from './components/Library/PlaylistView'
 import SearchView from './components/Search/SearchView'
+import LikedView from './components/Library/LikedView'
 import DownloadsView from './components/Library/DownloadsView'
 import SoulseekView from './components/Soulseek/SoulseekView'
 import SocialView from './components/Social/SocialView'
@@ -70,6 +71,7 @@ export default function App() {
           <Route path="/artist/:id" element={<ArtistView />} />
           <Route path="/playlists" element={<PlaylistList />} />
           <Route path="/playlist/:id" element={<PlaylistView />} />
+          <Route path="/liked" element={<LikedView />} />
           <Route path="/downloads" element={<DownloadsView />} />
           <Route path="/soulseek" element={<SoulseekView />} />
           <Route path="/social" element={<SocialView />} />

@@ -108,6 +108,21 @@ describe('library getters', () => {
     expect(res.TotalRecordCount).toBe(1)
   })
 
+  it('getFavoriteSongs requests favorite audio, newest first, and sanitizes', async () => {
+    const fetchMock = mockFetchRouter([['Filters=IsFavorite', jsonRes({
+      Items: [{ Id: 'f0', Name: 'Fav', Type: 'Audio' }, { Id: 'f1', Name: ' ' }],
+      TotalRecordCount: 2,
+    })]])
+    const res = await jellyfin.getFavoriteSongs()
+    expect(res.Items.map(i => i.Id)).toEqual(['f0'])
+    const url = fetchMock.mock.calls[0][0] as string
+    expect(url).toContain('IncludeItemTypes=Audio')
+    expect(url).toContain('Recursive=true')
+    expect(url).toContain('SortBy=DateCreated')
+    expect(url).toContain('SortOrder=Descending')
+    expect(url).toContain('Fields=MediaSources,RunTimeTicks,AlbumArtist,Album,AlbumId,Artists,HasLyrics')
+  })
+
   it('getPlaylistItems hits the playlist items endpoint', async () => {
     mockFetchRouter([['/Playlists/pl1/Items', jsonRes(items('Track'))]])
     expect((await jellyfin.getPlaylistItems('pl1')).Items).toHaveLength(1)

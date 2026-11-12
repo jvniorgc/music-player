@@ -12,6 +12,7 @@ describe('contextPath', () => {
     [{ type: 'songs', name: 'Songs' }, '/songs'],
     [{ type: 'home', name: 'Recently played' }, '/'],
     [{ type: 'downloads', name: 'Downloads' }, '/downloads'],
+    [{ type: 'liked', name: 'Liked songs' }, '/liked'],
     [{ type: 'search', id: 'a b', name: 's' }, '/search?q=a%20b'],
     [{ type: 'search', name: 's' }, '/search'],
     [{ type: 'mix', name: 'Instant mix' }, null],

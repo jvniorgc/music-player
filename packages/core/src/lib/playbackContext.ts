@@ -10,6 +10,7 @@ export function contextPath(ctx: PlaybackContext | null | undefined): string | n
     case 'songs': return '/songs'
     case 'home': return '/'
     case 'downloads': return '/downloads'
+    case 'liked': return '/liked'
     case 'search': return ctx.id ? `/search?q=${encodeURIComponent(ctx.id)}` : '/search'
     default: return null
   }

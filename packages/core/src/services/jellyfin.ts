@@ -288,6 +288,12 @@ class JellyfinService {
     return { Items: filtered, TotalRecordCount: filtered.length }
   }
 
+  /** The user's liked (favorite) songs. Jellyfin has no "date liked", so newest-added first. */
+  async getFavoriteSongs(signal?: AbortSignal): Promise<JellyfinItemsResponse> {
+    const res = await this.request<JellyfinItemsResponse>(`/Users/${this.userId}/Items?IncludeItemTypes=Audio&Recursive=true&Filters=IsFavorite&SortBy=DateCreated,SortName&SortOrder=Descending&Fields=MediaSources,RunTimeTicks,AlbumArtist,Album,AlbumId,Artists,HasLyrics`, { signal })
+    return this.sanitizeItems(res)
+  }
+
   async getPlaylistItems(playlistId: string, signal?: AbortSignal): Promise<JellyfinItemsResponse> {
     return this.request(`/Playlists/${playlistId}/Items?UserId=${this.userId}&Fields=MediaSources,RunTimeTicks,AlbumArtist,Album,AlbumId,PlaylistItemId,HasLyrics`, { signal })
   }

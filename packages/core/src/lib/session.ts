@@ -20,7 +20,7 @@ interface StoredSession extends PlaybackSnapshot {
 }
 
 const REPEAT_MODES: RepeatMode[] = ['none', 'all', 'one']
-const CONTEXT_TYPES: PlaybackContextType[] = ['album', 'playlist', 'artist', 'songs', 'search', 'home', 'library', 'mix', 'radio', 'downloads', 'custom']
+const CONTEXT_TYPES: PlaybackContextType[] = ['album', 'playlist', 'artist', 'songs', 'search', 'home', 'library', 'mix', 'radio', 'downloads', 'liked', 'custom']
 
 /** Only the fields the UI needs to render/play a queued track. */
 export function minimalItem(item: JellyfinItem): JellyfinItem {
