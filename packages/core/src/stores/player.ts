@@ -3,7 +3,6 @@ import { useToastStore } from './toast'
 import { playback, QueueTrack, RepeatMode, PlaybackContext } from '../services/playback'
 import { JellyfinItem, jellyfin } from '../services/jellyfin'
 import { t } from '../i18n'
-import { getRecommendations } from '../services/recommendations'
 import { initDiscordPresence } from '../services/discord'
 import { usePlaybackPrefs } from './prefs/playback'
 
@@ -34,8 +33,6 @@ interface PlayerState {
   shuffleItems: (items: JellyfinItem[], context?: PlaybackContext | string) => void
   /** "Shuffle all": random songs from the whole library. */
   shuffleAllSongs: () => Promise<void>
-  /** "Instant mix": a queue generated from recent listening; returns how many tracks were queued. */
-  startRadio: () => Promise<number>
   /** "Start radio" for one track (Jellyfin InstantMix); returns how many tracks were queued. */
   startTrackRadio: (item: JellyfinItem) => Promise<number>
   addToQueue: (item: JellyfinItem) => void
@@ -102,14 +99,6 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
     if (res.Items.length > 0) {
       playback.setQueue(res.Items, 0, { type: 'library', name: t('player.yourLibrary') })
     }
-  },
-
-  startRadio: async () => {
-    const items = await getRecommendations()
-    if (items.length > 0) {
-      playback.setQueue(items, 0, { type: 'mix', name: t('home.instantMix') })
-    }
-    return items.length
   },
 
   startTrackRadio: async (item) => {

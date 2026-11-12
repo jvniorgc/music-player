@@ -15,7 +15,6 @@ describe('contextPath', () => {
     [{ type: 'liked', name: 'Liked songs' }, '/liked'],
     [{ type: 'search', id: 'a b', name: 's' }, '/search?q=a%20b'],
     [{ type: 'search', name: 's' }, '/search'],
-    [{ type: 'mix', name: 'Instant mix' }, null],
     [null, null],
   ] as const)('%j → %s', (ctx, path) => {
     expect(contextPath(ctx as never)).toBe(path)

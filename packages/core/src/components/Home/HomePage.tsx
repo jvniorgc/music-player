@@ -1,10 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useLibraryStore } from '../../stores/library'
 import { usePlayerStore } from '../../stores/player'
-import { useToastStore } from '../../stores/toast'
 import { jellyfin } from '../../services/jellyfin'
-import { Clock, Radio, Loader2, AlertCircle, RefreshCw } from 'lucide-react'
+import { Clock, AlertCircle, RefreshCw } from 'lucide-react'
 import { TrackSubtitle } from '../UI/Links'
 import TrackMenu from '../UI/TrackMenu'
 import LikeButton from '../UI/LikeButton'
@@ -16,6 +15,7 @@ import { useShallow } from 'zustand/react/shallow'
 import { useT } from '../../i18n'
 import { HomeFeedSection } from '../Feed/Feed'
 import PicksRow from '../Picks/PicksRow'
+import { FriendsNowPlaying } from './FriendsNowPlaying'
 
 function HomeSkeleton() {
   const { t } = useT()
@@ -53,47 +53,22 @@ export default function HomePage() {
   const { t } = useT()
   const { recentlyAdded, recentlyPlayed, homeStatus, fetchHome } = useLibraryStore(useShallow(s => ({ recentlyAdded: s.recentlyAdded, recentlyPlayed: s.recentlyPlayed, homeStatus: s.homeStatus, fetchHome: s.fetchHome })))
   const hasContent = recentlyAdded.length > 0 || recentlyPlayed.length > 0
-  const startRadio = usePlayerStore(s => s.startRadio)
   const playFromList = usePlayerStore(s => s.playFromList)
-  const showToast = useToastStore(s => s.show)
-  const [radioLoading, setRadioLoading] = useState(false)
   const navigate = useNavigate()
 
   useEffect(() => {
     fetchHome()
   }, [])
 
-  const handleRadio = async () => {
-    if (radioLoading) return
-    setRadioLoading(true)
-    try {
-      const count = await startRadio()
-      if (count === 0) {
-        showToast(t('home.mixEmpty'), 'error')
-      }
-    } catch {
-      showToast(t('home.mixFailed'), 'error')
-    } finally {
-      setRadioLoading(false)
-    }
-  }
-
   return (
     <div className="space-y-10">
-      <div className="flex items-center justify-between gap-4">
+      <div>
         <h1 className="text-title font-semibold">{t('home.title')}</h1>
-        <button
-          onClick={handleRadio}
-          disabled={radioLoading}
-          className={buttonClass('primary')}
-          title={t('home.instantMixHint')}
-        >
-          {radioLoading ? <Loader2 size={16} className="animate-spin" /> : <Radio size={16} />}
-          {radioLoading ? t('home.instantMixLoading') : t('home.instantMix')}
-        </button>
       </div>
 
       <PicksRow />
+
+      <FriendsNowPlaying />
 
       {!hasContent && (homeStatus === 'idle' || homeStatus === 'loading') && <HomeSkeleton />}
 

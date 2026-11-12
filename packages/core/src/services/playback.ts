@@ -17,7 +17,7 @@ export interface QueueTrack {
 
 /** Where the current queue was started from ("Playing from <name>"). */
 export type PlaybackContextType =
-  | 'album' | 'playlist' | 'artist' | 'songs' | 'search' | 'home' | 'library' | 'mix' | 'radio' | 'downloads' | 'liked' | 'custom'
+  | 'album' | 'playlist' | 'artist' | 'songs' | 'search' | 'home' | 'library' | 'radio' | 'downloads' | 'liked' | 'custom'
 
 export interface PlaybackContext {
   type: PlaybackContextType

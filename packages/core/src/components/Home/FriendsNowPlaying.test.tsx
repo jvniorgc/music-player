@@ -44,14 +44,13 @@ describe('FriendsNowPlaying', () => {
     expect(h.list).toHaveBeenCalledTimes(3)
   })
 
-  it('collapses and shows a paused indicator', async () => {
+  it('renders as a home section and shows a paused indicator', async () => {
     h.list.mockResolvedValue([entry({ isPaused: true, item: { ...entry().item, artists: [] } })])
     render(<FriendsNowPlaying />)
     await settle()
     expect(screen.getByLabelText('Paused')).toBeInTheDocument()
     expect(screen.getByText('Song')).toBeInTheDocument()
-    fireEvent.click(screen.getByRole('button', { name: 'Listening now' }))
-    expect(screen.queryByText('Bia')).not.toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Listening now' })).toBeInTheDocument()
   })
 
   it('joins: plays the track at the adjusted position', async () => {

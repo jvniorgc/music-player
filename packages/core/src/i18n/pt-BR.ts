@@ -249,11 +249,6 @@ export const ptBR: Messages = {
   'playlist.emptyPlaylist': "Playlist vazia",
   // home
   'home.title': "Ouvir agora",
-  'home.instantMix': "Mix instantâneo",
-  'home.instantMixLoading': "Criando mix…",
-  'home.instantMixHint': "Toque um mix baseado no que você tem ouvido, com faixas populares no meio",
-  'home.mixEmpty': "Ainda não há histórico suficiente para um mix. Ouça algumas músicas e tente novamente.",
-  'home.mixFailed': "Não foi possível iniciar o mix",
   'home.recentlyAdded': "Adicionados recentemente",
   'home.seeAll': "Ver tudo",
   'home.recentlyPlayed': "Tocados recentemente",

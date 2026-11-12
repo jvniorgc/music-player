@@ -11,7 +11,6 @@ import { ProfileEditModal } from '../UI/ProfileEditModal'
 import { useShallow } from 'zustand/react/shallow'
 import { useT } from '../../i18n'
 import { PrivateSessionToggle } from './PrivateSessionToggle'
-import { FriendsNowPlaying } from './FriendsNowPlaying'
 import { useInboxStore, startInboxPolling, initInboxAutoListen } from '../../stores/inbox'
 
 const navItems = [
@@ -207,8 +206,6 @@ export default function Sidebar() {
           ))}
         </nav>
       </div>
-
-      <FriendsNowPlaying />
 
       {/* Playlists */}
       {playlists.length > 0 && (

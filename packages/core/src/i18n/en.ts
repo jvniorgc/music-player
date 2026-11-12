@@ -250,11 +250,6 @@ export const en = {
   'playlist.emptyPlaylist': "Empty playlist",
   // home
   'home.title': "Listen now",
-  'home.instantMix': "Instant mix",
-  'home.instantMixLoading': "Creating mix…",
-  'home.instantMixHint': "Play a mix based on what you have been listening to, with popular tracks mixed in",
-  'home.mixEmpty': "Not enough listening history for a mix yet. Play some music and try again.",
-  'home.mixFailed': "Could not start the mix",
   'home.recentlyAdded': "Recently added",
   'home.seeAll': "See all",
   'home.recentlyPlayed': "Recently played",
