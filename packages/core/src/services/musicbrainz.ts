@@ -2,7 +2,7 @@ import { timeoutSignal } from './http'
 
 const MB_BASE = 'https://musicbrainz.org/ws/2'
 const CAA_BASE = 'https://coverartarchive.org'
-const USER_AGENT = 'JellyfinMusicPlayer/0.1.0 (https://github.com/jvniorgc/music-player)'
+const USER_AGENT = 'Musga/0.1.0 (https://github.com/jvniorgc/music-player)'
 
 export interface MBRelease {
   id: string

@@ -85,10 +85,10 @@ type RequestOptions = RequestInit & { timeoutMs?: number }
 
 const UPLOAD_TIMEOUT_MS = 120_000
 
-const CLIENT_NAME = 'JellyfinMusicPlayer'
+const CLIENT_NAME = 'Musga'
 const CLIENT_VERSION = '0.1.0'
 const DEVICE_NAME = 'Desktop'
-const DEVICE_ID = 'jellyfin-music-player-' + Math.random().toString(36).slice(2)
+const DEVICE_ID = 'musga-' + Math.random().toString(36).slice(2)
 
 class JellyfinService {
   private auth: JellyfinAuth | null = null
@@ -924,7 +924,7 @@ class JellyfinService {
       if (album) params.set('album_name', album)
 
       const lrcRes = await fetch(`https://lrclib.net/api/get?${params}`, {
-        headers: { 'User-Agent': 'JellyfinMusicPlayer/1.0.0' },
+        headers: { 'User-Agent': 'Musga/1.0.0' },
         signal: timeoutSignal()
       })
       if (!lrcRes.ok) return []

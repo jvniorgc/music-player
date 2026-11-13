@@ -41,7 +41,7 @@ Conventions:
 
 ## Architecture
 
-This is an **Electron + React + TypeScript** desktop music player for Jellyfin servers, organized as an **npm-workspaces monorepo** with two tiers:
+This is **Musga**, an **Electron + React + TypeScript** desktop music player for Jellyfin servers, organized as an **npm-workspaces monorepo** with two tiers:
 
 - **`packages/core/`** (`@music-player/core`) — Platform-agnostic React UI and app logic: the root `App`, `components/` (by domain), `services/`, `stores/`, `app.css`, and the `PlatformApi` contract (`platform.ts`). This package is intended to be shared by the desktop (Electron) and a future mobile (Capacitor) client. **It must not import Electron or Node APIs** — it only reaches the host through `window.api`.
 - **`src/`** — The Electron **desktop client** (a thin shell), built with `electron-vite` into three processes:

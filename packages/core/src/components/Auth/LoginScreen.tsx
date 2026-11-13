@@ -27,7 +27,7 @@ export default function LoginScreen() {
       <div className="w-full max-w-sm mx-auto px-6">
         <div className="flex flex-col items-center text-center mb-8">
           <AppIcon size={72} className="mb-4" />
-          <h1 className="text-heading font-semibold">Music Player</h1>
+          <h1 className="text-heading font-semibold">Musga</h1>
           <p className="text-text-secondary mt-1 text-sm">{t('login.subtitle')}</p>
         </div>
 

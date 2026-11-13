@@ -1,7 +1,7 @@
 {
-  "name": "jellyfin-music-player",
+  "name": "musga",
   "version": "0.10.5",
-  "description": "Apple Music-inspired desktop music player for Jellyfin",
+  "description": "Musga — Apple Music-inspired desktop music player for Jellyfin",
   "main": "./out/main/index.js",
   "workspaces": [
     "packages/*"
@@ -18,7 +18,7 @@
   },
   "build": {
     "appId": "com.jvniorgc.jellyfin-music-player",
-    "productName": "Jellyfin Music Player",
+    "productName": "Musga",
     "mac": {
       "target": "dmg",
       "category": "public.app-category.music",

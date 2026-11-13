@@ -2,6 +2,7 @@ import { app, BrowserWindow, ipcMain, shell, session, net, Menu, protocol, dialo
 import { join, resolve, sep, isAbsolute } from 'path'
 import { pathToFileURL } from 'url'
 import { initDatabase, getDatabase } from './database'
+import { keepLegacyUserData } from './userData'
 import { existsSync, mkdirSync, createWriteStream, unlinkSync, statSync, readdirSync } from 'fs'
 import { writeFile } from 'fs/promises'
 import { Readable } from 'stream'
@@ -529,6 +530,8 @@ function enforceCacheLimit() {
     freed += row.file_size
   }
 }
+
+keepLegacyUserData()
 
 app.whenReady().then(() => {
   initPaths()

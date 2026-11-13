@@ -1,9 +1,9 @@
 <div align="center">
-  <img src="build/icon.png" width="120" height="120" alt="Jellyfin Music Player" />
+  <img src="build/icon.png" width="120" height="120" alt="Musga" />
 
-  # Jellyfin Music Player
+  # Musga
 
-  A desktop music player for [Jellyfin](https://jellyfin.org/) servers, inspired by Apple Music.
+  Musga is a desktop music player for [Jellyfin](https://jellyfin.org/) servers, inspired by Apple Music.
 
   [![Version](https://img.shields.io/badge/version-0.8.0-blue?style=flat-square)](https://github.com/jvniorgc/music-player/releases)
   [![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Windows%20%7C%20Linux-lightgrey?style=flat-square)](#download)
@@ -82,7 +82,7 @@ npm install
 The DMG is generated in `dist/`. On first launch, macOS may block the unsigned app:
 
 ```bash
-xattr -cr "dist/mac-arm64/Jellyfin Music Player.app"
+xattr -cr "dist/mac-arm64/Musga.app"
 ```
 
 Or go to **System Settings > Privacy & Security > Open Anyway**.
@@ -94,7 +94,7 @@ Or go to **System Settings > Privacy & Security > Open Anyway**.
 
 Cross-compilation is not supported due to native modules. Build on a Windows machine or use the CI workflow.
 
-The installer is generated at `dist/Jellyfin Music Player Setup {version}.exe`.
+The installer is generated at `dist/Musga Setup {version}.exe`.
 
 </details>
 
