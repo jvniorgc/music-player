@@ -2,6 +2,7 @@ import type { DiscordPresence } from '../platform'
 import type { QueueTrack } from './playback'
 import { usePlayerStore } from '../stores/player'
 import { TICKS_PER_SECOND } from '../lib/format'
+import { jellyfin } from './jellyfin'
 import { isPrivateSession, usePrivacyPrefs } from '../stores/prefs/privacy'
 
 /** Minimum interval between Rich Presence pushes (Discord rate-limits updates). */
@@ -11,7 +12,13 @@ const SEEK_THRESHOLD = 2
 
 type PlayerSnapshot = { currentTrack: QueueTrack | null; isPlaying: boolean; currentTime: number; duration: number }
 
-/** Presence for the current player state; null when paused/stopped. Only plain text — never server URLs. */
+/** Jellyfin artwork is public, so the cover URL is sent without the token — only for https (internet-reachable) servers. */
+function coverUrl(id: string): string | undefined {
+  const base = jellyfin.serverUrl.replace(/\/+$/, '')
+  return base.startsWith('https://') ? `${base}/Items/${id}/Images/Primary?maxHeight=512&quality=90` : undefined
+}
+
+/** Presence for the current player state; null when paused/stopped. Never includes credentials. */
 export function toPresence(s: PlayerSnapshot): DiscordPresence | null {
   if (!s.currentTrack || !s.isPlaying) return null
   const item = s.currentTrack.item
@@ -21,6 +28,7 @@ export function toPresence(s: PlayerSnapshot): DiscordPresence | null {
     album: item.Album,
     position: s.currentTime,
     duration: item.RunTimeTicks ? item.RunTimeTicks / TICKS_PER_SECOND : s.duration,
+    imageUrl: coverUrl(item.AlbumId || item.Id),
   }
 }
 

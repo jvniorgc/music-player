@@ -2,11 +2,8 @@ import { Client, type SetActivity } from '@xhayper/discord-rpc'
 import { getDatabase } from './database'
 import type { DiscordPresence } from '@music-player/core/platform'
 
-// PLACEHOLDER — replace with the real Discord application ID from
-// https://discord.com/developers/applications before shipping. The app must
-// also upload a Rich Presence art asset named LARGE_IMAGE_KEY.
 export const DISCORD_CLIENT_ID = '1570431140270055615'
-/** Static Rich Presence asset; Jellyfin artwork URLs carry the API key and must never be sent. */
+/** Fallback Rich Presence asset when no public cover URL is available. */
 export const LARGE_IMAGE_KEY = 'app_icon'
 export const RETRY_BASE_MS = 5_000
 export const RETRY_MAX_MS = 60_000
@@ -14,6 +11,9 @@ export const RETRY_MAX_MS = 60_000
 const KEY_ENABLED = 'discord_enabled'
 const ACTIVITY_TYPE_LISTENING = 2
 const MAX_FIELD = 128
+const MAX_IMAGE_URL = 256
+/** Shows the `state` field (artist) as "Listening to …" instead of the app name. */
+const STATUS_DISPLAY_STATE = 1
 
 let client: Client | null = null
 let connecting: Promise<Client | null> | null = null
@@ -46,8 +46,9 @@ function toActivity(p: DiscordPresence): SetActivity {
     type: ACTIVITY_TYPE_LISTENING,
     details: field(p.title),
     state: field(p.artist),
-    largeImageKey: LARGE_IMAGE_KEY,
+    largeImageKey: p.imageUrl?.startsWith('https://') && p.imageUrl.length <= MAX_IMAGE_URL ? p.imageUrl : LARGE_IMAGE_KEY,
     largeImageText: field(p.album),
+    statusDisplayType: STATUS_DISPLAY_STATE,
     startTimestamp: start,
     endTimestamp: p.duration > 0 ? Math.round(start + p.duration * 1000) : undefined,
     instance: false,

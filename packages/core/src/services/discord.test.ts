@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { usePlayerStore } from '../stores/player'
 import { initDiscordPresence, setDiscordEnabled, getDiscordEnabled, toPresence, THROTTLE_MS } from './discord'
-import type { JellyfinItem } from './jellyfin'
+import { jellyfin, type JellyfinItem } from './jellyfin'
 
 const item = {
   Id: 'a', Name: 'Song', Artists: ['Band', 'Guest'], Album: 'LP', RunTimeTicks: 200 * 10_000_000,
@@ -37,6 +37,16 @@ describe('toPresence', () => {
       .toEqual({ title: 'X', artist: 'AA', album: undefined, position: 0, duration: 99 })
     const it3 = { Id: 'c', Name: 'Y' } as JellyfinItem
     expect(toPresence({ currentTrack: { id: 'c', item: it3 }, isPlaying: true, currentTime: 0, duration: 0 })!.artist).toBe('')
+  })
+
+  it('adds a public album cover only for https servers, without credentials', () => {
+    const snap = (it2: JellyfinItem) => ({ currentTrack: { id: 'a', item: it2 }, isPlaying: true, currentTime: 0, duration: 0 })
+    jellyfin.setAuth({ serverUrl: 'https://music.example.com:8920/', token: 'secret', userId: 'u', username: 'n', serverId: 's' } as never)
+    expect(toPresence(snap({ ...item, AlbumId: 'alb' } as JellyfinItem))!.imageUrl)
+      .toBe('https://music.example.com:8920/Items/alb/Images/Primary?maxHeight=512&quality=90')
+    expect(toPresence(snap(item))!.imageUrl).toBe('https://music.example.com:8920/Items/a/Images/Primary?maxHeight=512&quality=90')
+    jellyfin.setAuth({ serverUrl: 'http://192.168.0.2:8096', token: 'secret', userId: 'u', username: 'n', serverId: 's' } as never)
+    expect(toPresence(snap(item))!.imageUrl).toBeUndefined()
   })
 
   it('is null when paused or stopped', () => {

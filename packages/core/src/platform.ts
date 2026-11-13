@@ -47,6 +47,8 @@ export type DiscordPresence = {
   position: number
   /** Track length in seconds (0 if unknown). */
   duration: number
+  /** Public https album cover (no credentials); omitted when the server isn't reachable by Discord. */
+  imageUrl?: string
 }
 
 export type AuthData = {

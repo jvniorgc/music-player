@@ -97,6 +97,7 @@ describe('setActivity', () => {
       state: 'Band',
       largeImageKey: discord.LARGE_IMAGE_KEY,
       largeImageText: 'LP',
+      statusDisplayType: 1,
       startTimestamp: 1_000_000 - 10_000,
       endTimestamp: 1_000_000 + 190_000,
       instance: false,
@@ -107,6 +108,15 @@ describe('setActivity', () => {
     const second = c.user.setActivity.mock.calls[1][0]
     expect(second.endTimestamp).toBeUndefined()
     expect(second.largeImageText).toBeUndefined()
+  })
+
+  it('uses a public https cover as the large image, falling back to the app icon', async () => {
+    discord.setEnabled(true)
+    await discord.setActivity({ ...presence, imageUrl: 'https://music.example.com/Items/a/Images/Primary' })
+    await discord.setActivity({ ...presence, imageUrl: 'http://192.168.0.2/Items/a/Images/Primary' })
+    await discord.setActivity({ ...presence, imageUrl: `https://x.com/${'a'.repeat(300)}` })
+    const calls = h.clients[0].user.setActivity.mock.calls.map((c: [{ largeImageKey: string }]) => c[0].largeImageKey)
+    expect(calls).toEqual(['https://music.example.com/Items/a/Images/Primary', discord.LARGE_IMAGE_KEY, discord.LARGE_IMAGE_KEY])
   })
 
   it('pads too-short fields required by Discord and truncates long ones', async () => {
